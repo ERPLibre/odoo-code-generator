@@ -81,6 +81,11 @@ class CodeGeneratorDbColumn(models.Model):
         help="Use this widget for this field when create views.",
     )
 
+    relation = fields.Char(
+        string="Relation many2one",
+        help="The field related with foreign key.",
+    )
+
     add_one2many = fields.Boolean(
         string="Add one2many",
         help="Add field one2many to related model on this field.",

@@ -44,6 +44,8 @@ class CodeGeneratorDbTable(models.Model):
 
     name = fields.Char(string="Table", help="Table", required=True)
 
+    module_name = fields.Char(string="Module", help="Module name")
+
     table_type = fields.Selection(
         string="Table type",
         help="Table type",
@@ -121,6 +123,9 @@ class CodeGeneratorDbTable(models.Model):
                     ),
                     "m2o_table": result.id,
                 }
+                if field[2].get("relation"):
+                    # TODO hack
+                    column_value["relation"] = field[2].get("relation")
                 self.env["code.generator.db.column"].create(column_value)
 
     @api.model
@@ -156,6 +161,134 @@ class CodeGeneratorDbTable(models.Model):
 
     @api.multi
     def generate_module(self, code_generator_id=None):
+        """
+        Function to generate a module
+        :return:
+        """
+        lst_module = []
+        dct_module = {}
+        dct_module_table = defaultdict(list)
+        for table in self:
+            dct_module_table[table.module_name].append(table)
+
+        for module_name, lst_table in dct_module_table.items():
+            module_name_caps = module_name.capitalize()
+            if not code_generator_id:
+                final_module_name = "%s_module_%s" % (
+                    lst_table[0].m2o_db.database,
+                    module_name,
+                )
+
+                module = self.env["code.generator.module"].search(
+                    [("name", "=", final_module_name)]
+                )
+                if not module:
+                    module = self.env["code.generator.module"].create(
+                        dict(
+                            shortdesc="Module %s" % module_name_caps,
+                            name=final_module_name,
+                            application=True,
+                        )
+                    )
+            else:
+                module = code_generator_id
+            dct_module[module_name] = module
+            lst_module.append(module)
+
+        for module_name, lst_table in dct_module_table.items():
+            self._compute_table(
+                dct_module.get(module_name), module_name, lst_table
+            )
+        return lst_module
+
+    def _compute_table(self, cg_module_id, module_name, lst_table):
+        dct_table_id = ""
+        # Ignore field
+        # Update model
+        # Update field
+        # Create one2many
+        # Reorder dependence model - lst_table
+
+        # Create model and field, ready for creation
+        lst_model_dct = []
+        for table in lst_table:
+            lst_field = []
+            for field in table.o2m_columns:
+                dct_field = {}
+                if field.ignore_field:
+                    continue
+                # TODO Move this at the end
+                if field.delete:
+                    continue
+                if field.new_name:
+                    dct_field["name"] = field.new_name
+                else:
+                    dct_field["name"] = field.name
+                if field.temporary_name_field and table.new_rec_name and table.new_rec_name != dct_field["name"]:
+                    continue
+                if field.new_string:
+                    dct_field["field_description"] = field.new_string
+                else:
+                    dct_field["field_description"] = field.description
+                if field.new_help:
+                    dct_field["help"] = field.new_help
+                if field.new_type:
+                    dct_field["ttype"] = field.new_type
+                else:
+                    dct_field["ttype"] = field.column_type
+                if field.new_change_required:
+                    dct_field["required"] = field.new_required
+                else:
+                    dct_field["required"] = field.required
+                if field.relation:
+                    dct_field["relation"] = field.relation
+
+                lst_field.append((0, 0, dct_field))
+            dct_model = {
+                "name": table.name,
+                "m2o_module": cg_module_id.id,
+                "nomenclator": table.nomenclator,
+                "field_id": lst_field,
+            }
+            if table.new_model_name:
+                dct_model["model"] = table.new_model_name
+            else:
+                dct_model["model"] = table.name.replace("_", ".")
+            if table.new_rec_name:
+                dct_model["rec_name"] = table.new_rec_name
+            if table.new_description:
+                dct_model["description"] = table.new_description
+            # TODO hack to remove accorderie.
+            model_name = dct_model["model"]
+            if model_name.startswith("tbl."):
+                dct_model["model"] = model_name[4:]
+            elif model_name.startswith("accorderie."):
+                dct_model["model"] = model_name[11:]
+            lst_model_dct.append(dct_model)
+        models_created = self.env["ir.model"].create(lst_model_dct)
+        print("fd")
+        # lst_model_dct = [
+        #     {
+        #         "name": a.name,
+        #         "model": "",
+        #         "field_id": [
+        #             (0,0,{
+        #                 "name": "",
+        #                 "field_description": "" ,
+        #                 "ttype": "" ,
+        #                 "required": "" ,
+        #                 "origin_name": "" ,
+        #              }) for b in a.o2m_columns
+        #         ],
+        #         "m2o_module": 1,
+        #         "nomenclator": a.nomenclator,
+        #         "rec_name": a.new_rec_name,
+        #     }
+        #     for a in lst_table
+        # ]
+
+    @api.multi
+    def generate_module2(self, code_generator_id=None):
         """
         Function to generate a module
         :return:
