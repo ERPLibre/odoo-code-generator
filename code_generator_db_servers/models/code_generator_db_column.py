@@ -84,6 +84,16 @@ class CodeGeneratorDbColumn(models.Model):
         help="New relation name after migration.",
     )
 
+    relation_column = fields.Char(
+        string="Relation many2one column",
+        help="The column foreign key from relation.",
+    )
+
+    new_relation_field = fields.Char(
+        string="New relation many2one field",
+        help="The field related with foreign key, contain the new field name.",
+    )
+
     force_widget = fields.Char(
         string="Force widget",
         help="Use this widget for this field when create views.",
@@ -137,6 +147,10 @@ class CodeGeneratorDbColumn(models.Model):
         string="Has new data",
         compute="_compute_has_update",
         store=True,
+    )
+
+    ir_model_field_id = fields.One2many(
+        comodel_name="ir.model.fields", inverse_name="db_columns_ids"
     )
 
     @api.depends(

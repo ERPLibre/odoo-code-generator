@@ -126,6 +126,10 @@ class CodeGeneratorDbTable(models.Model):
                 }
                 if dct_field.get("relation"):
                     column_value["relation"] = dct_field.get("relation")
+                if dct_field.get("relation_column"):
+                    column_value["relation_column"] = dct_field.get(
+                        "relation_column"
+                    )
                 self.env["code.generator.db.column"].create(column_value)
 
     @api.model
@@ -146,18 +150,18 @@ class CodeGeneratorDbTable(models.Model):
 
         return _inner_conform
 
-    @api.model
-    def _get_model_name(self, module_name, model):
-        """
-        Util function to obtain a model name
-        :param module_name:
-        :param model:
-        :return:
-        """
-
-        return (
-            "%s_%s" % (module_name, model) if module_name != "comun" else model
-        )
+    # @api.model
+    # def _get_model_name(self, module_name, model):
+    #     """
+    #     Util function to obtain a model name
+    #     :param module_name:
+    #     :param model:
+    #     :return:
+    #     """
+    #
+    #     return (
+    #         "%s_%s" % (module_name, model) if module_name != "comun" else model
+    #     )
 
     @api.multi
     def generate_module(self, code_generator_id=None):
@@ -203,100 +207,287 @@ class CodeGeneratorDbTable(models.Model):
         return lst_module
 
     def _compute_table(self, cg_module_id, module_name, table_ids):
-        # Ignore field
-        # Update model
-        # Update field
         # Create one2many
         # Reorder dependence model - lst_table
+        # Double link
+        # Double data link
 
         # Update model name
-        for table in table_ids:
-            if not table.new_model_name:
-                table.new_model_name = table.name.replace("_", ".")
+        for table_id in table_ids:
+            if not table_id.new_model_name:
+                # TODO update field relation with new model name?
+                table_id.new_model_name = table_id.name.replace("_", ".")
 
-        # Update relation name
-        for table in table_ids:
-            for field in table.o2m_columns:
-                if field.relation:
-                    field.new_relation = self.get_new_model_name(
-                        table_ids, field.relation
-                    )
+        # Update relation name, after update model name
+        for table_id in table_ids:
+            for field in table_id.o2m_columns:
+                if field.relation or field.relation_column:
+                    if not field.relation_column:
+                        _logger.error(
+                            "Missing relation column for relation"
+                            f" {field.relation} and field {field.name} for"
+                            f" table {table_id.name}."
+                        )
+                    elif not field.relation:
+                        _logger.error(
+                            "Missing relation for relation column"
+                            f" {field.relation_column} and field"
+                            f" {field.name} for table {table_id.name}."
+                        )
+                    else:
+                        (
+                            field.new_relation,
+                            field.new_relation_field,
+                        ) = self.get_new_model_name(
+                            table_ids, field.relation, field.relation_column
+                        )
+
+                # TODO maybe create a new variable for this value, like field_name, field_type, with a compute
+                if not field.new_name:
+                    field.new_name = field.name
+                if not field.new_type:
+                    field.new_type = field.column_type
 
         # Create model and field, ready for creation
-        lst_model_dct = []
-        for table in table_ids:
-            lst_field = []
-            for field in table.o2m_columns:
-                dct_field = {}
-                if field.ignore_field:
-                    continue
-
-                # Origin data from database
-                if field.delete:
-                    dct_field["ddb_cmd_delete"] = True
-
-                dct_field["ddb_field_name"] = field.name
-                dct_field["ddb_field_description"] = field.description
-                dct_field["ddb_field_required"] = field.required
-                dct_field["ddb_field_type"] = field.column_type
-                if field.relation:
-                    dct_field["ddb_field_relation"] = field.relation
-
-                # New data for model
-                if field.new_name:
-                    dct_field["name"] = field.new_name
-                else:
-                    dct_field["name"] = field.name
-                # Ignore create field name if no need anymore
-                if (
-                    field.temporary_name_field
-                    and table.new_rec_name
-                    and table.new_rec_name != dct_field["name"]
-                ):
-                    continue
-                if field.new_description:
-                    dct_field["field_description"] = field.new_description
-                else:
-                    dct_field["field_description"] = field.description
-                if field.new_help:
-                    dct_field["help"] = field.new_help
-                if field.new_type:
-                    dct_field["ttype"] = field.new_type
-                else:
-                    dct_field["ttype"] = field.column_type
-                if field.new_change_required:
-                    dct_field["required"] = field.new_required
-                else:
-                    dct_field["required"] = field.required
-                if field.new_relation:
-                    # Don't share field.relation, it's the relation with the table_name
-                    dct_field["relation"] = field.new_relation
-
-                lst_field.append((0, 0, dct_field))
-            dct_model = {
-                "name": table.name,
-                "m2o_module": cg_module_id.id,
-                "nomenclator": table.nomenclator,
-                "field_id": lst_field,
-            }
-            if table.new_model_name:
-                dct_model["model"] = table.new_model_name
-            else:
-                dct_model["model"] = table.name.replace("_", ".")
-            if table.new_rec_name:
-                dct_model["rec_name"] = table.new_rec_name
-            if table.new_description:
-                dct_model["description"] = table.new_description
-            lst_model_dct.append(dct_model)
+        lst_model_dct = [
+            self.create_ir_model_field_value(cg_module_id, table)
+            for table in table_ids
+        ]
+        _logger.info("Creating all ir.model...")
         models_created = self.env["ir.model"].create(lst_model_dct)
+        # TODO Reorder by many2one and remove recursive dependency
+
+        # Migrate data
+        table_nomenclator_ids = table_ids.filtered("nomenclator")
+        for seq, table_id in enumerate(table_nomenclator_ids):
+            _logger.info(f"Parse #{seq} - {table_id.name}")
+            self.generate_data(table_id)
+
+        # TODO create one2many
 
         # Delete field, after compute stuff
         _logger.info("Delete fields after compute with it.")
         for model_id in models_created:
-            field_ids = model_id.field_id.filtered(lambda x: x.ddb_cmd_delete)
+            field_ids = model_id.field_id.filtered(
+                lambda x: x.db_columns_ids.delete
+            )
             field_ids.unlink()
 
         _logger.info(f"End of migration for module {module_name}")
+
+    @staticmethod
+    def create_ir_model_field_value(cg_module_id, table):
+        """
+        Create ir.model.field value from code.generator.db.table
+        :param cg_module_id: code.generator module
+        :param table: code.generator.db.table
+        :return:
+        """
+        lst_field = []
+        for field in table.o2m_columns:
+            dct_field = {}
+            if field.ignore_field:
+                continue
+
+            # TODO skip delete if no many2one refer on this value
+
+            # Origin data from database
+            # if field.delete:
+            #     dct_field["ddb_cmd_delete"] = True
+            #
+            # dct_field["ddb_field_name"] = field.name
+            # dct_field["ddb_field_description"] = field.description
+            # dct_field["ddb_field_required"] = field.required
+            # dct_field["ddb_field_type"] = field.column_type
+            # if field.relation:
+            #     dct_field["ddb_field_relation"] = field.relation
+
+            # New data for model
+            if field.new_name:
+                dct_field["name"] = field.new_name
+            else:
+                dct_field["name"] = field.name
+            # Ignore create field name if no need anymore
+            if (
+                field.temporary_name_field
+                and table.new_rec_name
+                and table.new_rec_name != dct_field["name"]
+            ):
+                # Delete this column, we don't need that!
+                field.unlink()
+                continue
+            if field.new_description:
+                dct_field["field_description"] = field.new_description
+            else:
+                dct_field["field_description"] = field.description
+            if field.new_help:
+                dct_field["help"] = field.new_help
+            if field.new_type:
+                dct_field["ttype"] = field.new_type
+            else:
+                dct_field["ttype"] = field.column_type
+            if field.new_change_required:
+                dct_field["required"] = field.new_required
+            else:
+                dct_field["required"] = field.required
+            if field.new_relation:
+                # Don't share field.relation, it's the relation with the table_name
+                dct_field["relation"] = field.new_relation
+            # if field.path_binary:
+            #     dct_field["path_binary"] = field.path_binary
+            # if field.path_binary:
+            #     dct_field["force_widget"] = field.force_widget
+
+            dct_field["db_columns_ids"] = field.id
+
+            lst_field.append((0, 0, dct_field))
+        dct_model = {
+            "name": table.name,
+            "m2o_module": cg_module_id.id,
+            "nomenclator": table.nomenclator,
+            "field_id": lst_field,
+        }
+        if table.new_model_name:
+            dct_model["model"] = table.new_model_name
+        else:
+            dct_model["model"] = table.name.replace("_", ".")
+        if table.new_rec_name:
+            dct_model["rec_name"] = table.new_rec_name
+        if table.new_description:
+            dct_model["description"] = table.new_description
+        return dct_model
+
+    def generate_data(self, table_id):
+        # Get columns to fetch data
+        column_nomenclator_ids = table_id.o2m_columns.filtered(
+            lambda a: not a.delete
+            and not a.ignore_field
+            and a.ir_model_field_id.ttype != "one2many"
+            and not a.temporary_name_field
+        )
+        lst_column_name = column_nomenclator_ids.mapped("name")
+        lst_field_name = column_nomenclator_ids.mapped("new_name")
+
+        # Get column to compute data
+        column_compute_ids = column_nomenclator_ids.filtered(
+            lambda a: a.compute_data_function
+        )
+        column_binary_char_ids = column_nomenclator_ids.filtered(
+            lambda a: a.path_binary
+            and a.new_type == "binary"
+            and a.column_type == "char"
+        )
+        column_many2one_ids = column_nomenclator_ids.filtered(
+            lambda a: a.new_type == "many2one"
+        )
+
+        # Get query for SQL
+        lst_query_replace = [
+            (a.name, a.sql_select_modify)
+            for a in column_nomenclator_ids.filtered(
+                lambda col: col.sql_select_modify
+            )
+        ]
+
+        # Fetch all data
+        l_foreign_table_data = self.get_table_data(
+            table_id.name,
+            table_id.m2o_db,
+            lst_column_name,
+            lst_query_replace=lst_query_replace,
+        )
+
+        lst_data = list(
+            map(
+                self._conform_model_created_data(lst_field_name),
+                l_foreign_table_data,
+            )
+        )
+
+        # Compute data before create it
+        if column_compute_ids or column_binary_char_ids or column_many2one_ids:
+            try:
+                for data in lst_data:
+                    # Compute data with a method call
+                    for column_compute_id in column_compute_ids:
+                        value = data.get(column_compute_id.new_name)
+                        new_value = eval(
+                            column_compute_id.compute_data_function,
+                            data.copy(),
+                        )
+                        if new_value != value:
+                            data[column_compute_id.new_name] = new_value
+
+                    # Compute char path to transform in binary
+                    for column_binary_char_id in column_binary_char_ids:
+                        if data:
+                            value = data.get(column_binary_char_id.new_name)
+                            # import path in binary
+                            path_file = os.path.join(
+                                column_binary_char_id.path_binary,
+                                value,
+                            )
+                            if os.path.isfile(path_file):
+                                new_data_binary = open(
+                                    path_file,
+                                    "rb",
+                                ).read()
+                                data[
+                                    column_binary_char_id.new_name
+                                ] = base64.b64encode(new_data_binary)
+                            else:
+                                _logger.error(
+                                    f"Cannot add file path `{path_file}` for"
+                                    " model"
+                                    f" `{column_binary_char_id.ir_model_field_id.model}`"
+                                    " and field"
+                                    f" `{column_binary_char_id.new_name}`"
+                                )
+                    for column_many2one_id in column_many2one_ids:
+                        value = data.get(column_many2one_id.new_name)
+                        # Update value with foreign key value
+                        new_id = self.env[
+                            column_many2one_id.new_relation
+                        ].search(
+                            [
+                                (
+                                    column_many2one_id.new_relation_field,
+                                    "=",
+                                    value,
+                                )
+                            ]
+                        )
+                        if len(new_id) > 1:
+                            raise ValueError(
+                                "Model"
+                                f" `{column_many2one_id.ir_model_field_id.model}`"
+                                f" with field `{column_many2one_id.new_name}`"
+                                " is required, but cannot find relation"
+                                f" `{column_many2one_id.new_relation}`"
+                                " relation column"
+                                f" `{column_many2one_id.new_relation_field}`"
+                                f" of id `{value}`. Cannot associate multiple"
+                                " result, is your foreign configured"
+                                " correctly?"
+                            )
+                        int_new_id = new_id.id
+                        # TODO use real required
+                        if int_new_id is False and column_many2one_id.required:
+                            raise ValueError(
+                                "Model"
+                                f" `{column_many2one_id.ir_model_field_id.model}`"
+                                f" with field `{column_many2one_id.new_name}`"
+                                " is required, but cannot find relation"
+                                f" `{column_many2one_id.new_relation}`"
+                                " relation column"
+                                f" `{column_many2one_id.new_relation_field}`"
+                                f" of id `{value}`. Is it missing data?"
+                            )
+                        data[column_many2one_id.new_name] = int_new_id
+            except Exception as e:
+                _logger.error(e)
+        results = self.env[table_id.new_model_name].sudo().create(lst_data)
+        # dct_model_result_data[model_created.model] = results
 
     @api.multi
     def generate_module2(self, code_generator_id=None):
@@ -308,514 +499,514 @@ class CodeGeneratorDbTable(models.Model):
         dct_model_id = {}
         dct_model_result_data = {}
 
-        l_module_tables = defaultdict(list)
+        # l_module_tables = defaultdict(list)
+        #
+        # for table in self:
+        #
+        #     name_splitted = table.name.split("_", maxsplit=1)
+        #
+        #     if len(name_splitted) > 1:
+        #         module_name, table_name = name_splitted[0], name_splitted[1]
+        #
+        #     else:
+        #         module_name, table_name = "comun", name_splitted[0]
+        #
+        #     t_tname_m2o_db_nom = (table_name, table.m2o_db, table.nomenclator)
+        #     l_module_tables[module_name].append(t_tname_m2o_db_nom)
 
-        for table in self:
-
-            name_splitted = table.name.split("_", maxsplit=1)
-
-            if len(name_splitted) > 1:
-                module_name, table_name = name_splitted[0], name_splitted[1]
-
-            else:
-                module_name, table_name = "comun", name_splitted[0]
-
-            t_tname_m2o_db_nom = (table_name, table.m2o_db, table.nomenclator)
-            l_module_tables[module_name].append(t_tname_m2o_db_nom)
-
-        for module_name in l_module_tables.keys():
-
-            if not l_module_tables[module_name]:
-                continue
-
-            module_name_caps = module_name.capitalize()
-            if not code_generator_id:
-                final_module_name = "%s_module_%s" % (
-                    l_module_tables[module_name][0][1].database,
-                    module_name,
-                )
-
-                module = self.env["code.generator.module"].search(
-                    [("name", "=", final_module_name)]
-                )
-                if not module:
-                    module = self.env["code.generator.module"].create(
-                        dict(
-                            shortdesc="Module %s" % module_name_caps,
-                            name=final_module_name,
-                            application=True,
-                        )
-                    )
-            else:
-                module = code_generator_id
-
-            lst_model_dct = list(
-                map(
-                    lambda t_info: dict(
-                        name="Model %s belonging to Module %s"
-                        % (t_info[0].capitalize(), module_name_caps),
-                        model=self.replace_in(
-                            t_info[0].lower().replace("_", ".")
-                        ),
-                        field_id=self.get_table_fields(
-                            self._get_model_name(module_name, t_info[0]),
-                            t_info[1],
-                            rec_name=self.env[
-                                "code.generator.db.update.migration.model"
-                            ]
-                            .search(
-                                [
-                                    ("model_name", "=", t_info[0]),
-                                    ("code_generator_id", "=", module.id),
-                                ]
-                            )
-                            .new_rec_name,
-                        ),
-                        m2o_module=module.id,
-                        nomenclator=t_info[2],
-                    ),
-                    l_module_tables[module_name],
-                )
-            )
-
-            dct_model_dct = {a.get("model"): a for a in lst_model_dct}
+        # for module_name in l_module_tables.keys():
+        #
+        #     if not l_module_tables[module_name]:
+        #         continue
+        #
+        #     module_name_caps = module_name.capitalize()
+        #     if not code_generator_id:
+        #         final_module_name = "%s_module_%s" % (
+        #             l_module_tables[module_name][0][1].database,
+        #             module_name,
+        #         )
+        #
+        #         module = self.env["code.generator.module"].search(
+        #             [("name", "=", final_module_name)]
+        #         )
+        #         if not module:
+        #             module = self.env["code.generator.module"].create(
+        #                 dict(
+        #                     shortdesc="Module %s" % module_name_caps,
+        #                     name=final_module_name,
+        #                     application=True,
+        #                 )
+        #             )
+        #     else:
+        #         module = code_generator_id
+        #
+        #     lst_model_dct = list(
+        #         map(
+        #             lambda t_info: dict(
+        #                 name="Model %s belonging to Module %s"
+        #                 % (t_info[0].capitalize(), module_name_caps),
+        #                 model=self.replace_in(
+        #                     t_info[0].lower().replace("_", ".")
+        #                 ),
+        #                 field_id=self.get_table_fields(
+        #                     self._get_model_name(module_name, t_info[0]),
+        #                     t_info[1],
+        #                     rec_name=self.env[
+        #                         "code.generator.db.update.migration.model"
+        #                     ]
+        #                     .search(
+        #                         [
+        #                             ("model_name", "=", t_info[0]),
+        #                             ("code_generator_id", "=", module.id),
+        #                         ]
+        #                     )
+        #                     .new_rec_name,
+        #                 ),
+        #                 m2o_module=module.id,
+        #                 nomenclator=t_info[2],
+        #             ),
+        #             l_module_tables[module_name],
+        #         )
+        #     )
+        if True:
+            # dct_model_dct = {a.get("model"): a for a in lst_model_dct}
 
             # Delete ignored field before computation
-            ignored_field_ids = self.env[
-                "code.generator.db.update.migration.field"
-            ].search(
-                [
-                    ("ignore_field", "=", True),
-                    ("code_generator_id", "=", module.id),
-                ]
-            )
+            # ignored_field_ids = self.env[
+            #     "code.generator.db.update.migration.field"
+            # ].search(
+            #     [
+            #         ("ignore_field", "=", True),
+            #         ("code_generator_id", "=", module.id),
+            #     ]
+            # )
 
-            for ignored_field_id in ignored_field_ids:
-                dct_model_to_ignore = dct_model_dct.get(
-                    ignored_field_id.model_name
-                )
-                if not dct_model_to_ignore:
-                    _logger.warning(
-                        f"Ignore the field {ignored_field_id.field_name} from"
-                        f" model {ignored_field_id.model_name} into ignored"
-                        " list."
-                    )
-                    continue
-                # Search field
-                i = -1
-                for _, _, dct_field in dct_model_to_ignore.get("field_id"):
-                    i += 1
-                    if ignored_field_id.field_name == dct_field.get("name"):
-                        dct_model_to_ignore.get("field_id").pop(i)
-                        break
-                else:
-                    _logger.warning(
-                        f"Cannot find field {ignored_field_id.field_name} from"
-                        f" model {ignored_field_id.model_name}"
-                    )
+            # for ignored_field_id in ignored_field_ids:
+            #     dct_model_to_ignore = dct_model_dct.get(
+            #         ignored_field_id.model_name
+            #     )
+            #     if not dct_model_to_ignore:
+            #         _logger.warning(
+            #             f"Ignore the field {ignored_field_id.field_name} from"
+            #             f" model {ignored_field_id.model_name} into ignored"
+            #             " list."
+            #         )
+            #         continue
+            #     # Search field
+            #     i = -1
+            #     for _, _, dct_field in dct_model_to_ignore.get("field_id"):
+            #         i += 1
+            #         if ignored_field_id.field_name == dct_field.get("name"):
+            #             dct_model_to_ignore.get("field_id").pop(i)
+            #             break
+            #     else:
+            #         _logger.warning(
+            #             f"Cannot find field {ignored_field_id.field_name} from"
+            #             f" model {ignored_field_id.model_name}"
+            #         )
 
             # Update model
-            for model_name, dct_model in dct_model_dct.items():
-                modif_model_id = self.env[
-                    "code.generator.db.update.migration.model"
-                ].search(
-                    [
-                        ("model_name", "=", model_name),
-                        ("code_generator_id", "=", module.id),
-                    ]
-                )
-                if len(modif_model_id):
-                    if len(modif_model_id) > 1:
-                        _logger.warning(
-                            "Cannot support multiple update for model"
-                            f" {dct_model.get('model')}"
-                        )
-                    else:
-                        if modif_model_id.new_rec_name:
-                            dct_model["rec_name"] = modif_model_id.new_rec_name
-                        if modif_model_id.new_description:
-                            dct_model[
-                                "description"
-                            ] = modif_model_id.new_description
-                            dct_model["name"] = modif_model_id.new_description
+            # for model_name, dct_model in dct_model_dct.items():
+            #     modif_model_id = self.env[
+            #         "code.generator.db.update.migration.model"
+            #     ].search(
+            #         [
+            #             ("model_name", "=", model_name),
+            #             ("code_generator_id", "=", module.id),
+            #         ]
+            #     )
+            #     if len(modif_model_id):
+            #         if len(modif_model_id) > 1:
+            #             _logger.warning(
+            #                 "Cannot support multiple update for model"
+            #                 f" {dct_model.get('model')}"
+            #             )
+            #         else:
+            #             if modif_model_id.new_rec_name:
+            #                 dct_model["rec_name"] = modif_model_id.new_rec_name
+            #             if modif_model_id.new_description:
+            #                 dct_model[
+            #                     "description"
+            #                 ] = modif_model_id.new_description
+            #                 dct_model["name"] = modif_model_id.new_description
+            #
+            #     modif_field_ids = self.env[
+            #         "code.generator.db.update.migration.field"
+            #     ].search(
+            #         [
+            #             ("model_name", "=", model_name),
+            #             ("code_generator_id", "=", module.id),
+            #         ]
+            #     )
+            #     dct_field = {}
+            #     for modif_id in modif_field_ids:
+            #         if modif_id.field_name:
+            #             if modif_id.field_name in dct_field.keys():
+            #                 _logger.warning(
+            #                     "Cannot support multiple update field for"
+            #                     f" model {dct_model.get('model')} and field"
+            #                     f" {modif_id.field_name}"
+            #                 )
+            #                 continue
+            # Validate update field name exist from database
+            #     for _, _, dct_model_field in dct_model.get("field_id"):
+            #         if modif_id.field_name == dct_model_field.get(
+            #             "name"
+            #         ):
+            #             is_exist = True
+            #             break
+            #     else:
+            #         is_exist = False
+            #         if not modif_id.ignore_field:
+            #             _logger.warning(
+            #                 "Field name doesn't exist from update"
+            #                 " field for model"
+            #                 f" {dct_model.get('model')} and field"
+            #                 f" {modif_id.field_name}"
+            #             )
+            #
+            #     if is_exist:
+            #         dct_field[modif_id.field_name] = modif_id
+            # else:
+            #     _logger.warning(
+            #         "Missing field name in update field for model"
+            #         f" {dct_model.get('model')} and field"
+            #         f" {modif_id.field_name}"
+            #     )
 
-                modif_field_ids = self.env[
-                    "code.generator.db.update.migration.field"
-                ].search(
-                    [
-                        ("model_name", "=", model_name),
-                        ("code_generator_id", "=", module.id),
-                    ]
-                )
-                dct_field = {}
-                for modif_id in modif_field_ids:
-                    if modif_id.field_name:
-                        if modif_id.field_name in dct_field.keys():
-                            _logger.warning(
-                                "Cannot support multiple update field for"
-                                f" model {dct_model.get('model')} and field"
-                                f" {modif_id.field_name}"
-                            )
-                            continue
-                        # Validate update field name exist from database
-                        for _, _, dct_model_field in dct_model.get("field_id"):
-                            if modif_id.field_name == dct_model_field.get(
-                                "name"
-                            ):
-                                is_exist = True
-                                break
-                        else:
-                            is_exist = False
-                            if not modif_id.ignore_field:
-                                _logger.warning(
-                                    "Field name doesn't exist from update"
-                                    " field for model"
-                                    f" {dct_model.get('model')} and field"
-                                    f" {modif_id.field_name}"
-                                )
+            # i = -1
+            # for _, _, dct_model_field in dct_model.get("field_id"):
+            # i += 1
+            # # Force ddb_field_name to simplify code
+            # dct_model_field["ddb_field_name"] = dct_model_field["name"]
+            # update_info = dct_field.get(dct_model_field.get("name"))
+            # if not update_info:
+            #     continue
+            #
+            # if update_info.new_field_name:
+            #     dct_model_field["name"] = update_info.new_field_name
 
-                        if is_exist:
-                            dct_field[modif_id.field_name] = modif_id
-                    else:
-                        _logger.warning(
-                            "Missing field name in update field for model"
-                            f" {dct_model.get('model')} and field"
-                            f" {modif_id.field_name}"
-                        )
+            # Keep empty value
+            # if update_info.new_help is not False:
+            #     if "help" in dct_model_field:
+            #         dct_model_field[
+            #             "ddb_field_help"
+            #         ] = dct_model_field["help"]
+            #     dct_model_field["help"] = update_info.new_help
+            #
+            # if update_info.new_change_required:
+            #     if "required" in dct_model_field:
+            #         dct_model_field[
+            #             "ddb_field_required"
+            #         ] = dct_model_field["required"]
+            #     dct_model_field["required"] = update_info.new_required
+            #
+            # if update_info.new_type:
+            #     dct_model_field["ddb_field_type"] = dct_model_field[
+            #         "ttype"
+            #     ]
+            #     dct_model_field["ttype"] = update_info.new_type
 
-                i = -1
-                for _, _, dct_model_field in dct_model.get("field_id"):
-                    i += 1
-                    # Force ddb_field_name to simplify code
-                    dct_model_field["ddb_field_name"] = dct_model_field["name"]
-                    update_info = dct_field.get(dct_model_field.get("name"))
-                    if not update_info:
-                        continue
+            # if update_info.path_binary:
+            #     dct_model_field[
+            #         "path_binary"
+            #     ] = update_info.path_binary
+            #
+            # if update_info.force_widget:
+            #     dct_model_field[
+            #         "force_widget"
+            #     ] = update_info.force_widget
 
-                    if update_info.new_field_name:
-                        dct_model_field["name"] = update_info.new_field_name
+            # if update_info.add_one2many:
+            #     model_related_id = dct_model_dct[
+            #         dct_model_field.get("relation")
+            #     ]
+            #
+            #     new_name_one2many = update_info.model_name
+            #     # update_field_one2many = dct_field.get(
+            #     #     new_name_one2many
+            #     # )
+            #
+            #     # Create new field
+            #     # TODO Validate no duplicate in model_related_id, loop on field_id, check name if not already exist
+            #     # TODO move this after, in a new loop, to have new result of modification
+            #     lst_field_name = [
+            #         a[2].get("name")
+            #         for a in model_related_id.get("field_id")
+            #     ]
+            #     j = 0
+            #     original_new_name_one2many = new_name_one2many
+            #     while new_name_one2many in lst_field_name:
+            #         j += 1
+            #         if j == 1:
+            #             new_name_one2many = (
+            #                 f"{original_new_name_one2many}_ids"
+            #             )
+            #         else:
+            #             new_name_one2many = (
+            #                 f"{original_new_name_one2many}_ids_{j}"
+            #             )
+            #
+            #     dct_one2many = {
+            #         "name": new_name_one2many,
+            #         # don't add ddb_field_name to detect it's added
+            #         # "ddb_field_name": new_name_one2many,
+            #         "field_description": (
+            #             new_name_one2many.replace("_", " ").title()
+            #         ),
+            #         "help": f"{new_name_one2many.title()} relation",
+            #         "ttype": "one2many",
+            #         "relation": update_info.model_name,
+            #         "relation_field": update_info.new_field_name,
+            #         # "comodel_name": update_info.model_name,
+            #         # "inverse_name": update_info.new_field_name,
+            #     }
+            #     tpl_field_one2many = (0, 0, dct_one2many)
+            #
+            #     model_related_id.get("field_id").append(
+            #         tpl_field_one2many
+            #     )
 
-                    # Keep empty value
-                    if update_info.new_help is not False:
-                        if "help" in dct_model_field:
-                            dct_model_field[
-                                "ddb_field_help"
-                            ] = dct_model_field["help"]
-                        dct_model_field["help"] = update_info.new_help
-
-                    if update_info.new_change_required:
-                        if "required" in dct_model_field:
-                            dct_model_field[
-                                "ddb_field_required"
-                            ] = dct_model_field["required"]
-                        dct_model_field["required"] = update_info.new_required
-
-                    if update_info.new_type:
-                        dct_model_field["ddb_field_type"] = dct_model_field[
-                            "ttype"
-                        ]
-                        dct_model_field["ttype"] = update_info.new_type
-
-                    if update_info.path_binary:
-                        dct_model_field[
-                            "path_binary"
-                        ] = update_info.path_binary
-
-                    if update_info.force_widget:
-                        dct_model_field[
-                            "force_widget"
-                        ] = update_info.force_widget
-
-                    if update_info.add_one2many:
-                        model_related_id = dct_model_dct[
-                            dct_model_field.get("relation")
-                        ]
-
-                        new_name_one2many = update_info.model_name
-                        # update_field_one2many = dct_field.get(
-                        #     new_name_one2many
-                        # )
-
-                        # Create new field
-                        # TODO Validate no duplicate in model_related_id, loop on field_id, check name if not already exist
-                        # TODO move this after, in a new loop, to have new result of modification
-                        lst_field_name = [
-                            a[2].get("name")
-                            for a in model_related_id.get("field_id")
-                        ]
-                        j = 0
-                        original_new_name_one2many = new_name_one2many
-                        while new_name_one2many in lst_field_name:
-                            j += 1
-                            if j == 1:
-                                new_name_one2many = (
-                                    f"{original_new_name_one2many}_ids"
-                                )
-                            else:
-                                new_name_one2many = (
-                                    f"{original_new_name_one2many}_ids_{j}"
-                                )
-
-                        dct_one2many = {
-                            "name": new_name_one2many,
-                            # don't add ddb_field_name to detect it's added
-                            # "ddb_field_name": new_name_one2many,
-                            "field_description": (
-                                new_name_one2many.replace("_", " ").title()
-                            ),
-                            "help": f"{new_name_one2many.title()} relation",
-                            "ttype": "one2many",
-                            "relation": update_info.model_name,
-                            "relation_field": update_info.new_field_name,
-                            # "comodel_name": update_info.model_name,
-                            # "inverse_name": update_info.new_field_name,
-                        }
-                        tpl_field_one2many = (0, 0, dct_one2many)
-
-                        model_related_id.get("field_id").append(
-                            tpl_field_one2many
-                        )
-
-                    # Keep empty value
-                    if update_info.new_description is not False:
-                        if "field_description" in dct_model_field:
-                            dct_model_field[
-                                "ddb_field_description"
-                            ] = dct_model_field["field_description"]
-                        dct_model_field[
-                            "field_description"
-                        ] = update_info.new_description
-            (
-                lst_model_dct,
-                dct_complete_looping_model,
-            ) = self._reorder_dependence_model(dct_model_dct)
-            _logger.info(f"Create models.")
-            models_created = self.env["ir.model"].create(lst_model_dct)
-            for model_id in models_created:
-                dct_model_id[model_id.model] = model_id
-            models_nomenclator = models_created.filtered("nomenclator")
+            # # Keep empty value
+            # if update_info.new_description is not False:
+            #     if "field_description" in dct_model_field:
+            #         dct_model_field[
+            #             "ddb_field_description"
+            #         ] = dct_model_field["field_description"]
+            #     dct_model_field[
+            #         "field_description"
+            #     ] = update_info.new_description
+            # (
+            #     lst_model_dct,
+            #     dct_complete_looping_model,
+            # ) = self._reorder_dependence_model(dct_model_dct)
+            # _logger.info(f"Create models.")
+            # models_created = self.env["ir.model"].create(lst_model_dct)
+            # for model_id in models_created:
+            #     dct_model_id[model_id.model] = model_id
+            # models_nomenclator = models_created.filtered("nomenclator")
             # Create data for nomenclator field
             for seq, model_created in enumerate(models_nomenclator):
                 _logger.info(f"Parse #{seq} - {model_created.name}")
 
-                lst_struct_field_to_ignore = dct_complete_looping_model.get(
-                    model_created.model
-                )
-                if lst_struct_field_to_ignore:
-                    lst_field_to_ignore = [
-                        a.get("field_1") for a in lst_struct_field_to_ignore
-                    ]
-                    lst_ignored_field = lst_field_to_ignore
-                else:
-                    lst_ignored_field = []
+                # lst_struct_field_to_ignore = dct_complete_looping_model.get(
+                #     model_created.model
+                # )
+                # if lst_struct_field_to_ignore:
+                #     lst_field_to_ignore = [
+                #         a.get("field_1") for a in lst_struct_field_to_ignore
+                #     ]
+                #     lst_ignored_field = lst_field_to_ignore
+                # else:
+                #     lst_ignored_field = []
+                #
+                # ignored_field_ids = self.env[
+                #     "code.generator.db.update.migration.field"
+                # ].search(
+                #     [
+                #         ("ignore_field", "=", True),
+                #         ("model_name", "=", model_created.model),
+                #         ("code_generator_id", "=", module.id),
+                #     ]
+                # )
 
-                ignored_field_ids = self.env[
-                    "code.generator.db.update.migration.field"
-                ].search(
-                    [
-                        ("ignore_field", "=", True),
-                        ("model_name", "=", model_created.model),
-                        ("code_generator_id", "=", module.id),
-                    ]
-                )
-
-                if ignored_field_ids:
-                    for ignored_field_id in ignored_field_ids:
-                        lst_ignored_field.append(ignored_field_id.field_name)
-
-                model_created_fields = model_created.field_id.filtered(
-                    lambda field: field.name
-                    not in MAGIC_FIELDS + ["name"] + lst_ignored_field
-                    and field.ttype != "one2many"
-                )
-                origin_mapped_model_created_fields = (
-                    model_created_fields.mapped("ddb_field_name")
-                )
-                mapped_model_created_fields = model_created_fields.mapped(
-                    "name"
-                )
-
-                foreign_table = self.filtered(
-                    lambda t: t.name
-                    == self._get_model_name(
-                        module_name, model_created.model.replace(".", "_")
-                    )
-                )
-
-                # sql_select_modify
-                sql_select_modify_id = self.env[
-                    "code.generator.db.update.migration.field"
-                ].search(
-                    [
-                        ("sql_select_modify", "!=", False),
-                        ("model_name", "=", model_created.model),
-                        ("code_generator_id", "=", module.id),
-                    ]
-                )
-                lst_query_replace = [
-                    (a.field_name, a.sql_select_modify)
-                    for a in sql_select_modify_id
-                ]
-
-                l_foreign_table_data = self.get_table_data(
-                    foreign_table.name,
-                    foreign_table.m2o_db,
-                    origin_mapped_model_created_fields,
-                    lst_query_replace=lst_query_replace,
-                )
-
-                lst_data = list(
-                    map(
-                        self._conform_model_created_data(
-                            mapped_model_created_fields
-                        ),
-                        l_foreign_table_data,
-                    )
-                )
+                # if ignored_field_ids:
+                #     for ignored_field_id in ignored_field_ids:
+                #         lst_ignored_field.append(ignored_field_id.field_name)
+                #
+                # model_created_fields = model_created.field_id.filtered(
+                #     lambda field: field.name
+                #     not in MAGIC_FIELDS + ["name"] + lst_ignored_field
+                #     and field.ttype != "one2many"
+                # )
+                # origin_mapped_model_created_fields = (
+                #     model_created_fields.mapped("ddb_field_name")
+                # )
+                # mapped_model_created_fields = model_created_fields.mapped(
+                #     "name"
+                # )
+                #
+                # foreign_table = self.filtered(
+                #     lambda t: t.name
+                #     == self._get_model_name(
+                #         module_name, model_created.model.replace(".", "_")
+                #     )
+                # )
+                #
+                # # sql_select_modify
+                # sql_select_modify_id = self.env[
+                #     "code.generator.db.update.migration.field"
+                # ].search(
+                #     [
+                #         ("sql_select_modify", "!=", False),
+                #         ("model_name", "=", model_created.model),
+                #         ("code_generator_id", "=", module.id),
+                #     ]
+                # )
+                # lst_query_replace = [
+                #     (a.field_name, a.sql_select_modify)
+                #     for a in sql_select_modify_id
+                # ]
+                #
+                # l_foreign_table_data = self.get_table_data(
+                #     foreign_table.name,
+                #     foreign_table.m2o_db,
+                #     origin_mapped_model_created_fields,
+                #     lst_query_replace=lst_query_replace,
+                # )
+                #
+                # lst_data = list(
+                #     map(
+                #         self._conform_model_created_data(
+                #             mapped_model_created_fields
+                #         ),
+                #         l_foreign_table_data,
+                #     )
+                # )
                 # Update
-                for i, name in enumerate(mapped_model_created_fields):
-                    field_id = model_created_fields[i]
-
-                    # compute_data_function
-                    compute_data_function_ids = self.env[
-                        "code.generator.db.update.migration.field"
-                    ].search(
-                        [
-                            ("compute_data_function", "!=", False),
-                            ("model_name", "=", model_created.model),
-                            ("code_generator_id", "=", module.id),
-                        ]
-                    )
-                    if compute_data_function_ids:
-                        for (
-                            compute_data_function_id
-                        ) in compute_data_function_ids:
-                            field_name = (
-                                compute_data_function_id.new_field_name
-                                if compute_data_function_id.new_field_name
-                                else compute_data_function_id.field_name
-                            )
-                            try:
-                                for data in lst_data:
-                                    value = data.get(field_name)
-                                    new_value = eval(
-                                        compute_data_function_id.compute_data_function,
-                                        data.copy(),
-                                    )
-                                    if new_value != value:
-                                        data[field_name] = new_value
-                            except Exception as e:
-                                _logger.error(e)
-
-                    if (
-                        field_id.path_binary
-                        and field_id.ttype == "binary"
-                        and field_id.ddb_field_type == "char"
-                    ):
-                        for data in lst_data:
-                            if data and data.get(field_id.name):
-                                # import path in binary
-                                path_file = os.path.join(
-                                    field_id.path_binary,
-                                    data.get(field_id.name),
-                                )
-                                if os.path.isfile(path_file):
-                                    new_data_binary = open(
-                                        path_file,
-                                        "rb",
-                                    ).read()
-                                    data[field_id.name] = base64.b64encode(
-                                        new_data_binary
-                                    )
-                                else:
-                                    _logger.error(
-                                        f"Cannot add file path `{path_file}`"
-                                        f" for model `{name}` and field"
-                                        f" `{field_id.name}`"
-                                    )
-
-                    if field_id.ttype == "many2one":
-                        relation_model = field_id.relation
-                        relation_field = field_id.ddb_field_foreign_key_column
-                        new_relation_field = self.search_new_field_name(
-                            module, relation_model, relation_field
-                        )
-                        for data in lst_data:
-                            # Update many2one
-                            value = data[name]
-                            if value is not None:
-                                result_new_id = self.env[
-                                    relation_model
-                                ].search([(new_relation_field, "=", value)])
-                                if len(result_new_id) > 1:
-                                    raise ValueError(
-                                        f"Model `{field_id.model}` with"
-                                        f" field `{field_id.name}` is"
-                                        " required, but cannot find"
-                                        f" relation `{new_relation_field}` of"
-                                        f" id `{value}`. Cannot associate"
-                                        " multiple result, is your"
-                                        " foreign configured correctly?"
-                                    )
-                                new_id = result_new_id.id
-                                if new_id is False and field_id.required:
-                                    raise ValueError(
-                                        f"Model `{field_id.model}` with"
-                                        f" field `{field_id.name}` is"
-                                        " required, but cannot find"
-                                        f" relation `{new_relation_field}` of"
-                                        f" id `{value}`. Is it missing"
-                                        " data?"
-                                    )
-                                data[name] = new_id
-                results = self.env[model_created.model].sudo().create(lst_data)
-                dct_model_result_data[model_created.model] = results
-
-                # Generate xml_id for all nonmenclature
-                for result in results:
-                    second = False
-                    if result._rec_name:
-                        second = getattr(result, result._rec_name)
-                    if second is False:
-                        second = uuid.uuid1().int
-                    # unidecode remove all accent
-                    new_id = unidecode.unidecode(
-                        f"{model_created.model.replace('.', '_')}_{second}"
-                        .replace("-", "_")
-                        .replace(" ", "_")
-                        .replace(".", "_")
-                        .replace("'", "_")
-                        .replace("`", "_")
-                        .replace("^", "_")
-                        .lower()
-                    )
-                    new_id = new_id.strip("_")
-
-                    while new_id.count("__"):
-                        new_id = new_id.replace("__", "_")
-
-                    # validate duplicate
-                    origin_new_id = new_id
-                    ir_model_data_id = self.env["ir.model.data"].search(
-                        [("name", "=", new_id)]
-                    )
-                    i = 0
-                    while ir_model_data_id:
-                        i += 1
-                        origin_new_id = f"{new_id}{i}"
-                        ir_model_data_id = self.env["ir.model.data"].search(
-                            [("name", "=", origin_new_id)]
-                        )
-
-                    self.env["ir.model.data"].create(
-                        {
-                            "name": origin_new_id,
-                            "model": model_created.model,
-                            "module": module.name,
-                            "res_id": result.id,
-                            "noupdate": True,
-                        }
-                    )
+                # for i, name in enumerate(mapped_model_created_fields):
+                #     field_id = model_created_fields[i]
+                #
+                #     # compute_data_function
+                #     compute_data_function_ids = self.env[
+                #         "code.generator.db.update.migration.field"
+                #     ].search(
+                #         [
+                #             ("compute_data_function", "!=", False),
+                #             ("model_name", "=", model_created.model),
+                #             ("code_generator_id", "=", module.id),
+                #         ]
+                #     )
+                #     if compute_data_function_ids:
+                #         for (
+                #             compute_data_function_id
+                #         ) in compute_data_function_ids:
+                #             field_name = (
+                #                 compute_data_function_id.new_field_name
+                #                 if compute_data_function_id.new_field_name
+                #                 else compute_data_function_id.field_name
+                #             )
+                #             try:
+                #                 for data in lst_data:
+                #                     value = data.get(field_name)
+                #                     new_value = eval(
+                #                         compute_data_function_id.compute_data_function,
+                #                         data.copy(),
+                #                     )
+                #                     if new_value != value:
+                #                         data[field_name] = new_value
+                #             except Exception as e:
+                #                 _logger.error(e)
+                #
+                #     if (
+                #         field_id.path_binary
+                #         and field_id.ttype == "binary"
+                #         and field_id.ddb_field_type == "char"
+                #     ):
+                #         for data in lst_data:
+                #             if data and data.get(field_id.name):
+                #                 # import path in binary
+                #                 path_file = os.path.join(
+                #                     field_id.path_binary,
+                #                     data.get(field_id.name),
+                #                 )
+                #                 if os.path.isfile(path_file):
+                #                     new_data_binary = open(
+                #                         path_file,
+                #                         "rb",
+                #                     ).read()
+                #                     data[field_id.name] = base64.b64encode(
+                #                         new_data_binary
+                #                     )
+                #                 else:
+                #                     _logger.error(
+                #                         f"Cannot add file path `{path_file}`"
+                #                         f" for model `{name}` and field"
+                #                         f" `{field_id.name}`"
+                #                     )
+                # if True:
+                # if field_id.ttype == "many2one":
+                #     relation_model = field_id.relation
+                #     relation_field = field_id.relation_column
+                #     new_relation_field = self.search_new_field_name(
+                #         module, relation_model, relation_field
+                #     )
+                #     for data in lst_data:
+                #         # Update many2one
+                #         value = data[name]
+                #         if value is not None:
+                #             result_new_id = self.env[
+                #                 relation_model
+                #             ].search([(new_relation_field, "=", value)])
+                #             if len(result_new_id) > 1:
+                #                 raise ValueError(
+                #                     f"Model `{field_id.model}` with"
+                #                     f" field `{field_id.name}` is"
+                #                     " required, but cannot find"
+                #                     f" relation `{new_relation_field}` of"
+                #                     f" id `{value}`. Cannot associate"
+                #                     " multiple result, is your"
+                #                     " foreign configured correctly?"
+                #                 )
+                #             new_id = result_new_id.id
+                #             if new_id is False and field_id.required:
+                #                 raise ValueError(
+                #                     f"Model `{field_id.model}` with"
+                #                     f" field `{field_id.name}` is"
+                #                     " required, but cannot find"
+                #                     f" relation `{new_relation_field}` of"
+                #                     f" id `{value}`. Is it missing"
+                #                     " data?"
+                #                 )
+                #             data[name] = new_id
+                # results = self.env[model_created.model].sudo().create(lst_data)
+                # dct_model_result_data[model_created.model] = results
+                #
+                # # Generate xml_id for all nonmenclature
+                # for result in results:
+                #     second = False
+                #     if result._rec_name:
+                #         second = getattr(result, result._rec_name)
+                #     if second is False:
+                #         second = uuid.uuid1().int
+                #     # unidecode remove all accent
+                #     new_id = unidecode.unidecode(
+                #         f"{model_created.model.replace('.', '_')}_{second}"
+                #         .replace("-", "_")
+                #         .replace(" ", "_")
+                #         .replace(".", "_")
+                #         .replace("'", "_")
+                #         .replace("`", "_")
+                #         .replace("^", "_")
+                #         .lower()
+                #     )
+                #     new_id = new_id.strip("_")
+                #
+                #     while new_id.count("__"):
+                #         new_id = new_id.replace("__", "_")
+                #
+                #     # validate duplicate
+                #     origin_new_id = new_id
+                #     ir_model_data_id = self.env["ir.model.data"].search(
+                #         [("name", "=", new_id)]
+                #     )
+                #     i = 0
+                #     while ir_model_data_id:
+                #         i += 1
+                #         origin_new_id = f"{new_id}{i}"
+                #         ir_model_data_id = self.env["ir.model.data"].search(
+                #             [("name", "=", origin_new_id)]
+                #         )
+                #
+                #     self.env["ir.model.data"].create(
+                #         {
+                #             "name": origin_new_id,
+                #             "model": model_created.model,
+                #             "module": module.name,
+                #             "res_id": result.id,
+                #             "noupdate": True,
+                #         }
+                #     )
 
             # Create missing field to fix looping dependencies
             i = -1
@@ -861,31 +1052,33 @@ class CodeGeneratorDbTable(models.Model):
                     ).id
                     self.env["ir.model.fields"].create(value_field)
 
-                    # if modif_model_id and modif_model_id.add_one2many:
-                    #     # TODO update this field
-                    #     # TODO add one2many
-                    #
-                    #     # Find model
-                    #     model_related_id = self.env["ir.model"].search([("model", "=", dct_looping_value.get("model_2"))])
-                    #
-                    #     # TODO validate name not exist
-                    #     dct_one2many = {
-                    #         "name": dct_looping_value.get("field_2")
-                    #         + "_reverse",
-                    #         "model_id": model_related_id.id,
-                    #         # don't add ddb_field_name to detect it's added
-                    #         # "ddb_field_name": new_name_one2many,
-                    #         "field_description": (
-                    #             f"{dct_looping_value.get('field_2').title()} relation"
-                    #         ),
-                    #         "ttype": "one2many",
-                    #         "relation": dct_looping_value.get("model_1"),
-                    #         "relation_field": dct_looping_value.get("field_1"),
-                    #         # "comodel_name": update_info.model_name,
-                    #         # "inverse_name": update_info.new_field_name,
-                    #         # TODO add model
-                    #     }
-                    #     self.env["ir.model.fields"].create(dct_one2many)
+                    if modif_model_id and modif_model_id.add_one2many:
+                        # TODO update this field
+                        # TODO add one2many
+
+                        # Find model
+                        model_related_id = self.env["ir.model"].search(
+                            [("model", "=", dct_looping_value.get("model_2"))]
+                        )
+
+                        # TODO validate name not exist
+                        dct_one2many = {
+                            "name": dct_looping_value.get("field_2")
+                            + "_reverse",
+                            "model_id": model_related_id.id,
+                            # don't add ddb_field_name to detect it's added
+                            # "ddb_field_name": new_name_one2many,
+                            "field_description": (
+                                f"{dct_looping_value.get('field_2').title()} relation"
+                            ),
+                            "ttype": "one2many",
+                            "relation": dct_looping_value.get("model_1"),
+                            "relation_field": dct_looping_value.get("field_1"),
+                            # "comodel_name": update_info.model_name,
+                            # "inverse_name": update_info.new_field_name,
+                            # TODO add model
+                        }
+                        self.env["ir.model.fields"].create(dct_one2many)
 
                 ir_model_info = self.env["ir.model"].search(
                     [("model", "=", model_name)]
@@ -969,9 +1162,7 @@ class CodeGeneratorDbTable(models.Model):
                                         continue
                                     # TODO duplicated code
                                     relation_model = field_id.relation
-                                    relation_field = (
-                                        field_id.ddb_field_foreign_key_column
-                                    )
+                                    relation_field = field_id.relation_column
                                     new_relation_field = (
                                         self.search_new_field_name(
                                             module,
@@ -1254,7 +1445,7 @@ class CodeGeneratorDbTable(models.Model):
                         #     module_name, table_name = "comun", name_splitted[0]
                         t_odoo_field_4insert[2]["relation"] = table_name
                         t_odoo_field_4insert[2][
-                            "ddb_field_foreign_key_column"
+                            "relation_column"
                         ] = column_name.lower()
 
                     l_fields.append(t_odoo_field_4insert)
@@ -1281,6 +1472,55 @@ class CodeGeneratorDbTable(models.Model):
             raise ValidationError(TABLEFIELDPROBLEM)
 
     def get_table_data(
+        self,
+        table_name,
+        m2o_db,
+        lst_column_name,
+        limit=None,
+        lst_query_replace=[],
+    ):
+        """
+        Function to obtain a table data
+        :param table_name:
+        :param m2o_db:
+        :param lst_column_name:
+        :param limit: int max to get data
+        :param lst_query_replace: list of query to replace, tuple [0] string to replace, [1] new string
+        :return:
+        """
+
+        if not table_name:
+            raise ValueError(f"table name is empty.")
+
+        port = self.env["code.generator.db"].get_port(m2o_db.port)
+        try:
+            cr = self.env["code.generator.db"].get_db_cr(
+                sgdb=m2o_db.m2o_dbtype.name,
+                database=m2o_db.database,
+                host=m2o_db.host,
+                port=port,
+                user=m2o_db.user,
+                password=m2o_db.password,
+            )
+            if False in lst_column_name:
+                raise ValueError(
+                    f"One element is False in list of field {lst_column_name}"
+                )
+            query = f" SELECT {','.join(lst_column_name)} FROM {table_name} "
+            if limit:
+                query += f"LIMIT {limit} "
+
+            for str_search, str_replace in lst_query_replace:
+                query = query.replace(str_search, str_replace)
+
+            cr.execute(query)
+
+            return cr.fetchall()
+
+        except psycopg2.OperationalError:
+            raise ValidationError(TABLEDATAPROBLEM)
+
+    def get_table_data2(
         self,
         table_name,
         m2o_db,
@@ -1520,16 +1760,21 @@ class CodeGeneratorDbTable(models.Model):
         return lst_model_ordered, dct_complete_looping_model
 
     @staticmethod
-    def get_new_model_name(table_ids, table_name):
-        for table_id in table_ids:
-            if table_id.name == table_name:
-                new_name = table_id.new_model_name
-                if not new_name:
-                    _logger.error(
-                        f"New model name of table '{table_name}' is empty."
-                    )
-                return new_name
-        else:
+    def get_new_model_name(table_ids, table_name, column_name):
+        table_id = table_ids.filtered(lambda a: a.name == table_name)
+        if not table_id:
             _logger.error(
                 f"Cannot find table_name '{table_name}' to get new model name."
             )
+        else:
+            column_id = table_id.o2m_columns.filtered(
+                lambda a: a.name == column_name
+            )
+            if not column_id:
+                _logger.error(
+                    f"Cannot find column '{column_name}' from table table_name"
+                    f" '{table_name}' to get new model name."
+                )
+            else:
+                return table_id.new_model_name, column_id.new_name
+        return False, False
