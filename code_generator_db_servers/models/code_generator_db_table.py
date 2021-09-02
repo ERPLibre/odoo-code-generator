@@ -113,19 +113,19 @@ class CodeGeneratorDbTable(models.Model):
                 result.name, result.m2o_db, mark_temporary_field=True
             )
             for field in lst_fields:
+                dct_field = field[2]
                 column_value = {
-                    "name": field[2].get("name"),
-                    "required": field[2].get("required"),
-                    "column_type": field[2].get("ttype"),
-                    "description": field[2].get("field_description"),
-                    "temporary_name_field": field[2].get(
+                    "name": dct_field.get("name"),
+                    "required": dct_field.get("required"),
+                    "column_type": dct_field.get("ttype"),
+                    "description": dct_field.get("field_description"),
+                    "temporary_name_field": dct_field.get(
                         "temporary_name_field"
                     ),
                     "m2o_table": result.id,
                 }
-                if field[2].get("relation"):
-                    # TODO hack
-                    column_value["relation"] = field[2].get("relation")
+                if dct_field.get("relation"):
+                    column_value["relation"] = dct_field.get("relation")
                 self.env["code.generator.db.column"].create(column_value)
 
     @api.model
@@ -196,38 +196,66 @@ class CodeGeneratorDbTable(models.Model):
             lst_module.append(module)
 
         for module_name, lst_table in dct_module_table.items():
+            table_ids = self.browse([a.id for a in lst_table])
             self._compute_table(
-                dct_module.get(module_name), module_name, lst_table
+                dct_module.get(module_name), module_name, table_ids
             )
         return lst_module
 
-    def _compute_table(self, cg_module_id, module_name, lst_table):
-        dct_table_id = ""
+    def _compute_table(self, cg_module_id, module_name, table_ids):
         # Ignore field
         # Update model
         # Update field
         # Create one2many
         # Reorder dependence model - lst_table
 
+        # Update model name
+        for table in table_ids:
+            if not table.new_model_name:
+                table.new_model_name = table.name.replace("_", ".")
+
+        # Update relation name
+        for table in table_ids:
+            for field in table.o2m_columns:
+                if field.relation:
+                    field.new_relation = self.get_new_model_name(
+                        table_ids, field.relation
+                    )
+
         # Create model and field, ready for creation
         lst_model_dct = []
-        for table in lst_table:
+        for table in table_ids:
             lst_field = []
             for field in table.o2m_columns:
                 dct_field = {}
                 if field.ignore_field:
                     continue
-                # TODO Move this at the end
+
+                # Origin data from database
                 if field.delete:
-                    continue
+                    dct_field["ddb_cmd_delete"] = True
+
+                dct_field["ddb_field_name"] = field.name
+                dct_field["ddb_field_description"] = field.description
+                dct_field["ddb_field_required"] = field.required
+                dct_field["ddb_field_type"] = field.column_type
+                if field.relation:
+                    dct_field["ddb_field_relation"] = field.relation
+
+                # New data for model
                 if field.new_name:
                     dct_field["name"] = field.new_name
                 else:
                     dct_field["name"] = field.name
-                if field.temporary_name_field and table.new_rec_name and table.new_rec_name != dct_field["name"]:
+                # Ignore create field name if no need anymore
+                if (
+                    field.temporary_name_field
+                    and table.new_rec_name
+                    and table.new_rec_name != dct_field["name"]
+                ):
                     continue
-                if field.new_string:
-                    dct_field["field_description"] = field.new_string
+                if field.new_description:
+                    dct_field["field_description"] = field.new_description
                 else:
                     dct_field["field_description"] = field.description
                 if field.new_help:
@@ -240,8 +268,9 @@ class CodeGeneratorDbTable(models.Model):
                     dct_field["required"] = field.new_required
                 else:
                     dct_field["required"] = field.required
-                if field.relation:
-                    dct_field["relation"] = field.relation
+                if field.new_relation:
+                    # Don't share field.relation, it's the relation with the table_name
+                    dct_field["relation"] = field.new_relation
 
                 lst_field.append((0, 0, dct_field))
             dct_model = {
@@ -258,34 +287,16 @@ class CodeGeneratorDbTable(models.Model):
                 dct_model["rec_name"] = table.new_rec_name
             if table.new_description:
                 dct_model["description"] = table.new_description
-            # TODO hack to remove accorderie.
-            model_name = dct_model["model"]
-            if model_name.startswith("tbl."):
-                dct_model["model"] = model_name[4:]
-            elif model_name.startswith("accorderie."):
-                dct_model["model"] = model_name[11:]
             lst_model_dct.append(dct_model)
         models_created = self.env["ir.model"].create(lst_model_dct)
-        print("fd")
-        # lst_model_dct = [
-        #     {
-        #         "name": a.name,
-        #         "model": "",
-        #         "field_id": [
-        #             (0,0,{
-        #                 "name": "",
-        #                 "field_description": "" ,
-        #                 "ttype": "" ,
-        #                 "required": "" ,
-        #                 "origin_name": "" ,
-        #              }) for b in a.o2m_columns
-        #         ],
-        #         "m2o_module": 1,
-        #         "nomenclator": a.nomenclator,
-        #         "rec_name": a.new_rec_name,
-        #     }
-        #     for a in lst_table
-        # ]
+
+        # Delete field, after compute stuff
+        _logger.info("Delete fields after compute with it.")
+        for model_id in models_created:
+            field_ids = model_id.field_id.filtered(lambda x: x.ddb_cmd_delete)
+            field_ids.unlink()
+
+        _logger.info(f"End of migration for module {module_name}")
 
     @api.multi
     def generate_module2(self, code_generator_id=None):
@@ -475,8 +486,8 @@ class CodeGeneratorDbTable(models.Model):
                 i = -1
                 for _, _, dct_model_field in dct_model.get("field_id"):
                     i += 1
-                    # Force origin_name to simplify code
-                    dct_model_field["origin_name"] = dct_model_field["name"]
+                    # Force ddb_field_name to simplify code
+                    dct_model_field["ddb_field_name"] = dct_model_field["name"]
                     update_info = dct_field.get(dct_model_field.get("name"))
                     if not update_info:
                         continue
@@ -487,20 +498,20 @@ class CodeGeneratorDbTable(models.Model):
                     # Keep empty value
                     if update_info.new_help is not False:
                         if "help" in dct_model_field:
-                            dct_model_field["origin_help"] = dct_model_field[
-                                "help"
-                            ]
+                            dct_model_field[
+                                "ddb_field_help"
+                            ] = dct_model_field["help"]
                         dct_model_field["help"] = update_info.new_help
 
                     if update_info.new_change_required:
                         if "required" in dct_model_field:
                             dct_model_field[
-                                "origin_required"
+                                "ddb_field_required"
                             ] = dct_model_field["required"]
                         dct_model_field["required"] = update_info.new_required
 
                     if update_info.new_type:
-                        dct_model_field["origin_type"] = dct_model_field[
+                        dct_model_field["ddb_field_type"] = dct_model_field[
                             "ttype"
                         ]
                         dct_model_field["ttype"] = update_info.new_type
@@ -547,8 +558,8 @@ class CodeGeneratorDbTable(models.Model):
 
                         dct_one2many = {
                             "name": new_name_one2many,
-                            # don't add origin_name to detect it's added
-                            # "origin_name": new_name_one2many,
+                            # don't add ddb_field_name to detect it's added
+                            # "ddb_field_name": new_name_one2many,
                             "field_description": (
                                 new_name_one2many.replace("_", " ").title()
                             ),
@@ -566,14 +577,14 @@ class CodeGeneratorDbTable(models.Model):
                         )
 
                     # Keep empty value
-                    if update_info.new_string is not False:
+                    if update_info.new_description is not False:
                         if "field_description" in dct_model_field:
-                            dct_model_field["origin_string"] = dct_model_field[
-                                "field_description"
-                            ]
+                            dct_model_field[
+                                "ddb_field_description"
+                            ] = dct_model_field["field_description"]
                         dct_model_field[
                             "field_description"
-                        ] = update_info.new_string
+                        ] = update_info.new_description
             (
                 lst_model_dct,
                 dct_complete_looping_model,
@@ -618,7 +629,7 @@ class CodeGeneratorDbTable(models.Model):
                     and field.ttype != "one2many"
                 )
                 origin_mapped_model_created_fields = (
-                    model_created_fields.mapped("origin_name")
+                    model_created_fields.mapped("ddb_field_name")
                 )
                 mapped_model_created_fields = model_created_fields.mapped(
                     "name"
@@ -699,7 +710,7 @@ class CodeGeneratorDbTable(models.Model):
                     if (
                         field_id.path_binary
                         and field_id.ttype == "binary"
-                        and field_id.origin_type == "char"
+                        and field_id.ddb_field_type == "char"
                     ):
                         for data in lst_data:
                             if data and data.get(field_id.name):
@@ -725,7 +736,7 @@ class CodeGeneratorDbTable(models.Model):
 
                     if field_id.ttype == "many2one":
                         relation_model = field_id.relation
-                        relation_field = field_id.foreign_key_field_name
+                        relation_field = field_id.ddb_field_foreign_key_column
                         new_relation_field = self.search_new_field_name(
                             module, relation_model, relation_field
                         )
@@ -818,7 +829,7 @@ class CodeGeneratorDbTable(models.Model):
                 )
                 # Adding field
                 lst_added_field_name = []
-                lst_added_field_origin_name = []
+                lst_added_field_ddb_field_name = []
                 for dct_looping_value in lst_dct_looping_value:
                     # TODO mettre la variable de la DB dans dct_looping_value au lieu de field_name
                     # modif_model_id = self.env[
@@ -842,8 +853,8 @@ class CodeGeneratorDbTable(models.Model):
                     value_field = dct_looping_value.get("field_info_1").copy()
                     # TODO implement here modification
                     lst_added_field_name.append(value_field.get("name"))
-                    lst_added_field_origin_name.append(
-                        value_field.get("origin_name")
+                    lst_added_field_ddb_field_name.append(
+                        value_field.get("ddb_field_name")
                     )
                     value_field["model_id"] = dct_model_id.get(
                         dct_looping_value.get("model_1")
@@ -862,8 +873,8 @@ class CodeGeneratorDbTable(models.Model):
                     #         "name": dct_looping_value.get("field_2")
                     #         + "_reverse",
                     #         "model_id": model_related_id.id,
-                    #         # don't add origin_name to detect it's added
-                    #         # "origin_name": new_name_one2many,
+                    #         # don't add ddb_field_name to detect it's added
+                    #         # "ddb_field_name": new_name_one2many,
                     #         "field_description": (
                     #             f"{dct_looping_value.get('field_2').title()} relation"
                     #         ),
@@ -916,7 +927,7 @@ class CodeGeneratorDbTable(models.Model):
                 l_foreign_table_data = self.get_table_data(
                     foreign_table.name,
                     foreign_table.m2o_db,
-                    lst_added_field_origin_name,
+                    lst_added_field_ddb_field_name,
                     lst_query_replace=lst_query_replace,
                 )
 
@@ -959,7 +970,7 @@ class CodeGeneratorDbTable(models.Model):
                                     # TODO duplicated code
                                     relation_model = field_id.relation
                                     relation_field = (
-                                        field_id.foreign_key_field_name
+                                        field_id.ddb_field_foreign_key_column
                                     )
                                     new_relation_field = (
                                         self.search_new_field_name(
@@ -1229,23 +1240,21 @@ class CodeGeneratorDbTable(models.Model):
                     )
 
                     if is_m2o:  # It is a foreign key?
-                        model_name = is_m2o[0]
+                        table_name = is_m2o[0]
                         column_name = is_m2o[1]
-                        name_splitted = model_name.split("_", maxsplit=1)
-
-                        if len(name_splitted) > 1:
-                            module_name, table_name = (
-                                name_splitted[0],
-                                name_splitted[1],
-                            )
-
-                        else:
-                            module_name, table_name = "comun", name_splitted[0]
+                        # name_splitted = table_name.split("_", maxsplit=1)
+                        #
+                        # if len(name_splitted) > 1:
+                        #     module_name, table_name = (
+                        #         name_splitted[0],
+                        #         name_splitted[1],
+                        #     )
+                        #
+                        # else:
+                        #     module_name, table_name = "comun", name_splitted[0]
+                        t_odoo_field_4insert[2]["relation"] = table_name
                         t_odoo_field_4insert[2][
-                            "relation"
-                        ] = f"{table_name.replace('_', '.')}"
-                        t_odoo_field_4insert[2][
-                            "foreign_key_field_name"
+                            "ddb_field_foreign_key_column"
                         ] = column_name.lower()
 
                     l_fields.append(t_odoo_field_4insert)
@@ -1324,14 +1333,14 @@ class CodeGeneratorDbTable(models.Model):
             raise ValidationError(TABLEDATAPROBLEM)
 
     @staticmethod
-    def replace_in(string, regex="\d"):
+    def replace_in(text, regex="\d"):
         """
-        Util function to replace some content in a string
-        :param string:
+        Util function to replace some content in a text
+        :param text:
         :param regex:
         :return:
         """
-        return re.sub(regex, "", string)
+        return re.sub(regex, "", text)
 
     def search_new_field_name(self, module_id, model_name, old_field_name):
         update_ids = self.env[
@@ -1509,3 +1518,18 @@ class CodeGeneratorDbTable(models.Model):
                     if is_find:
                         break
         return lst_model_ordered, dct_complete_looping_model
+
+    @staticmethod
+    def get_new_model_name(table_ids, table_name):
+        for table_id in table_ids:
+            if table_id.name == table_name:
+                new_name = table_id.new_model_name
+                if not new_name:
+                    _logger.error(
+                        f"New model name of table '{table_name}' is empty."
+                    )
+                return new_name
+        else:
+            _logger.error(
+                f"Cannot find table_name '{table_name}' to get new model name."
+            )

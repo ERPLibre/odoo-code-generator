@@ -4,6 +4,25 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+SELECTION_TYPE = [
+    ("char", "Char"),
+    ("text", "Text"),
+    ("integer", "Integer"),
+    ("monetary", "Monetary"),
+    ("float", "Float"),
+    ("datetime", "Datetime"),
+    ("date", "Date"),
+    ("boolean", "Boolean"),
+    ("html", "Html"),
+    ("binary", "Binary"),
+    ("selection", "Selection"),
+    ("many2one", "Many2one"),
+    # TODO support many2many
+    # ("many2many", "Many2many"),
+    # Cannot detect one2many in database relation
+    # ("one2many", "One2many"),
+]
+
 
 class CodeGeneratorDbColumn(models.Model):
     _name = "code.generator.db.column"
@@ -19,25 +38,25 @@ class CodeGeneratorDbColumn(models.Model):
         required=True,
     )
 
-    new_name = fields.Char(
-        string="New name", help="Rename the field name to this value."
-    )
-
-    string = fields.Char(
-        "String",
-        help=(
-            "The string representation of field name. By default, it's the"
-            " title of the field name."
-        ),
-    )
-
-    new_string = fields.Char(string="New string")
-
-    new_type = fields.Char(string="New type")
+    new_name = fields.Char(help="Rename the field name to this value.")
 
     description = fields.Char(
-        string="Description",
-        help="Column description",
+        help="Column description, be converted to field description.",
+    )
+
+    new_description = fields.Char(
+        help="Rename the field description this value."
+    )
+
+    new_help = fields.Char(string="New help")
+
+    column_type = fields.Selection(
+        required=True,
+        selection=SELECTION_TYPE,
+    )
+
+    new_type = fields.Selection(
+        selection=SELECTION_TYPE,
     )
 
     required = fields.Boolean(
@@ -45,45 +64,29 @@ class CodeGeneratorDbColumn(models.Model):
         help="Column required",
     )
 
-    new_required = fields.Boolean(string="New required")
+    new_required = fields.Boolean()
 
     new_change_required = fields.Boolean(
         string="New required update",
-        help="Set at True if need to update required value.",
+        help=(
+            "Set at True if need to update required with field new_required"
+            " instead of field required."
+        ),
     )
 
-    column_type = fields.Selection(
-        string="Column type",
-        help="Column type",
-        required=True,
-        selection=[
-            ("char", "Char"),
-            ("text", "Text"),
-            ("integer", "Integer"),
-            ("monetary", "Monetary"),
-            ("float", "Float"),
-            ("datetime", "Datetime"),
-            ("date", "Date"),
-            ("boolean", "Boolean"),
-            ("html", "Html"),
-            ("binary", "Binary"),
-            ("selection", "Selection"),
-            ("many2one", "Many2one"),
-            # TODO support many2many
-            # ("many2many", "Many2many"),
-            # Cannot detect one2many in database relation
-            # ("one2many", "One2many"),
-        ],
+    relation = fields.Char(
+        string="Relation many2one",
+        help="The field related with foreign key, contain the new model name.",
+    )
+
+    new_relation = fields.Char(
+        string="New relation many2one",
+        help="New relation name after migration.",
     )
 
     force_widget = fields.Char(
         string="Force widget",
         help="Use this widget for this field when create views.",
-    )
-
-    relation = fields.Char(
-        string="Relation many2one",
-        help="The field related with foreign key.",
     )
 
     add_one2many = fields.Boolean(
@@ -113,7 +116,13 @@ class CodeGeneratorDbColumn(models.Model):
         ),
     )
 
-    new_help = fields.Char(string="New help")
+    temporary_name_field = fields.Boolean(
+        string="Temporary name field",
+        help=(
+            "This field is temporary, at creation, if the __name__ of the"
+            " module is name, this will create the field, else ignore it."
+        ),
+    )
 
     delete = fields.Boolean(
         string="Delete", help="When enable, remove the field in generation."
@@ -130,42 +139,37 @@ class CodeGeneratorDbColumn(models.Model):
         store=True,
     )
 
-    temporary_name_field = fields.Boolean(
-        string="Temporary name field",
-        help=(
-            "This field is temporary, at creation, if the __name__ of the"
-            " module is name, this will create the field, else ignore it."
-        ),
-    )
-
     @api.depends(
         "new_name",
-        "new_string",
+        "new_description",
         "new_type",
         "new_change_required",
+        "new_help",
+        "new_relation",
         "force_widget",
         "add_one2many",
         "sql_select_modify",
         "compute_data_function",
         "path_binary",
-        "new_help",
         "delete",
         "ignore_field",
     )
     def _compute_has_update(self):
         for obj in self:
-            obj.has_update = bool(
+            has_update = bool(
                 obj.new_name
-                or obj.new_name
-                or obj.new_string
+                or obj.new_description
                 or obj.new_change_required
+                or obj.new_type
+                or obj.new_help
                 or obj.force_widget
                 or obj.add_one2many
                 or obj.sql_select_modify
                 or obj.compute_data_function
-                or obj.compute_data_function
                 or obj.path_binary
-                or obj.new_help
                 or obj.delete
                 or obj.ignore_field
             )
+            if not has_update and obj.relation:
+                has_update = obj.new_relation != obj.relation.replace("_", ".")
+            obj.has_update = has_update

@@ -8,32 +8,29 @@ _logger = logging.getLogger(__name__)
 class IrModelFields(models.Model):
     _inherit = "ir.model.fields"
 
-    foreign_key_field_name = fields.Char(string="Foreign key field")
+    ddb_field_foreign_key_column = fields.Char(string="Foreign key field")
 
-    origin_name = fields.Char(
-        string="Origin name", help="Name before migration."
+    ddb_field_name = fields.Char(help="Name before migration.")
+
+    ddb_field_description = fields.Char(help="Description before migration.")
+
+    # ddb_field_help = fields.Char(help="Help before migration.")
+
+    ddb_field_required = fields.Boolean(help="Required before migration.")
+
+    ddb_field_type = fields.Char(help="Type before migration.")
+
+    ddb_field_relation = fields.Char(
+        help="Relation before migration, for a foreign key."
     )
 
-    origin_string = fields.Char(
-        string="Origin string", help="String before migration."
-    )
-
-    # TODO not used field, remove this
-    origin_help = fields.Char(
-        string="Origin help", help="Help before migration."
-    )
-
-    origin_required = fields.Boolean(
-        string="Origin required", help="Required before migration."
+    ddb_cmd_delete = fields.Boolean(
+        help="Delete this field after compute data when migrate."
     )
 
     add_one2many = fields.Boolean(
         string="Add one2many",
         help="Add field one2many to related model on this field.",
-    )
-
-    origin_type = fields.Char(
-        string="Origin type", help="Type before migration."
     )
 
     path_binary = fields.Char(

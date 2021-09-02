@@ -46,7 +46,7 @@ class CodeGeneratorDbUpdateMigrationField(models.Model):
 
     new_field_name = fields.Char(string="New name")
 
-    new_string = fields.Char(string="New string")
+    new_description = fields.Char(string="New description")
 
     new_type = fields.Char(string="New type")
 
