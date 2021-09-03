@@ -341,7 +341,10 @@ class CodeGeneratorDbTable(models.Model):
             and not a.delete
         )
         pos_order = 1
-        while table_to_reorder_ids:
+        max_loop = len(table_to_reorder_ids) + 1
+        i = 0
+        while table_to_reorder_ids and i < max_loop:
+            i += 1
             pos_order += 1
             table_ordered_ids = table_ids.filtered(
                 lambda a: a.order_extract_data
@@ -371,6 +374,9 @@ class CodeGeneratorDbTable(models.Model):
                 and not a.order_extract_data
                 and not a.delete
             )
+
+        if table_to_reorder_ids:
+            _logger.error("Stopping infinity loop, a bug occur when try to reorder model.")
 
         # self._reorder_dependence_model(table_ids)
 
