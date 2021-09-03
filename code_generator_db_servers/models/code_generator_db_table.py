@@ -70,6 +70,33 @@ class CodeGeneratorDbTable(models.Model):
         store=True,
     )
 
+    order_extract_data = fields.Integer(
+        help=(
+            "The order to extract data, to support many2one dependancy."
+            " Piority to minimum value > 1, 0 is ignored."
+        ),
+    )
+
+    has_many2one_dependency = fields.Boolean(
+        help="At True when has a column type many2one."
+    )
+
+    has_looping_many2one_dependency = fields.Boolean(
+        help="At True when has a column type many2one looping between."
+    )
+
+    # table_many2one_dependencies_ids = fields.Many2many(
+    #     string="Depend table",
+    #     relation="table_many2many_rel",
+    #     comodel_name="code.generator.db.table",
+    # )
+    #
+    # table_looping_many2one_dependencies_ids = fields.Many2many(
+    #     string="Depend looping table",
+    #     relation="table_looping_many2many_rel",
+    #     comodel_name="code.generator.db.table",
+    # )
+
     delete = fields.Boolean(
         string="Delete", help="When enable, remove the table in generation."
     )
@@ -217,48 +244,150 @@ class CodeGeneratorDbTable(models.Model):
             if not table_id.new_model_name:
                 # TODO update field relation with new model name?
                 table_id.new_model_name = table_id.name.replace("_", ".")
+            for column_id in table_id.o2m_columns:
+                # TODO maybe create a new variable for this value, like field_name, field_type, with a compute
+                if not column_id.new_name:
+                    column_id.new_name = column_id.name
+                if not column_id.new_type:
+                    column_id.new_type = column_id.column_type
+                if not column_id.new_change_required and column_id.required:
+                    column_id.new_required = column_id.required
+
+                # To remove error in insert data if field is delete
+                if column_id.delete and column_id.new_required:
+                    column_id.new_required = False
 
         # Update relation name, after update model name
         for table_id in table_ids:
-            for field in table_id.o2m_columns:
-                if field.relation or field.relation_column:
-                    if not field.relation_column:
-                        _logger.error(
-                            "Missing relation column for relation"
-                            f" {field.relation} and field {field.name} for"
-                            f" table {table_id.name}."
-                        )
-                    elif not field.relation:
-                        _logger.error(
-                            "Missing relation for relation column"
-                            f" {field.relation_column} and field"
-                            f" {field.name} for table {table_id.name}."
-                        )
-                    else:
-                        (
-                            field.new_relation,
-                            field.new_relation_field,
-                        ) = self.get_new_model_name(
-                            table_ids, field.relation, field.relation_column
-                        )
+            field_with_relation_ids = table_id.o2m_columns.filtered(
+                lambda a: a.relation and a.relation_column
+            )
+            if field_with_relation_ids:
+                for field in field_with_relation_ids:
+                    # TODO Ce n'est plus utile si on link vers le field directement
+                    (
+                        field.new_relation,
+                        field.new_relation_field,
+                    ) = self.get_new_model_name(
+                        table_ids, field.relation, field.relation_column
+                    )
 
-                # TODO maybe create a new variable for this value, like field_name, field_type, with a compute
-                if not field.new_name:
-                    field.new_name = field.name
-                if not field.new_type:
-                    field.new_type = field.column_type
+                    # Find looping dependency
+                    related_columns_ids = self.env[
+                        "code.generator.db.column"
+                    ].search(
+                        [
+                            ("name", "=", field.relation_column),
+                            ("m2o_table.name", "=", field.relation),
+                        ]
+                    )
+                    related_columns_id = related_columns_ids[0]
+
+                    field.relation_table_id = related_columns_id.m2o_table.id
+                    field.relation_column_id = related_columns_id.id
+
+                    # Search in all columns of his table
+                    for (
+                        relate_column_id
+                    ) in related_columns_id.m2o_table.o2m_columns:
+                        looping_related_columns_ids = self.env[
+                            "code.generator.db.column"
+                        ].search(
+                            [
+                                (
+                                    "name",
+                                    "=",
+                                    relate_column_id.relation_column,
+                                ),
+                                (
+                                    "m2o_table.name",
+                                    "=",
+                                    relate_column_id.relation,
+                                ),
+                            ]
+                        )
+                        if (
+                            looping_related_columns_ids.m2o_table
+                            == field.m2o_table
+                        ):
+                            _logger.info(
+                                "Find looping dependency from table"
+                                f" `{field.m2o_table.name}` column"
+                                f" `{field.name}` to table"
+                                f" `{related_columns_id.m2o_table.name}`"
+                                f" column `{related_columns_id.name}`."
+                            )
+                            table_id.has_looping_many2one_dependency = True
+                            # field.m2o_table.table_looping_many2one_dependencies_ids = (4, related_columns_id.m2o_table.id)
+                            break
+                    else:
+                        _logger.info(
+                            "Find dependency of table"
+                            f" `{field.m2o_table.name}` column"
+                            f" `{field.name}` to table"
+                            f" `{related_columns_id.m2o_table.name}`"
+                            f" column `{related_columns_id.name}`."
+                        )
+                        # field.m2o_table.table_many2one_dependencies_ids = (4, related_columns_id.m2o_table.id)
+                        table_id.has_many2one_dependency = True
+            else:
+                table_id.order_extract_data = 1
+
+        # Reorder many2one dependency
+        table_to_reorder_ids = table_ids.filtered(
+            lambda a: a.has_many2one_dependency
+            and not a.has_looping_many2one_dependency
+            and not a.order_extract_data
+            and not a.delete
+        )
+        pos_order = 1
+        while table_to_reorder_ids:
+            pos_order += 1
+            table_ordered_ids = table_ids.filtered(
+                lambda a: a.order_extract_data
+            )
+
+            for table_to_reorder_id in table_to_reorder_ids:
+                # TODO can we do many2many on same table? it's not working
+                lst_table_id_depend = []
+                column_ids = table_to_reorder_id.o2m_columns.filtered(
+                    lambda a: a.relation_table_id
+                )
+                for column_id in column_ids:
+                    lst_table_id_depend.append(column_id.relation_table_id.id)
+
+                # Check if in list
+                for table_id_int in set(lst_table_id_depend):
+                    if table_id_int not in table_ordered_ids.ids:
+                        break
+                else:
+                    table_to_reorder_id.order_extract_data = pos_order
+                    # Force next order
+                    break
+
+            table_to_reorder_ids = table_ids.filtered(
+                lambda a: a.has_many2one_dependency
+                and not a.has_looping_many2one_dependency
+                and not a.order_extract_data
+                and not a.delete
+            )
+
+        # self._reorder_dependence_model(table_ids)
 
         # Create model and field, ready for creation
         lst_model_dct = [
             self.create_ir_model_field_value(cg_module_id, table)
-            for table in table_ids
+            for table in table_ids.sorted(key=lambda a: a.order_extract_data)
         ]
         _logger.info("Creating all ir.model...")
+
         models_created = self.env["ir.model"].create(lst_model_dct)
         # TODO Reorder by many2one and remove recursive dependency
 
         # Migrate data
-        table_nomenclator_ids = table_ids.filtered("nomenclator")
+        table_nomenclator_ids = table_ids.filtered("nomenclator").sorted(
+            key=lambda a: a.order_extract_data
+        )
         for seq, table_id in enumerate(table_nomenclator_ids):
             _logger.info(f"Parse #{seq} - {table_id.name}")
             self.generate_data(table_id)
@@ -288,6 +417,8 @@ class CodeGeneratorDbTable(models.Model):
             dct_field = {}
             if field.ignore_field:
                 continue
+            # if field.delete:
+            #     continue
 
             # TODO skip delete if no many2one refer on this value
 
@@ -360,8 +491,8 @@ class CodeGeneratorDbTable(models.Model):
     def generate_data(self, table_id):
         # Get columns to fetch data
         column_nomenclator_ids = table_id.o2m_columns.filtered(
-            lambda a: not a.delete
-            and not a.ignore_field
+            # TODO do we need a.delete?
+            lambda a: not a.ignore_field
             and a.ir_model_field_id.ttype != "one2many"
             and not a.temporary_name_field
         )
@@ -405,47 +536,60 @@ class CodeGeneratorDbTable(models.Model):
         )
 
         # Compute data before create it
+
         if column_compute_ids or column_binary_char_ids or column_many2one_ids:
-            try:
-                for data in lst_data:
-                    # Compute data with a method call
+            for data in lst_data:
+                # Compute data with a method call
+                try:
                     for column_compute_id in column_compute_ids:
                         value = data.get(column_compute_id.new_name)
+                        if value is None:
+                            continue
                         new_value = eval(
                             column_compute_id.compute_data_function,
                             data.copy(),
                         )
                         if new_value != value:
                             data[column_compute_id.new_name] = new_value
+                except Exception as e:
+                    _logger.error(e)
+                    _logger.error(
+                        f"Last error for data {data} on table"
+                        f" `{table_id.name}`"
+                    )
+                    _logger.error(
+                        "Last computing:"
+                        f" `{column_compute_id.compute_data_function}`"
+                    )
 
-                    # Compute char path to transform in binary
-                    for column_binary_char_id in column_binary_char_ids:
-                        if data:
-                            value = data.get(column_binary_char_id.new_name)
-                            # import path in binary
-                            path_file = os.path.join(
-                                column_binary_char_id.path_binary,
-                                value,
+                # Compute char path to transform in binary
+                for column_binary_char_id in column_binary_char_ids:
+                    if data:
+                        value = data.get(column_binary_char_id.new_name)
+                        # import path in binary
+                        path_file = os.path.join(
+                            column_binary_char_id.path_binary,
+                            value,
+                        )
+                        if os.path.isfile(path_file):
+                            new_data_binary = open(
+                                path_file,
+                                "rb",
+                            ).read()
+                            data[
+                                column_binary_char_id.new_name
+                            ] = base64.b64encode(new_data_binary)
+                        else:
+                            _logger.error(
+                                f"Cannot add file path `{path_file}` for model"
+                                f" `{column_binary_char_id.ir_model_field_id.model}`"
+                                " and field"
+                                f" `{column_binary_char_id.new_name}`"
                             )
-                            if os.path.isfile(path_file):
-                                new_data_binary = open(
-                                    path_file,
-                                    "rb",
-                                ).read()
-                                data[
-                                    column_binary_char_id.new_name
-                                ] = base64.b64encode(new_data_binary)
-                            else:
-                                _logger.error(
-                                    f"Cannot add file path `{path_file}` for"
-                                    " model"
-                                    f" `{column_binary_char_id.ir_model_field_id.model}`"
-                                    " and field"
-                                    f" `{column_binary_char_id.new_name}`"
-                                )
-                    for column_many2one_id in column_many2one_ids:
-                        value = data.get(column_many2one_id.new_name)
-                        # Update value with foreign key value
+                for column_many2one_id in column_many2one_ids:
+                    value = data.get(column_many2one_id.new_name)
+                    # Update value with foreign key value
+                    try:
                         new_id = self.env[
                             column_many2one_id.new_relation
                         ].search(
@@ -457,37 +601,52 @@ class CodeGeneratorDbTable(models.Model):
                                 )
                             ]
                         )
-                        if len(new_id) > 1:
-                            raise ValueError(
-                                "Model"
-                                f" `{column_many2one_id.ir_model_field_id.model}`"
-                                f" with field `{column_many2one_id.new_name}`"
-                                " is required, but cannot find relation"
-                                f" `{column_many2one_id.new_relation}`"
-                                " relation column"
-                                f" `{column_many2one_id.new_relation_field}`"
-                                f" of id `{value}`. Cannot associate multiple"
-                                " result, is your foreign configured"
-                                " correctly?"
-                            )
-                        int_new_id = new_id.id
-                        # TODO use real required
-                        if int_new_id is False and column_many2one_id.required:
-                            raise ValueError(
-                                "Model"
-                                f" `{column_many2one_id.ir_model_field_id.model}`"
-                                f" with field `{column_many2one_id.new_name}`"
-                                " is required, but cannot find relation"
-                                f" `{column_many2one_id.new_relation}`"
-                                " relation column"
-                                f" `{column_many2one_id.new_relation_field}`"
-                                f" of id `{value}`. Is it missing data?"
-                            )
-                        data[column_many2one_id.new_name] = int_new_id
-            except Exception as e:
-                _logger.error(e)
-        results = self.env[table_id.new_model_name].sudo().create(lst_data)
-        # dct_model_result_data[model_created.model] = results
+                    except Exception as e:
+                        raise
+                    if len(new_id) > 1:
+                        raise ValueError(
+                            "Model"
+                            f" `{column_many2one_id.ir_model_field_id.model}`"
+                            f" with field `{column_many2one_id.new_name}`"
+                            " is required, but cannot find relation"
+                            f" `{column_many2one_id.new_relation}`"
+                            " relation column"
+                            f" `{column_many2one_id.new_relation_field}`"
+                            f" of id `{value}`. Cannot associate multiple"
+                            " result, is your foreign configured"
+                            " correctly?"
+                        )
+                    if value and not new_id:
+                        raise ValueError(
+                            f"Cannot find value `{value}` for column"
+                            f" `{column_many2one_id.new_relation_field}` in"
+                            f" table `{table_id.name}`"
+                        )
+                    int_new_id = new_id.id
+                    # TODO use real required
+                    if int_new_id is False and (
+                        column_many2one_id.required
+                        or (
+                            column_many2one_id.new_change_required
+                            and column_many2one_id.new_required
+                        )
+                    ):
+                        raise ValueError(
+                            "Model"
+                            f" `{column_many2one_id.ir_model_field_id.model}`"
+                            f" with field `{column_many2one_id.new_name}`"
+                            " is required, but cannot find relation"
+                            f" `{column_many2one_id.new_relation}`"
+                            " relation column"
+                            f" `{column_many2one_id.new_relation_field}`"
+                            f" of id `{value}`. Is it missing data?"
+                        )
+                    data[column_many2one_id.new_name] = int_new_id
+
+        try:
+            results = self.env[table_id.new_model_name].sudo().create(lst_data)
+        except Exception as e:
+            raise
 
     @api.multi
     def generate_module2(self, code_generator_id=None):
@@ -717,55 +876,50 @@ class CodeGeneratorDbTable(models.Model):
             #         "force_widget"
             #     ] = update_info.force_widget
 
-            # if update_info.add_one2many:
-            #     model_related_id = dct_model_dct[
-            #         dct_model_field.get("relation")
-            #     ]
-            #
-            #     new_name_one2many = update_info.model_name
-            #     # update_field_one2many = dct_field.get(
-            #     #     new_name_one2many
-            #     # )
-            #
-            #     # Create new field
-            #     # TODO Validate no duplicate in model_related_id, loop on field_id, check name if not already exist
-            #     # TODO move this after, in a new loop, to have new result of modification
-            #     lst_field_name = [
-            #         a[2].get("name")
-            #         for a in model_related_id.get("field_id")
-            #     ]
-            #     j = 0
-            #     original_new_name_one2many = new_name_one2many
-            #     while new_name_one2many in lst_field_name:
-            #         j += 1
-            #         if j == 1:
-            #             new_name_one2many = (
-            #                 f"{original_new_name_one2many}_ids"
-            #             )
-            #         else:
-            #             new_name_one2many = (
-            #                 f"{original_new_name_one2many}_ids_{j}"
-            #             )
-            #
-            #     dct_one2many = {
-            #         "name": new_name_one2many,
-            #         # don't add ddb_field_name to detect it's added
-            #         # "ddb_field_name": new_name_one2many,
-            #         "field_description": (
-            #             new_name_one2many.replace("_", " ").title()
-            #         ),
-            #         "help": f"{new_name_one2many.title()} relation",
-            #         "ttype": "one2many",
-            #         "relation": update_info.model_name,
-            #         "relation_field": update_info.new_field_name,
-            #         # "comodel_name": update_info.model_name,
-            #         # "inverse_name": update_info.new_field_name,
-            #     }
-            #     tpl_field_one2many = (0, 0, dct_one2many)
-            #
-            #     model_related_id.get("field_id").append(
-            #         tpl_field_one2many
-            #     )
+            if update_info.add_one2many:
+                model_related_id = dct_model_dct[
+                    dct_model_field.get("relation")
+                ]
+
+                new_name_one2many = update_info.model_name
+                # update_field_one2many = dct_field.get(
+                #     new_name_one2many
+                # )
+
+                # Create new field
+                # TODO Validate no duplicate in model_related_id, loop on field_id, check name if not already exist
+                # TODO move this after, in a new loop, to have new result of modification
+                lst_field_name = [
+                    a[2].get("name") for a in model_related_id.get("field_id")
+                ]
+                j = 0
+                original_new_name_one2many = new_name_one2many
+                while new_name_one2many in lst_field_name:
+                    j += 1
+                    if j == 1:
+                        new_name_one2many = f"{original_new_name_one2many}_ids"
+                    else:
+                        new_name_one2many = (
+                            f"{original_new_name_one2many}_ids_{j}"
+                        )
+
+                dct_one2many = {
+                    "name": new_name_one2many,
+                    # don't add ddb_field_name to detect it's added
+                    # "ddb_field_name": new_name_one2many,
+                    "field_description": (
+                        new_name_one2many.replace("_", " ").title()
+                    ),
+                    "help": f"{new_name_one2many.title()} relation",
+                    "ttype": "one2many",
+                    "relation": update_info.model_name,
+                    "relation_field": update_info.new_field_name,
+                    # "comodel_name": update_info.model_name,
+                    # "inverse_name": update_info.new_field_name,
+                }
+                tpl_field_one2many = (0, 0, dct_one2many)
+
+                model_related_id.get("field_id").append(tpl_field_one2many)
 
             # # Keep empty value
             # if update_info.new_description is not False:
@@ -1606,7 +1760,13 @@ class CodeGeneratorDbTable(models.Model):
         return result
 
     @staticmethod
-    def _reorder_dependence_model(dct_model):
+    def _reorder_dependence_model(table_ids):
+        # detect looping dependency
+        for table_id in table_ids:
+            print(table_id)
+
+    @staticmethod
+    def _reorder_dependence_model2(dct_model):
         lst_model_ordered = []
         dct_model_hold = {}
         dct_looping_model_unique = defaultdict(dict)

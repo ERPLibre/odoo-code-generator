@@ -74,6 +74,20 @@ class CodeGeneratorDbColumn(models.Model):
         ),
     )
 
+    relation_table_id = fields.Many2one(
+        string="Depend table",
+        comodel_name="code.generator.db.table",
+        ondelete="restrict",
+    )
+
+    relation_column_id = fields.Many2one(
+        string="Depend column",
+        comodel_name="code.generator.db.column",
+        ondelete="restrict",
+    )
+
+    # is_looping_relation = fields.Boolean(help="Set True when this field is a looping dependency.")
+
     relation = fields.Char(
         string="Relation many2one",
         help="The field related with foreign key, contain the new model name.",
