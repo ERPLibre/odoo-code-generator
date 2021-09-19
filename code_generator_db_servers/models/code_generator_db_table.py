@@ -482,6 +482,8 @@ class CodeGeneratorDbTable(models.Model):
                 for column_selection_id in column_selection_ids:
                     if data:
                         value = data.get(column_selection_id.field_name)
+                        if value is None:
+                            value = column_selection_id.selection_migration_start_at
                         if type(value) is not int:
                             _logger.error(
                                 "Selection type support only database type"
