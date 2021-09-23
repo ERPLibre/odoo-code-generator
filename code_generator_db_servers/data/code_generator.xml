@@ -15,6 +15,10 @@
       <field name="name">SQLServer</field>
     </record>
 
+    <record model="code.generator.db.type" id="code_generator_db_type_odbc">
+      <field name="name">ODBC</field>
+    </record>
+
   </data>
 
   <data>

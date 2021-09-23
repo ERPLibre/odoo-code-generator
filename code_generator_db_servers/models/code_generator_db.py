@@ -10,6 +10,7 @@ INVALIDPORT = "The specify port is invalid."
 PSYCOPGUNINSTALLED = "Verify that the psycopg package is installed."
 PYMYSQLUNINSTALLED = "Verify that the pymysql package is installed."
 PYMSSQLUNINSTALLED = "Verify that the pymssql package is installed."
+PYODBCUNINSTALLED = "Verify that the pyodbc package is installed."
 CONNECTIONPROBLEM = "A connection problem occur."
 CREATEDBPROBLEM = "An error occur creating the database."
 
@@ -42,19 +43,21 @@ class CodeGeneratorDb(models.Model):
 
     m2o_dbtype_name = fields.Char(related="m2o_dbtype.name")
 
-    database = fields.Char(string="Db Name", help="Db Name", required=True)
+    database = fields.Char(string="Db Name", help="Db Name")
 
     schema = fields.Char(
-        string="Schema", help="Schema", required=True, default="public"
+        string="Schema", help="Schema", default="public"
     )
 
-    host = fields.Char(string="Ip address", help="Ip address", required=True)
+    file_path = fields.Char(string="File path", help="File of database to load")
 
-    port = fields.Char(string="Port", help="Port", required=True)
+    host = fields.Char(string="Ip address", help="Ip address")
 
-    user = fields.Char(string="User", help="User", required=True)
+    port = fields.Char(string="Port", help="Port")
 
-    password = fields.Char(string="Password", help="Password", required=True)
+    user = fields.Char(string="User", help="User")
+
+    password = fields.Char(string="Password", help="Password")
 
     accept_primary_key = fields.Boolean(
         string="Accept Primary Key",
@@ -90,6 +93,7 @@ class CodeGeneratorDb(models.Model):
                     port=value["port"],
                     user=value["user"],
                     password=value["password"],
+                    file_path=value["file_path"],
                 )
 
                 result = super(CodeGeneratorDb, self).create(value)
@@ -127,7 +131,7 @@ class CodeGeneratorDb(models.Model):
 
         return result
 
-    def get_db_cr(self, sgdb, database, host, port, user, password):
+    def get_db_cr(self, sgdb, database, host, port, user, password, file_path):
         """
         Util function to obtain an specific database cursor
         :param sgdb:
@@ -136,6 +140,7 @@ class CodeGeneratorDb(models.Model):
         :param port:
         :param user:
         :param password:
+        :param file_path:
         :return:
         """
 
@@ -185,6 +190,21 @@ class CodeGeneratorDb(models.Model):
 
             except ImportError:
                 raise ValidationError(PYMSSQLUNINSTALLED)
+
+        elif sgdb == "ODBC":
+
+            try:
+                import pyodbc
+
+                # TODO change me
+                path_odbc = ""
+
+                conn = pyodbc.connect(
+                    r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};'
+                    f'DBQ={file_path};')
+
+            except ImportError:
+                raise ValidationError(PYODBCUNINSTALLED)
 
         if conn:
             return conn.cursor()

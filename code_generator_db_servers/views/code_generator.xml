@@ -12,13 +12,16 @@
               <field name="m2o_dbtype"/>
               <field name="m2o_dbtype_name" invisible="True"/>
             </group>
-            <group>
+            <group attrs="{'invisible': [('m2o_dbtype_name', '==', 'ODBC')]}">
               <field name="database"/>
               <field name="schema" attrs="{'required': [('m2o_dbtype_name', '!=', 'SQLServer')]}"/>
               <field name="host"/>
               <field name="port"/>
               <field name="user"/>
               <field name="password" password="True"/>
+            </group>
+            <group attrs="{'invisible': [('m2o_dbtype_name', '!=', 'ODBC')]}">
+              <field name="file_path"/>
             </group>
           </group>
           <group>
