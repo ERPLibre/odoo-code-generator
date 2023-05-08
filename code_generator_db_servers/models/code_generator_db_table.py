@@ -216,6 +216,9 @@ class CodeGeneratorDbTable(models.Model):
                     "name": dct_field.get("name"),
                     "required": dct_field.get("required"),
                     "column_type": dct_field.get("ttype"),
+                    "need_conversion_type": dct_field.get(
+                        "need_conversion_type"
+                    ),
                     "description": dct_field.get("field_description"),
                     "temporary_name_field": dct_field.get(
                         "temporary_name_field"
@@ -439,6 +442,9 @@ class CodeGeneratorDbTable(models.Model):
             and not a.temporary_name_field
         )
         lst_column_name = column_nomenclator_ids.mapped("name")
+        lst_need_conversion_type = column_nomenclator_ids.mapped(
+            "need_conversion_type"
+        )
         lst_field_name = column_nomenclator_ids.mapped("field_name")
 
         # Get column to compute data
@@ -471,6 +477,7 @@ class CodeGeneratorDbTable(models.Model):
             table_id.m2o_db,
             lst_column_name,
             lst_query_replace=lst_query_replace,
+            lst_need_conversion_type=lst_need_conversion_type,
         )
 
         lst_data = list(
@@ -614,7 +621,12 @@ class CodeGeneratorDbTable(models.Model):
                         )
                     data[column_many2one_id.field_name] = int_new_id
 
-        results = self.env[table_id.new_model_name].sudo().create(lst_data)
+        if table_id.new_model_name:
+            model_name = table_id.new_model_name
+        else:
+            model_name = table_id.model_name
+
+        results = self.env[model_name].sudo().create(lst_data)
 
     def update_relation_many2one(self, table_ids):
         for table_id in table_ids:
@@ -900,6 +912,9 @@ class CodeGeneratorDbTable(models.Model):
         elif data_type == "money":
             odoo_ttype = "monetary"
 
+        elif data_type == "longtext":
+            odoo_ttype = "text"
+
         elif data_type == "decimal" or data_type == "double":
             odoo_ttype = "float"
 
@@ -913,7 +928,7 @@ class CodeGeneratorDbTable(models.Model):
         ):
             odoo_ttype = "datetime"
 
-        elif data_type == "date":
+        elif data_type == "date" or data_type == "year":
             odoo_ttype = "date"
 
         return odoo_ttype
@@ -995,6 +1010,11 @@ class CodeGeneratorDbTable(models.Model):
                         column_info[6] == "NO",
                     )
 
+                    if column_info[7].lower() == "year":
+                        t_odoo_field_4insert[2][
+                            "need_conversion_type"
+                        ] = "year_to_date"
+
                     if is_m2o:  # It is a foreign key?
                         table_name = is_m2o[0]
                         column_name = is_m2o[1]
@@ -1043,6 +1063,7 @@ class CodeGeneratorDbTable(models.Model):
         lst_column_name,
         limit=None,
         lst_query_replace=[],
+        lst_need_conversion_type=[],
     ):
         """
         Function to obtain a table data
@@ -1071,59 +1092,20 @@ class CodeGeneratorDbTable(models.Model):
                 raise ValueError(
                     f"One element is False in list of field {lst_column_name}"
                 )
+            if any(lst_need_conversion_type):
+                for index, need_conversion in enumerate(
+                    lst_need_conversion_type
+                ):
+                    if not need_conversion:
+                        continue
+                    if need_conversion == "year_to_date":
+                        lst_column_name[index] = (
+                            f"DATE_FORMAT(CONCAT({lst_column_name[index]},"
+                            " '-01-01'), '%Y-%m-%d') AS"
+                            f" {lst_column_name[index]}"
+                        )
+
             query = f" SELECT {','.join(lst_column_name)} FROM {table_name} "
-            if limit:
-                query += f"LIMIT {limit} "
-
-            for str_search, str_replace in lst_query_replace:
-                query = query.replace(str_search, str_replace)
-
-            cr.execute(query)
-
-            return cr.fetchall()
-
-        except psycopg2.OperationalError:
-            raise ValidationError(TABLEDATAPROBLEM)
-
-    def get_table_data2(
-        self,
-        table_name,
-        m2o_db,
-        model_created_fields,
-        limit=None,
-        lst_query_replace=[],
-    ):
-        """
-        Function to obtain a table data
-        :param table_name:
-        :param m2o_db:
-        :param model_created_fields:
-        :param limit: int max to get data
-        :param lst_query_replace: list of query to replace, tuple [0] string to replace, [1] new string
-        :return:
-        """
-
-        if not table_name:
-            raise ValueError(f"table name is empty.")
-
-        port = self.env["code.generator.db"].get_port(m2o_db.port)
-        try:
-            cr = self.env["code.generator.db"].get_db_cr(
-                sgdb=m2o_db.m2o_dbtype.name,
-                database=m2o_db.database,
-                host=m2o_db.host,
-                port=port,
-                user=m2o_db.user,
-                password=m2o_db.password,
-            )
-            if False in model_created_fields:
-                raise ValueError(
-                    "One element is False in list of field"
-                    f" {model_created_fields}"
-                )
-            query = (
-                f" SELECT {','.join(model_created_fields)} FROM {table_name} "
-            )
             if limit:
                 query += f"LIMIT {limit} "
 

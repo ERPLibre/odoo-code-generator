@@ -64,6 +64,10 @@ class CodeGeneratorDbColumn(models.Model):
         selection=SELECTION_TYPE,
     )
 
+    need_conversion_type = fields.Selection(
+        selection=[("year_to_date", "Year to Date")],
+    )
+
     new_type = fields.Selection(
         selection=SELECTION_TYPE,
     )
