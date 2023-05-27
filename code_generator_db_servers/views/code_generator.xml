@@ -18,6 +18,7 @@
                             <field name="port" />
                             <field name="user" />
                             <field name="password" password="True" />
+                            <!--TODO add here field attrs="{'required': [('m2o_dbtype_name', '!=', 'SQLServer')]}" -->
                         </group>
                     </group>
                     <group>

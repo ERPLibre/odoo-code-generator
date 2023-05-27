@@ -34,7 +34,6 @@ class CodeGeneratorDb(models.Model):
     m2o_dbtype = fields.Many2one(
         "code.generator.db.type",
         "Db Type",
-        required=True,
         default=lambda self: self.env.ref(
             "code_generator_db_servers.code_generator_db_type_pgsql"
         ).id,
@@ -43,19 +42,19 @@ class CodeGeneratorDb(models.Model):
 
     m2o_dbtype_name = fields.Char(related="m2o_dbtype.name")
 
-    database = fields.Char(string="Db Name", help="Db Name", required=True)
+    database = fields.Char(string="Db Name", help="Db Name")
 
     schema = fields.Char(
-        string="Schema", help="Schema", required=True, default="public"
+        string="Schema", help="Schema", default="public"
     )
 
-    host = fields.Char(string="Ip address", help="Ip address", required=True)
+    host = fields.Char(string="Ip address", help="Ip address")
 
-    port = fields.Char(string="Port", help="Port", required=True)
+    port = fields.Char(string="Port", help="Port")
 
-    user = fields.Char(string="User", help="User", required=True)
+    user = fields.Char(string="User", help="User")
 
-    password = fields.Char(string="Password", help="Password", required=True)
+    password = fields.Char(string="Password", help="Password")
 
     accept_primary_key = fields.Boolean(
         string="Accept Primary Key",
