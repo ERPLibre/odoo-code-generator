@@ -2517,7 +2517,10 @@ _logger = logging.getLogger(__name__)"""
                 cw.emit(f"def {code.name}({code.param}){return_v}:")
 
                 code_traited = code.code.replace("\\\n", key_special_endline)
-                code_traited = code_traited.replace("\\'", "\\\\'")
+                # code_traited = code_traited.replace('\\\\"', '#$%&###').replace('"', '\"').replace('#$%&###', '\\\\"')
+                code_traited = code_traited.replace("\"\'", "\\\"\'")
+                # code_traited = code_traited.replace("\'''","'''")
+                # code_traited = code_traited.replace("\'", "\\'")
                 code_traited = code_traited.replace("\b", "\\b")
                 with cw.indent():
                     for code_line in code_traited.split("\n"):

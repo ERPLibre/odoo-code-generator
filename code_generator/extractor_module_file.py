@@ -265,6 +265,7 @@ class ExtractorModuleFile:
         else:
             v = self._fill_search_field(value)
             if type(v) is str:
+                v = v.replace("'", "\\\\'")
                 str_args += f"='{v}'"
             else:
                 str_args += f"={v}"
@@ -611,7 +612,7 @@ class ExtractorModuleFile:
                         codes += f"{str_line}\n"
                     # codes = "\n".join(self.lst_line[no_line_min - 1:no_line_max])
                 codes = (
-                    codes.replace("'''", "\\'''")
+                    codes.replace("'''", "\\'\\'\\'")
                     .replace("\\n", "\\\\n")
                     .replace("\b", "\\b")
                 )

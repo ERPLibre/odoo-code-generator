@@ -1734,7 +1734,7 @@ class CodeGeneratorWriter(models.Model):
                 ):
                     for code_id in code_ids:
                         with cw.block(delim=("{", "}")):
-                            lst_line = code_id.code.split("\n")
+                            lst_line = code_id.code.replace("\\'\\'\\'", "#$%&###").replace("\'", "\\'").replace("#$%&###", "\\'\\'\\'").split("\n")
                             if len(lst_line) == 1:
                                 cw.emit(f"\"code\": '''{lst_line[0]}''',")
                             else:
