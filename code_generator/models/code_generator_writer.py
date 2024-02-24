@@ -1939,12 +1939,12 @@ _logger = logging.getLogger(__name__)"""
             )
             view_type = (
                 cg_act_window_id.view_type
-                if cg_act_window_id
+                if cg_act_window_id and cg_act_window_id.view_type
                 else act_window.view_type
             )
             view_mode = (
                 cg_act_window_id.view_mode
-                if cg_act_window_id
+                if cg_act_window_id and cg_act_window_id.view_mode
                 else act_window.view_mode
             )
             # TODO if not complex, search if associate with a menu. If the menu is not generated, don't generate is act_window
