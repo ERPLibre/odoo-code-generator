@@ -620,8 +620,10 @@ class CodeGeneratorModule(models.Model):
 
     def _check_relation_many2many(self, model_model, field_value):
         relation_name = field_value.get("relation")
-        comodel_name = relation_name.replace(".", "_")
-        str_model_model = model_model.replace(".", "_")
+        comodel_name = ""
+        if relation_name:
+            comodel_name = relation_name.replace(".", "_")
+            str_model_model = model_model.replace(".", "_")
         if not comodel_name:
             _logger.warning(f"Missing relation for field_value {field_value}")
         else:
