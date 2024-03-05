@@ -37,6 +37,16 @@ class CodeGeneratorViewItem(models.Model):
         help="Choose background color of HTML.",
     )
 
+    binding_type = fields.Selection(
+        selection=[
+            ("", ""),
+            ("object", "Object"),
+            ("action", "Action"),
+            ("server", "Server"),
+        ],
+        help="Button type, the binding method.",
+    )
+
     button_type = fields.Selection(
         selection=[
             ("", ""),  # Default
@@ -53,16 +63,6 @@ class CodeGeneratorViewItem(models.Model):
         help="Choose item type to generate.",
     )
 
-    binding_type = fields.Selection(
-        selection=[
-            ("", ""),
-            ("object", "Object"),
-            ("action", "Action"),
-            ("server", "Server"),
-        ],
-        help="Button type, the binding method.",
-    )
-
     child_id = fields.One2many(
         comodel_name="code.generator.view.item",
         inverse_name="parent_id",
@@ -70,6 +70,8 @@ class CodeGeneratorViewItem(models.Model):
     )
 
     class_attr = fields.Char(help="Update class attribute")
+
+    clickable = fields.Char()
 
     colspan = fields.Integer(
         default=1,
@@ -82,16 +84,28 @@ class CodeGeneratorViewItem(models.Model):
 
     edit_only = fields.Boolean(string="Edit only")
 
+    expand = fields.Char()
+
     expr = fields.Char(help="Example: //field[@name='name']")
+
+    filter_domain = fields.Char(help="Like domain for field.")
+
+    groups = fields.Char(help="Limit access to this item by group.")
 
     has_label = fields.Boolean(
         string="Labeled",
         help="Label for title.",
     )
 
+    help = fields.Char(help="Show help to user about this item.")
+
     icon = fields.Char(
         help="Example fa-television. Only supported with button."
     )
+
+    inner_text = fields.Char(help="Inner text into div.")
+
+    invisible = fields.Char(help="if the item is invisible")
 
     is_help = fields.Boolean()
 
@@ -132,6 +146,12 @@ class CodeGeneratorViewItem(models.Model):
 
     # TODO create HTML for specific label
     label = fields.Char()
+
+    nolabel = fields.Char(help="Feature for field to remove label.")
+
+    options = fields.Char(
+        help="More option for this item, usually manage by Javascript."
+    )
 
     parent_id = fields.Many2one(
         comodel_name="code.generator.view.item",
@@ -176,24 +196,6 @@ class CodeGeneratorViewItem(models.Model):
 
     tabindex = fields.Char(help="Tab index")
 
-    invisible = fields.Char(help="if the item is invisible")
-
-    groups = fields.Char(help="Limit access to this item by group.")
-
-    options = fields.Char(
-        help="More option for this item, usually manage by Javascript."
-    )
-
-    filter_domain = fields.Char(help="Like domain for field.")
-
-    nolabel = fields.Char(help="Feature for field to remove label.")
-
-    clickable = fields.Char()
-
-    expand = fields.Char()
-
-    help = fields.Char(help="Show help to user about this item.")
-
     title = fields.Char(help="title attribute")
 
     type = fields.Selection(
@@ -202,5 +204,3 @@ class CodeGeneratorViewItem(models.Model):
     )
 
     widget = fields.Char(help="widget attribute")
-
-    inner_text = fields.Char(help="Inner text into div.")

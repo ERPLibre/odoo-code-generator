@@ -20,26 +20,27 @@ class CodeGeneratorActWindow(models.Model):
         help="Specify id name of this action window.",
     )
 
+    is_wizard = fields.Boolean()
+
     model_name = fields.Char(
         help="The associate model, if empty, no association."
     )
 
-    view_mode = fields.Char(help="The sequence of view mode.")
-
-    view_type = fields.Char(
-        help="The default view for this action window.", default="form"
-    )
-
     target = fields.Selection(
-        [
+        selection=[
             ("current", "Current Window"),
             ("new", "New Window"),
             ("inline", "Inline Edit"),
             ("fullscreen", "Full Screen"),
             ("main", "Main action of Current Window"),
         ],
-        default="current",
         string="Target Window",
+        default="current",
     )
 
-    is_wizard = fields.Boolean()
+    view_mode = fields.Char(help="The sequence of view mode.")
+
+    view_type = fields.Char(
+        default="form",
+        help="The default view for this action window.",
+    )
