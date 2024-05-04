@@ -3526,11 +3526,14 @@ _logger = logging.getLogger(__name__)"""
                 ";"
             )
             last_extractor_view = None
+            last_extractor_view_with_cg = None
             for model in lst_model:
                 model = model.strip()
                 if model:
                     last_extractor_view = ExtractorView(module, model)
                     module.view_file_sync[model] = last_extractor_view
+                    if last_extractor_view.code_generator_id:
+                        last_extractor_view_with_cg = last_extractor_view
                     module.module_file_sync[model] = ExtractorModule(
                         module, model, module.view_file_sync[model]
                     )
@@ -3538,8 +3541,9 @@ _logger = logging.getLogger(__name__)"""
                     ExtractorController(
                         module, model, module.module_file_sync[model]
                     )
-            if last_extractor_view:
-                last_extractor_view.parse_menu()
+            if last_extractor_view_with_cg:
+                # TODO this seems an hack to extract menu, need another method
+                last_extractor_view_with_cg.parse_menu()
 
         for model in module.o2m_models:
 

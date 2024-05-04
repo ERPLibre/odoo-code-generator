@@ -124,6 +124,8 @@ class ExtractorView:
         )
         if not ir_model_data_ids:
             return
+        if not self.code_generator_id:
+            return
         lst_id_menu = [a.res_id for a in ir_model_data_ids]
         menu_ids = self.env["ir.ui.menu"].browse(lst_id_menu)
         for menu_id in menu_ids:
