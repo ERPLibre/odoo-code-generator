@@ -733,7 +733,9 @@ class CodeGeneratorModule(models.Model):
 
     @api.multi
     def unlink(self):
-        o2m_models = self.mapped("o2m_models").filtered(lambda m: m.state == 'manual')
+        o2m_models = self.mapped("o2m_models").filtered(
+            lambda m: m.state == "manual"
+        )
         if o2m_models:
             o2m_models.mapped("view_ids").unlink()
             # TODO need to support logic unlink depend from interdependency

@@ -1490,7 +1490,10 @@ class CodeGeneratorWriter(models.Model):
             # and model_id.description != model_id.name
         ):
             dct_model_data["description"] = model_id.description
-        if module.template_auto_export_data and not module.template_ignore_export_data:
+        if (
+            module.template_auto_export_data
+            and not module.template_ignore_export_data
+        ):
             dct_model_data["nomenclator"] = True
         if model_id.order:
             dct_model_data["order"] = model_id.order
