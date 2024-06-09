@@ -888,33 +888,33 @@ class CodeGeneratorDbTable(models.Model):
         :return:
         """
 
+        # Update this list when got error
+        # odoo.addons.code_generator_db_servers.models.code_generator_db: Wrong value for code.generator.db.column.column_type:
         odoo_ttype = data_type
         if (
-            data_type == "smallint"
-            or data_type == "int"
-            or data_type == "bit"
-            or data_type == "tinyint"
+            data_type in ["smallint", "int", "bit", "tinyint", "bigint"]
         ):
             odoo_ttype = "integer"
 
         elif data_type == "money":
             odoo_ttype = "monetary"
 
-        elif data_type == "decimal" or data_type == "double":
+        elif data_type in ["decimal", "double"]:
             odoo_ttype = "float"
 
-        elif data_type == "character varying" or data_type == "varchar":
+        elif data_type in ["character varying", "varchar", "nvarchar", "uniqueidentifier", "ntext", "nchar"]:
             odoo_ttype = "char"
 
         elif (
-            data_type == "timestamp with time zone"
-            or data_type == "timestamp"
-            or data_type == "time"
+            data_type in ["timestamp with time zone", "timestamp", "time", "datetime2"]
         ):
             odoo_ttype = "datetime"
 
         elif data_type == "date":
             odoo_ttype = "date"
+
+        elif data_type in ["varbinary", "image"]:
+            odoo_ttype = "binary"
 
         return odoo_ttype
 
