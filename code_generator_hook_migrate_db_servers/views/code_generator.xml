@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<odoo>
+    <record model="ir.ui.view" id="code_generator_module_hook_form_inherit">
+        <field name="name">code.generator.module.form.inherit</field>
+        <field name="model">code.generator.module</field>
+        <field name="inherit_id" ref="code_generator_hook.code_generator_module_hook_form_inherit" />
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='post_init_hook_show_feature']" position="inside">
+                <field name="migrate_from_db_server" />
+            </xpath>
+            <xpath expr="//group[@name='uninstall_hook']" position="before">
+                <group
+                    name="db_server_migration_template_script_group"
+                    string="DB server conf"
+                    attrs="{'invisible': [('migrate_from_db_server', '=', False)]}"
+                >
+                    <field name="migrate_db_server_relation_table_ids" widget="many2many_tags">
+                        <tree editable="top">
+                            <field name="name" />
+                        </tree>
+                    </field>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

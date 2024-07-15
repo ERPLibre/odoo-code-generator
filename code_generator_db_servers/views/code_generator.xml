@@ -225,6 +225,15 @@
     # action = {"type": "ir.actions.client", "tag": "reload", "params": {"menu_id": env.ref('code_generator.code_generator_generator_menu').id}}</field><!-- prettier-ignore-end -->
     </record>
 
+    <record model="ir.actions.server" id="code_generator_db_table_generate_code_data_migration_hook_actionserver">
+        <field name="name">Generate data migration by hook module</field>
+        <field name="model_id" ref="model_code_generator_db_table" />
+        <field name="binding_model_id" ref="model_code_generator_db_table" />
+        <field name="state">code</field>
+<!-- prettier-ignore-start --><field name="code">if records:
+    records.generate_module_data_migration_hook()</field><!-- prettier-ignore-end -->
+    </record>
+
     <record model="ir.actions.server" id="code_generator_db_table_toggle_nomenclators_actionserver">
         <field name="name">Toggle Nomenclator property</field>
         <field name="model_id" ref="model_code_generator_db_table" />

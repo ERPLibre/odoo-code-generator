@@ -249,6 +249,42 @@ class CodeGeneratorDbTable(models.Model):
         return _inner_conform
 
     @api.multi
+    def generate_module_data_migration_hook(self, code_generator_id=None):
+        db_id = self[0].m2o_db
+
+        final_module_name = f"{db_id.database}_migrate_db"
+
+        module = self.env["code.generator.module"].search(
+            [("name", "=", final_module_name)]
+        )
+        if not module:
+            module = self.env["code.generator.module"].create(
+                dict(
+                    shortdesc="Module %s" % db_id.database,
+                    name=final_module_name,
+                    application=False,
+                )
+            )
+        module.migrate_from_db_server = True
+        module.post_init_hook_show = True
+
+        # Save only table with data
+        table_ids = db_id.get_tables_with_data(self)
+        # module.migrate_db_server_relation_table_ids = [(6, 0, self.ids)]
+        module.migrate_db_server_relation_table_ids = [(6, 0, table_ids.ids)]
+        if db_id.m2o_dbtype.name == "PostgreSQL":
+            module.migrate_db_server_param_python_lib = "psycopg2"
+        elif db_id.m2o_dbtype.name == "MySQL":
+            module.migrate_db_server_param_python_lib = "pymysql"
+        elif db_id.m2o_dbtype.name == "SQLServer":
+            module.migrate_db_server_param_python_lib = "pymssql"
+        else:
+            _logger.error(
+                f"Cannot support db type name '{db_id.m2o_dbtype.name}' from"
+                " code_generator_db_table"
+            )
+
+    @api.multi
     def generate_module(self, code_generator_id=None):
         """
         Function to generate a module
@@ -891,9 +927,7 @@ class CodeGeneratorDbTable(models.Model):
         # Update this list when got error
         # odoo.addons.code_generator_db_servers.models.code_generator_db: Wrong value for code.generator.db.column.column_type:
         odoo_ttype = data_type
-        if (
-            data_type in ["smallint", "int", "bit", "tinyint", "bigint"]
-        ):
+        if data_type in ["smallint", "int", "bit", "tinyint", "bigint"]:
             odoo_ttype = "integer"
 
         elif data_type == "money":
@@ -902,12 +936,22 @@ class CodeGeneratorDbTable(models.Model):
         elif data_type in ["decimal", "double"]:
             odoo_ttype = "float"
 
-        elif data_type in ["character varying", "varchar", "nvarchar", "uniqueidentifier", "ntext", "nchar"]:
+        elif data_type in [
+            "character varying",
+            "varchar",
+            "nvarchar",
+            "uniqueidentifier",
+            "ntext",
+            "nchar",
+        ]:
             odoo_ttype = "char"
 
-        elif (
-            data_type in ["timestamp with time zone", "timestamp", "time", "datetime2"]
-        ):
+        elif data_type in [
+            "timestamp with time zone",
+            "timestamp",
+            "time",
+            "datetime2",
+        ]:
             odoo_ttype = "datetime"
 
         elif data_type == "date":

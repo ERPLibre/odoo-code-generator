@@ -568,6 +568,8 @@ class CodeGeneratorWriter(models.Model):
             for line in module.hook_constant_code.split("\n"):
                 cw.emit(line)
 
+        self.code_write_hook_header_inherit(cw, module)
+
         def _add_hook(
             module,
             cw,
@@ -1422,6 +1424,7 @@ class CodeGeneratorWriter(models.Model):
                         cw.emit("if code_generator_id:")
                         with cw.indent():
                             cw.emit("code_generator_id.unlink()")
+                    self.code_write_hook_inherit(cw, module, method_name)
 
         _add_hook(
             module,
@@ -1461,6 +1464,12 @@ class CodeGeneratorWriter(models.Model):
         hook_file_path = "hooks.py"
 
         self.code_generator_data.write_file_str(hook_file_path, cw.render())
+
+    def code_write_hook_header_inherit(self, cw, module):
+        pass
+
+    def code_write_hook_inherit(self, cw, module, method_name):
+        pass
 
     def write_model(
         self,
