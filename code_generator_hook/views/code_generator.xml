@@ -11,7 +11,11 @@
                         <group>
                             <field name="pre_init_hook_show" />
                         </group>
-                        <group string="Feature" attrs="{'invisible': [('pre_init_hook_show', '=', False)]}">
+                        <group
+                            string="Feature"
+                            name="pre_init_hook_show_feature"
+                            attrs="{'invisible': [('pre_init_hook_show', '=', False)]}"
+                        >
                             <field name="pre_init_hook_feature_general_conf" />
                         </group>
                     </group>
@@ -28,7 +32,11 @@
                         <group>
                             <field name="post_init_hook_show" />
                         </group>
-                        <group string="Feature" attrs="{'invisible': [('post_init_hook_show', '=', False)]}">
+                        <group
+                            string="Feature"
+                            name="post_init_hook_show_feature"
+                            attrs="{'invisible': [('post_init_hook_show', '=', False)]}"
+                        >
                             <field name="post_init_hook_feature_general_conf" />
                             <field name="post_init_hook_feature_code_generator" />
                         </group>
@@ -45,7 +53,11 @@
                         <group>
                             <field name="uninstall_hook_show" />
                         </group>
-                        <group string="Feature" attrs="{'invisible': [('uninstall_hook_show', '=', False)]}">
+                        <group
+                            string="Feature"
+                            name="uninstall_hook_show_feature"
+                            attrs="{'invisible': [('uninstall_hook_show', '=', False)]}"
+                        >
                             <field name="uninstall_hook_feature_general_conf" />
                             <field name="uninstall_hook_feature_code_generator" />
                         </group>

@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 
 class ExtractorView:
-    def __init__(self, module, model_model, number_view):
+    def __init__(self, module, model_model):
         self._module = module
         self.env = module.env
         model_name = model_model.replace(".", "_")
@@ -50,9 +50,11 @@ class ExtractorView:
                 value
             )
             self._parse_view_ids()
-            if number_view == 0:
-                self._parse_menu()
-                self._parse_action_server()
+
+    def parse_menu(self):
+        self._parse_menu()
+        self._parse_action_server()
+        self._parse_wizard()
 
     def _parse_action_server(self):
         # Search comment node associated to action_server
@@ -95,6 +97,24 @@ class ExtractorView:
                         if result:
                             result.comment = last_record.data.strip()
 
+    def _parse_wizard(self):
+        ir_model_data_ids = self.env["ir.model.data"].search(
+            [
+                ("model", "=", "ir.actions.act_window"),
+                ("module", "=", self._module.template_module_name),
+            ]
+        )
+        lst_id = [a.res_id for a in ir_model_data_ids]
+        ir_actions_act_window_wizard_ids = self.env[
+            "ir.actions.act_window"
+        ].search([("id", "in", lst_id), ("target", "=", "new")])
+        # for act_window_id in ir_actions_act_window_wizard_ids:
+        #     dct_act_value = {
+        #         "id_name": menu_name,
+        #         "name": menu_id.action.name,
+        #         "code_generator_id": self.code_generator_id.id,
+        #     }
+
     def _parse_menu(self):
         ir_model_data_ids = self.env["ir.model.data"].search(
             [
@@ -103,6 +123,8 @@ class ExtractorView:
             ]
         )
         if not ir_model_data_ids:
+            return
+        if not self.code_generator_id:
             return
         lst_id_menu = [a.res_id for a in ir_model_data_ids]
         menu_ids = self.env["ir.ui.menu"].browse(lst_id_menu)
@@ -126,6 +148,33 @@ class ExtractorView:
                 }
                 if menu_id.action.res_model:
                     dct_act_value["model_name"] = menu_id.action.res_model
+                    module_name_xml_id = (
+                        f"{self._module.template_module_name}.{menu_name}"
+                    )
+                    ir_actions_windows = self.env[
+                        "ir.actions.act_window"
+                    ].search([("res_model", "=", menu_id.action.res_model)])
+                    if ir_actions_windows:
+                        # take first, but what to do with multiple action?
+                        if len(ir_actions_windows) > 1:
+                            for ir_act_id in ir_actions_windows:
+                                if ir_act_id.xml_id == module_name_xml_id:
+                                    ir_actions_windows = [ir_act_id]
+                                    break
+                            else:
+                                _logger.warning(
+                                    "Multiple action windows for model"
+                                    f" '{menu_id.action.res_model}'"
+                                )
+                        ir_actions_windows_id = ir_actions_windows[0]
+                        dct_act_value[
+                            "view_type"
+                        ] = ir_actions_windows_id.view_type
+                        dct_act_value[
+                            "view_mode"
+                        ] = ir_actions_windows_id.view_mode
+                        dct_act_value["target"] = ir_actions_windows_id.target
+                # TODO why create act_window and not extract value
                 menu_action = self.env["code.generator.act_window"].create(
                     dct_act_value
                 )
@@ -168,8 +217,8 @@ class ExtractorView:
             mydoc = minidom.parseString(view_id.arch_base.encode())
 
             lst_view_item_id = []
-
             dct_view_attr = {}
+            lst_ignore_node = []
 
             # Search graph
             lst_graph_xml = mydoc.getElementsByTagName("graph")
@@ -445,26 +494,26 @@ class ExtractorView:
 
             # Search oe_chatter activity message_ids or message_follower_ids
             lst_div_xml = mydoc.getElementsByTagName("div")
-            if lst_div_xml:
-                for div_xml in lst_div_xml:
-                    if (
-                        "class",
-                        "oe_chatter",
-                    ) in div_xml.attributes.items():
-                        for child_div in div_xml.childNodes:
-                            if child_div.nodeType is Node.ELEMENT_NODE:
-                                lst_value = dict(
-                                    child_div.attributes.items()
-                                ).values()
-                                if (
-                                    "activity_ids" in lst_value
-                                    or "message_ids" in lst_value
-                                    or "message_follower_ids" in lst_value
-                                ):
-                                    # self.model_id.write(
-                                    #     {"enable_activity": True}
-                                    # )
-                                    self.model_id.enable_activity = True
+            for div_xml in lst_div_xml:
+                if (
+                    "class",
+                    "oe_chatter",
+                ) in div_xml.attributes.items():
+                    for i, child_div in enumerate(div_xml.childNodes):
+                        if child_div.nodeType is Node.ELEMENT_NODE:
+                            lst_value = dict(
+                                child_div.attributes.items()
+                            ).values()
+                            if (
+                                "activity_ids" in lst_value
+                                or "message_ids" in lst_value
+                                or "message_follower_ids" in lst_value
+                            ):
+                                # self.model_id.write(
+                                #     {"enable_activity": True}
+                                # )
+                                self.model_id.enable_activity = True
+                                lst_ignore_node.append(div_xml)
 
             # Sheet
             lst_sheet_xml = mydoc.getElementsByTagName("sheet")
@@ -492,6 +541,7 @@ class ExtractorView:
                             lst_view_item_id,
                             "header",
                             sequence=no_sequence,
+                            debug_xmlid=view_id.xml_id,
                         )
 
             # Search footer
@@ -513,13 +563,14 @@ class ExtractorView:
                             lst_view_item_id,
                             "footer",
                             sequence=no_sequence,
+                            debug_xmlid=view_id.xml_id,
                         )
 
             # Search title
             no_sequence = 1
             nb_oe_title = 0
             div_title = None
-            for div_xml in mydoc.getElementsByTagName("div"):
+            for div_xml in lst_div_xml:
                 # Find oe_title class
                 # TODO what todo when multiple class? split by ,
                 for key, value in div_xml.attributes.items():
@@ -564,6 +615,7 @@ class ExtractorView:
                                     "code.generator.view.item"
                                 ].create(dct_attributes)
                                 lst_view_item_id.append(view_item_id.id)
+                                lst_ignore_node.append(div_xml)
                                 no_sequence += 1
 
             lst_body_xml = []
@@ -619,7 +671,8 @@ class ExtractorView:
                         #     lst_body_xml.append(child_form)
                         # TODO everything can be in body? check when add oe_chatter
                         # TODO why cumulate here when change value in lst_sheet_xml next lines
-                        lst_body_xml.append(child_form)
+                        if child_form not in lst_ignore_node:
+                            lst_body_xml.append(child_form)
 
             if lst_sheet_xml:
                 # TODO validate this, test with and without <sheet>
@@ -641,13 +694,17 @@ class ExtractorView:
                     if data:
                         _logger.warning(f"Not supported : {data}.")
                 elif body_xml.nodeType is Node.ELEMENT_NODE:
-                    status = self._extract_child_xml(
-                        body_xml,
-                        lst_view_item_id,
-                        "body",
-                        lst_node=lst_node,
-                        sequence=sequence,
-                    )
+                    if body_xml not in lst_ignore_node:
+                        status = self._extract_child_xml(
+                            body_xml,
+                            lst_view_item_id,
+                            "body",
+                            lst_node=lst_node,
+                            sequence=sequence,
+                            debug_xmlid=view_id.xml_id,
+                        )
+                    else:
+                        status = False
                     if status:
                         lst_node.append(body_xml)
                     else:
@@ -673,6 +730,46 @@ class ExtractorView:
             if "class" in dct_view_attr.keys():
                 value["view_attr_class"] = dct_view_attr.get("class")
                 lst_view_attr_copy.remove("class")
+            if "decoration-danger" in dct_view_attr.keys():
+                value["view_attr_decoration_danger"] = dct_view_attr.get(
+                    "decoration-danger"
+                )
+                lst_view_attr_copy.remove("decoration-danger")
+            if "decoration-success" in dct_view_attr.keys():
+                value["view_attr_decoration_success"] = dct_view_attr.get(
+                    "decoration-success"
+                )
+                lst_view_attr_copy.remove("decoration-success")
+            if "decoration-primary" in dct_view_attr.keys():
+                value["view_attr_decoration_primary"] = dct_view_attr.get(
+                    "decoration-primary"
+                )
+                lst_view_attr_copy.remove("decoration-primary")
+            if "decoration-bf" in dct_view_attr.keys():
+                value["view_attr_decoration_bf"] = dct_view_attr.get(
+                    "decoration-bf"
+                )
+                lst_view_attr_copy.remove("decoration-bf")
+            if "decoration-it" in dct_view_attr.keys():
+                value["view_attr_decoration_it"] = dct_view_attr.get(
+                    "decoration-it"
+                )
+                lst_view_attr_copy.remove("decoration-it")
+            if "decoration-view_attr_decoration_info" in dct_view_attr.keys():
+                value[
+                    "view_attr_decoration_view_attr_decoration_info"
+                ] = dct_view_attr.get("decoration-view_attr_decoration_info")
+                lst_view_attr_copy.remove("decoration-info")
+            if "decoration-warning" in dct_view_attr.keys():
+                value["view_attr_decoration_warning"] = dct_view_attr.get(
+                    "decoration-warning"
+                )
+                lst_view_attr_copy.remove("decoration-warning")
+            if "decoration-muted" in dct_view_attr.keys():
+                value["view_attr_decoration_muted"] = dct_view_attr.get(
+                    "decoration-muted"
+                )
+                lst_view_attr_copy.remove("decoration-muted")
             if "default_group_by" in dct_view_attr.keys():
                 # TODO support it in parameter of timeline view
                 # Ignore it, from timeline
@@ -722,6 +819,7 @@ class ExtractorView:
         lst_node=None,
         parent=None,
         sequence=1,
+        debug_xmlid="",
     ):
         """
 
@@ -756,31 +854,64 @@ class ExtractorView:
             "sequence": sequence,
         }
 
-        for key, value in node.attributes.items():
-            if key == "t-name":
-                dct_attributes["t_name"] = value
-            elif key == "t-attf-class":
-                dct_attributes["t_attf_class"] = value
-            elif key == "t-if":
-                dct_attributes["t_if"] = value
-            elif key == "title":
-                dct_attributes["title"] = value
-            elif key == "aria-label":
-                dct_attributes["aria_label"] = value
-            elif key == "role":
-                dct_attributes["role"] = value
-            elif key == "name":
-                dct_attributes["name"] = value
-            elif key == "widget":
-                dct_attributes["widget"] = value
-            elif key == "domain":
-                dct_attributes["domain"] = value
-            elif key == "context":
-                dct_attributes["context"] = value
-            elif key == "class":
-                dct_attributes["class_attr"] = value
-            elif key == "string":
-                dct_attributes["label"] = value
+        if node.attributes:
+            for key, value in node.attributes.items():
+                if key == "t-name":
+                    dct_attributes["t_name"] = value
+                elif key == "t-attf-class":
+                    dct_attributes["t_attf_class"] = value
+                elif key == "t-if":
+                    dct_attributes["t_if"] = value
+                elif key == "title":
+                    dct_attributes["title"] = value
+                elif key == "aria-label":
+                    dct_attributes["aria_label"] = value
+                elif key == "role":
+                    dct_attributes["role"] = value
+                elif key == "name":
+                    # A name cannot be a number, this view is an action
+                    if value.isdigit():
+                        act_id = self.env["ir.actions.act_window"].browse(
+                            int(value)
+                        )
+                        dct_attributes["name"] = f"%({act_id.xml_id})d"
+                        dct_attributes["binding_type"] = act_id.binding_type
+                    else:
+                        dct_attributes["name"] = value
+                elif key == "widget":
+                    dct_attributes["widget"] = value
+                elif key == "domain":
+                    dct_attributes["domain"] = value
+                elif key == "context":
+                    dct_attributes["context"] = value
+                elif key == "class":
+                    dct_attributes["class_attr"] = value
+                elif key == "string":
+                    dct_attributes["label"] = value
+                elif key == "tabindex":
+                    dct_attributes["tabindex"] = value
+                elif key == "options":
+                    dct_attributes["options"] = value
+                elif key == "filter_domain":
+                    dct_attributes["filter_domain"] = value
+                elif key == "nolabel":
+                    dct_attributes["nolabel"] = value
+                elif key == "clickable":
+                    dct_attributes["clickable"] = value
+                elif key == "invisible":
+                    dct_attributes["invisible"] = value
+                elif key == "expand":
+                    dct_attributes["expand"] = value
+                elif key == "groups":
+                    dct_attributes["groups"] = value
+                elif key == "help":
+                    dct_attributes["help"] = value
+                # else:
+                #     _logger.warning(
+                #         f"Unknown node '{node.nodeName}' attribute '{key}'"
+                #         f" with value '{value}'. Already got attributes"
+                #         f" {dct_attributes} from xml_id {debug_xmlid}."
+                #     )
 
         if parent:
             dct_attributes["parent_id"] = parent.id
@@ -794,6 +925,14 @@ class ExtractorView:
             "li",
             "strong",
             "i",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "notebook",
+            "page",
+            "p",
         ):
             if lst_node:
                 # Check cached of nodes
@@ -854,6 +993,8 @@ class ExtractorView:
                     dct_attributes["expr"] = value
                 elif key == "position":
                     dct_attributes["position"] = value
+        elif node.nodeName == "#text":
+            dct_attributes["inner_text"] = node.data.strip()
         elif node.nodeName == "separator":
             # Accumulate nodes
             return True
@@ -868,10 +1009,20 @@ class ExtractorView:
             return
 
         # TODO use external function to get attributes items to remove duplicate code, search "node.attributes.items()"
-        for key, value in node.attributes.items():
-            attributes_name = dct_key_keep.get(key)
-            if attributes_name:
-                dct_attributes[attributes_name] = value
+        if node.attributes:
+            for key, value in node.attributes.items():
+                attributes_name = dct_key_keep.get(key)
+                if attributes_name:
+                    if (
+                        attributes_name == "action_name"
+                        and value.isdigit()
+                        and "name" in dct_attributes.keys()
+                    ):
+                        dct_attributes[attributes_name] = dct_attributes.get(
+                            "name"
+                        )
+                    else:
+                        dct_attributes[attributes_name] = value
         # TODO validate dct_attributes has all needed key with dct_key_keep (except button_type)
         if "button_type" in dct_attributes.keys():
             button_type_value = dct_attributes.get("button_type")
@@ -882,7 +1033,22 @@ class ExtractorView:
                     dct_attributes["button_type"] = "btn-primary"
                 elif "btn-secondary" in button_type_value:
                     dct_attributes["button_type"] = "btn-secondary"
+                elif "btn-default" in button_type_value:
+                    dct_attributes["button_type"] = "btn-default"
+                elif "btn-link" in button_type_value:
+                    dct_attributes["button_type"] = "btn-link"
+                elif "btn-success" in button_type_value:
+                    dct_attributes["button_type"] = "btn-success"
+                elif "btn-warning" in button_type_value:
+                    dct_attributes["button_type"] = "btn-warning"
+                elif "btn-danger" in button_type_value:
+                    dct_attributes["button_type"] = "btn-danger"
+                elif "oe_highlight" in button_type_value:
+                    dct_attributes["button_type"] = "oe_highlight"
+                elif "oe_stat_button" in button_type_value:
+                    dct_attributes["button_type"] = "oe_stat_button"
                 else:
+                    del dct_attributes["button_type"]
                     _logger.warning(
                         "Cannot support multiple value in button_type, value"
                         f" : {button_type_value}"
@@ -900,7 +1066,16 @@ class ExtractorView:
                 if child.nodeType is Node.TEXT_NODE:
                     data = child.data.strip()
                     if data:
-                        _logger.warning(f"Not supported : {data}.")
+                        self._extract_child_xml(
+                            child,
+                            lst_view_item_id,
+                            section_type,
+                            parent=view_item_id,
+                            sequence=child_sequence,
+                            debug_xmlid=debug_xmlid,
+                        )
+                        child_sequence += 1
+                        # _logger.warning(f"Not supported : {data}.")
                 elif child.nodeType is Node.ELEMENT_NODE:
                     self._extract_child_xml(
                         child,
@@ -908,5 +1083,6 @@ class ExtractorView:
                         section_type,
                         parent=view_item_id,
                         sequence=child_sequence,
+                        debug_xmlid=debug_xmlid,
                     )
                     child_sequence += 1

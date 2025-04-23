@@ -67,6 +67,7 @@ class ExtractorModuleFile:
         self.search_field()
         # Fill method
         self.search_import()
+        self.search_model_inherit()
         self.search_method()
 
     def extract_lambda(self, node):
@@ -77,6 +78,7 @@ class ExtractorModuleFile:
 
     def _fill_search_field(self, ast_obj, var_name=""):
         ast_obj_type = type(ast_obj)
+        result = None
         if ast_obj_type is ast.Str:
             result = ast_obj.s
         elif ast_obj_type is ast.Lambda:
@@ -85,17 +87,35 @@ class ExtractorModuleFile:
             result = ast_obj.value
         elif ast_obj_type is ast.Num:
             result = ast_obj.n
+        elif ast_obj_type is ast.UnaryOp:
+            if type(ast_obj.op) is ast.USub:
+                # value is negative
+                result = ast_obj.operand.n * -1
+            else:
+                _logger.warning(
+                    f"Cannot support keyword of variable {var_name} type"
+                    f" {ast_obj_type} operator {type(ast_obj.op)} in filename"
+                    f" {self.py_filename}."
+                )
         elif ast_obj_type is ast.Name:
             result = ast_obj.id
         elif ast_obj_type is ast.Attribute:
             # Support -> fields.Date.context_today
             parent_node = ast_obj
             lst_call_lambda = []
-            while hasattr(parent_node, "value"):
-                lst_call_lambda.insert(0, parent_node.attr)
-                parent_node = parent_node.value
-            lst_call_lambda.insert(0, parent_node.id)
-            result = ".".join(lst_call_lambda)
+            if hasattr(parent_node, "id"):
+                while hasattr(parent_node, "value"):
+                    lst_call_lambda.insert(0, parent_node.attr)
+                    parent_node = parent_node.value
+                lst_call_lambda.insert(0, parent_node.id)
+                result = ".".join(lst_call_lambda)
+            else:
+                # default=uuid.uuid4().hex
+                _logger.warning(
+                    f"Cannot support keyword of variable {var_name} type"
+                    f" {ast_obj_type} in filename {self.py_filename}, because"
+                    " parent_node is type ast.Call."
+                )
         elif ast_obj_type is ast.List:
             result = [
                 self._fill_search_field(a, var_name) for a in ast_obj.elts
@@ -112,8 +132,7 @@ class ExtractorModuleFile:
                 [self._fill_search_field(a, var_name) for a in ast_obj.elts]
             )
         else:
-            result = None
-            _logger.error(
+            _logger.warning(
                 f"Cannot support keyword of variable {var_name} type"
                 f" {ast_obj_type} in filename {self.py_filename}."
             )
@@ -362,11 +381,13 @@ class ExtractorModuleFile:
             "right",
             "left",
             "value",
+            "values",
             "exc",
             "ctx",
             "func",
             "args",
             "elts",
+            "keywords",
         ]
         for attr in lst_attr:
             if not hasattr(item, attr):
@@ -480,6 +501,15 @@ class ExtractorModuleFile:
         ):
             self.module.env["code.generator.model.code.import"].create(d)
 
+    def search_model_inherit(self):
+        has_transient_model = False
+        if self.class_model_ast.bases:
+            for ast_base in self.class_model_ast.bases:
+                inherit_model_str = self._fill_search_field(ast_base)
+                has_transient_model = (
+                    inherit_model_str == "models.TransientModel"
+                )
+
     def search_method(self):
         use_astor = False
         sequence = -1
@@ -497,6 +527,9 @@ class ExtractorModuleFile:
                     elif node.targets[0].id == "_rec_name":
                         value = self._fill_search_field(node.value)
                         self.model_id.rec_name = value
+                    elif node.targets[0].id == "_order":
+                        value = self._fill_search_field(node.value)
+                        self.model_id.order = value
                     elif node.targets[0].id == "_inherit":
                         value = self._fill_search_field(node.value)
                         if type(value) is list:

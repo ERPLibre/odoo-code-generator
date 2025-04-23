@@ -1909,6 +1909,7 @@ _logger = logging.getLogger(__name__)"""
         #
         for act_window in act_window_ids:
             # Use descriptive method when contain this attributes, not supported in simplify view
+            # TODO why support non complex view, its suppose to be the default view
             use_complex_view = bool(
                 act_window.groups_id
                 or act_window.help
@@ -1927,8 +1928,24 @@ _logger = logging.getLogger(__name__)"""
                     act_window, creating=True
                 )
 
+            cg_act_window_id = (
+                self.env["code.generator.act_window"]
+                .search([("id_name", "=", record_id)], limit=1)
+                .exists()
+            )
+
             has_menu = bool(
                 module.with_context({"ir.ui.menu.full_list": True}).o2m_menus
+            )
+            view_type = (
+                cg_act_window_id.view_type
+                if cg_act_window_id and cg_act_window_id.view_type
+                else act_window.view_type
+            )
+            view_mode = (
+                cg_act_window_id.view_mode
+                if cg_act_window_id and cg_act_window_id.view_mode
+                else act_window.view_mode
             )
             # TODO if not complex, search if associate with a menu. If the menu is not generated, don't generate is act_window
             if use_complex_view:
@@ -1994,18 +2011,11 @@ _logger = logging.getLogger(__name__)"""
                         E.field({"name": "target"}, act_window.target)
                     )
 
-                if (
-                    act_window.view_mode != "tree,form"
-                    and act_window.view_mode != "form,tree"
-                ):
-                    lst_field.append(
-                        E.field({"name": "view_mode"}, act_window.view_mode)
-                    )
+                if view_mode != "tree,form" and view_mode != "form,tree":
+                    lst_field.append(E.field({"name": "view_mode"}, view_mode))
 
-                if act_window.view_type != "form":
-                    lst_field.append(
-                        E.field({"name": "view_type"}, act_window.view_type)
-                    )
+                if view_type != "form":
+                    lst_field.append(E.field({"name": "view_type"}, view_type))
 
                 if act_window.usage:
                     lst_field.append(
@@ -2097,11 +2107,11 @@ _logger = logging.getLogger(__name__)"""
                 if act_window.target != "current":
                     dct_act_window["target"] = act_window.target
 
-                if act_window.view_mode != "tree,form":
-                    dct_act_window["view_mode"] = act_window.view_mode
+                if view_mode != "tree,form":
+                    dct_act_window["view_mode"] = view_mode
 
-                if act_window.view_type != "form":
-                    dct_act_window["view_type"] = act_window.view_type
+                if view_type != "form":
+                    dct_act_window["view_type"] = view_type
 
                 if act_window.usage:
                     # TODO replace ref
@@ -2218,6 +2228,9 @@ _logger = logging.getLogger(__name__)"""
         for key, value in dct_replace.items():
             str_content = str_content.replace(key, value)
         str_content = self._change_xml_2_to_4_spaces(str_content)[:-1]
+        # Patch, because xml domain is better with <>
+        str_content = str_content.replace("'&gt;'", "'>'")
+        str_content = str_content.replace("'&lt;'", "'<'")
 
         wizards_path = self.code_generator_data.wizards_path
         views_path = self.code_generator_data.views_path
@@ -2494,38 +2507,44 @@ _logger = logging.getLogger(__name__)"""
             rec_name = self._get_rec_name_inherit_model(model)
             if rec_name:
                 cw.emit(f"_rec_name = '{rec_name}'")
+            if model.order:
+                new_order = model.order.replace("'", "\\'")
+                cw.emit(f"_order = '{new_order}'")
 
             # TODO _order, _local_fields, _period_number, _inherits, _log_access, _auto, _parent_store
             # TODO _parent_name
 
             self._get_model_constrains(cw, model, module)
 
-            self._get_model_fields(cw, model, module)
+            f2exports = self._get_model_fields_f2export(model, module)
+
+            lst_method_before = []
+            # Detect method to move before field
+            for ir_model_field_id in f2exports:
+                if ir_model_field_id.default_lambda:
+                    for code_id in code_ids:
+                        if code_id.name == ir_model_field_id.default_lambda:
+                            lst_method_before.append(code_id)
+
+            lst_method_after = [
+                code_id
+                for code_id in code_ids
+                if code_id not in lst_method_before
+            ]
+
+            self._write_code(
+                cw, model, module, lst_method_before, key_special_endline
+            )
+
+            self._get_model_fields(cw, model, module, f2exports)
 
             # code_ids = self.env["code.generator.model.code"].search(
             #     [("m2o_module", "=", module.id)]
             # )
 
-            # Add function
-            for code in code_ids:
-                cw.emit()
-                if code.decorator:
-                    for line in code.decorator.split(";"):
-                        if line:
-                            cw.emit(line)
-                return_v = "" if not code.returns else f" -> {code.returns}"
-                cw.emit(f"def {code.name}({code.param}){return_v}:")
-
-                code_traited = code.code.replace("\\\n", key_special_endline)
-                code_traited = code_traited.replace("\\'", "\\\\'")
-                code_traited = code_traited.replace("\b", "\\b")
-                with cw.indent():
-                    for code_line in code_traited.split("\n"):
-                        if key_special_endline in code_line:
-                            code_line = code_line.replace(
-                                key_special_endline, "\\\\n"
-                            )
-                        cw.emit(code_line)
+            self._write_code(
+                cw, model, module, lst_method_after, key_special_endline
+            )
 
         if model.transient:
             pypath = self.code_generator_data.wizards_path
@@ -2934,11 +2953,23 @@ _logger = logging.getLogger(__name__)"""
                                     :63
                                 ].trim("_")
                         dct_field_attribute["relation"] = new_relation_table
-                domain_info = extra_info.get("domain")
+                if extra_info:
+                    domain_info = extra_info.get("domain")
+                else:
+                    domain_info = ""
                 if f2export.domain and f2export.domain != "[]":
                     dct_field_attribute["domain"] = f2export.domain
                 elif domain_info and domain_info != "[]":
                     dct_field_attribute["domain"] = domain_info
+                if f2export.force_domain:
+                    try:
+                        eval(f2export.force_domain)
+                        dct_field_attribute[
+                            "domain_raw"
+                        ] = f2export.force_domain
+                    except Exception as e:
+                        # Cannot transform it in string
+                        dct_field_attribute["domain"] = f2export.force_domain
 
                 if (
                     f2export.ttype == "many2one"
@@ -3015,8 +3046,9 @@ _logger = logging.getLogger(__name__)"""
             # Get default value
             default_lambda = f2export.get_default_lambda()
             if default_lambda:
-                dct_field_attribute["default"] = default_lambda.replace(
-                    "'", '"'
+                dct_field_attribute["default"] = (
+                    "noquote",
+                    default_lambda.replace("'", '"'),
                 )
             else:
                 default_value = None
@@ -3130,33 +3162,41 @@ _logger = logging.getLogger(__name__)"""
             if lst_attribute_to_filter and key not in lst_attribute_to_filter:
                 continue
             if type(value) is str:
-                # TODO find another solution than removing \n, this cause error with cw.CodeWriter
-                copy_value = value.replace("'", "\\'")
-                value = value.replace("\n", " ").replace("'", "\\'")
-                if key == "comodel_name":
-                    lst_first_field_attribute.append(f"{key}='{value}'")
-                elif key == "ondelete":
-                    lst_last_field_attribute.append(f"{key}='{value}'")
+                if key == "domain_raw":
+                    lst_last_field_attribute.append(f"domain={value}")
                 else:
-                    if (
-                        value.startswith("lambda")
-                        or value.startswith("date")
-                        or value.startswith("datetime")
-                    ):
-                        # Exception for lambda
-                        lst_field_attribute.append(f"{key}={value}")
+                    # TODO find another solution than removing \n, this cause error with cw.CodeWriter
+                    copy_value = value.replace("'", "\\'")
+                    value = value.replace("\n", " ").replace("'", "\\'")
+                    if key == "comodel_name":
+                        lst_first_field_attribute.append(f"{key}='{value}'")
+                    elif key == "ondelete":
+                        lst_last_field_attribute.append(f"{key}='{value}'")
                     else:
                         if "\n" in copy_value:
                             has_endline = True
-                            lst_field_attribute.append(
-                                f"{key}='''{copy_value}'''"
-                            )
+                            if '"""' in copy_value:
+                                lst_field_attribute.append(
+                                    f"{key}='''{copy_value}'''"
+                                )
+                            elif "'''" in copy_value:
+                                lst_field_attribute.append(
+                                    f'{key}="""{copy_value}"""'
+                                )
+                            else:
+                                lst_field_attribute.append(
+                                    f'{key}="""{copy_value}"""'
+                                )
                         else:
                             lst_field_attribute.append(f"{key}='{copy_value}'")
-            elif type(value) is list:
+            elif type(value) is list or type(value) is tuple:
                 # TODO find another solution than removing \n, this cause error with cw.CodeWriter
-                new_value = str(value).replace("\n", " ")
-                lst_field_attribute.append(f"{key}={new_value}")
+                if key == "default" and value[0] == "noquote":
+                    # Exception for lambda
+                    lst_field_attribute.append(f"{key}={value[1]}")
+                else:
+                    new_value = str(value).replace("\n", " ")
+                    lst_field_attribute.append(f"{key}={new_value}")
             else:
                 lst_field_attribute.append(f"{key}={value}")
 
@@ -3168,7 +3208,7 @@ _logger = logging.getLogger(__name__)"""
 
         return lst_field_attribute, has_endline, compute, True
 
-    def _get_model_fields(self, cw, model, module):
+    def _get_model_fields_f2export(self, model, module):
         """
         Function to obtain the model fields
         :param model:
@@ -3189,8 +3229,6 @@ _logger = logging.getLogger(__name__)"""
             .sorted(key=lambda r: r.code_generator_sequence)
             .with_context(lang=None)
         )
-
-        lst_inherit_model = self._get_lst_inherit_model(model)
 
         if model.inherit_model_ids:
             is_whitelist = any(
@@ -3221,6 +3259,63 @@ _logger = logging.getLogger(__name__)"""
             #     f2exports = f2exports.filtered(
             #         lambda field: field.name not in list(set_unique_field)
             #     ).with_context(lang=None)
+        return f2exports
+
+    def _write_code(self, cw, model, module, code_ids, key_special_endline):
+        # Add function
+        for code in code_ids:
+            cw.emit()
+            if code.decorator:
+                for line in code.decorator.split(";"):
+                    if line:
+                        cw.emit(line)
+            return_v = "" if not code.returns else f" -> {code.returns}"
+            # TODO Bug from uca, into ucb hook, so patch it
+            param_formatted = code.param.replace("='''", '="\'"')
+            cw.emit(f"def {code.name}({param_formatted}){return_v}:")
+
+            code_formatted = code.code.replace("\\\n", key_special_endline)
+            code_formatted = code_formatted.replace("\\'", "\\\\'")
+            code_formatted = code_formatted.replace("\b", "\\b")
+            # TODO Bug from uca, into ucb hook, so patch it
+            code_formatted = code_formatted.replace("'\\\"'", "'\\\\\"'")
+            code_formatted = code_formatted.replace("\"''", "\"\\''")
+            code_formatted = code_formatted.replace('}"\'"', '}\\"\'"')
+            code_formatted = code_formatted.replace(
+                "osascript -e ", "osascript -e \\"
+            )
+            code_formatted = code_formatted.replace(
+                '\\"{cmd}{str_keep_open}\\"',
+                '\\\\"{cmd}{str_keep_open}\\\\"',
+            )
+            code_formatted = code_formatted.replace(
+                'grep -nr "{s_value_error}"',
+                'grep -nr \\\\"{s_value_error}"\\\\',
+            )
+            code_formatted = code_formatted.replace(
+                'force replace " to "', 'force replace " to \\"'
+            )
+            code_formatted = code_formatted.replace(
+                "{value_error}", "\\{value_error}"
+            )
+            code_formatted = code_formatted.replace(
+                '\\"{s_value_error}\\"', '\\\\"{s_value_error}\\\\"'
+            )
+            with cw.indent():
+                for code_line in code_formatted.split("\n"):
+                    if key_special_endline in code_line:
+                        code_line = code_line.replace(
+                            key_special_endline, "\\\\n"
+                        )
+                    cw.emit(code_line)
+
+    def _get_model_fields(self, cw, model, module, f2exports):
+        """
+        Function to obtain the model fields
+        :param model:
+        :return:
+        """
+        lst_inherit_model = self._get_lst_inherit_model(model)
 
         # Force field name first
         field_rec_name = model.get_rec_name()
@@ -3270,10 +3365,7 @@ _logger = logging.getLogger(__name__)"""
             # TODO éviter d'écraser une valeur pour le multi héritage
             for field_inherit in lst_field_inherit:
                 for attr_name in lst_attribute_check_diff:
-                    try:
-                        actual_value = getattr(f2export, attr_name)
-                    except Exception as e:
-                        print(e)
+                    actual_value = getattr(f2export, attr_name)
                     inherit_value = getattr(field_inherit, attr_name)
                     if actual_value != inherit_value:
                         dct_field_attr_diff[attr_name].append(inherit_value)
@@ -3428,19 +3520,20 @@ _logger = logging.getLogger(__name__)"""
         module.module_file_sync = {}
 
         if module.template_model_name or module.template_inherit_model_name:
-            i = -1
             lst_model = f"{module.template_model_name};{module.template_inherit_model_name}".strip(
                 ";"
             ).split(
                 ";"
             )
+            last_extractor_view = None
+            last_extractor_view_with_cg = None
             for model in lst_model:
-                i += 1
                 model = model.strip()
                 if model:
-                    module.view_file_sync[model] = ExtractorView(
-                        module, model, i
-                    )
+                    last_extractor_view = ExtractorView(module, model)
+                    module.view_file_sync[model] = last_extractor_view
+                    if last_extractor_view.code_generator_id:
+                        last_extractor_view_with_cg = last_extractor_view
                     module.module_file_sync[model] = ExtractorModule(
                         module, model, module.view_file_sync[model]
                     )
@@ -3448,6 +3541,9 @@ _logger = logging.getLogger(__name__)"""
                     ExtractorController(
                         module, model, module.module_file_sync[model]
                     )
+            if last_extractor_view_with_cg:
+                # TODO this seems an hack to extract menu, need another method
+                last_extractor_view_with_cg.parse_menu()
 
         for model in module.o2m_models:
 

@@ -582,9 +582,33 @@ class CodeGeneratorModule(models.Model):
                         )
                     ]
                 else:
-                    _logger.error(
-                        f"Cannot found rec_name for model {model_model}."
-                    )
+                    # Step 1, search a random char
+                    lst_field_id_type_char = [
+                        name
+                        for name, info in dct_field.items()
+                        if info.get("ttype") in ["char", "text"]
+                    ]
+                    if lst_field_id_type_char:
+                        field_id_type_char = lst_field_id_type_char[0]
+                        value["rec_name"] = field_id_type_char
+                    else:
+                        # Step 2, if not found, create name
+                        _logger.warning(
+                            f"Missing rec_name for model {model_model}, force"
+                            " create field 'name' type char."
+                        )
+                        value["rec_name"] = "name"
+                        value["field_id"].append(
+                            (
+                                0,
+                                0,
+                                {
+                                    "name": "name",
+                                    "field_description": "Name",
+                                    "ttype": "char",
+                                },
+                            )
+                        )
 
             model_id = self.env["ir.model"].create(value)
 
@@ -596,8 +620,10 @@ class CodeGeneratorModule(models.Model):
 
     def _check_relation_many2many(self, model_model, field_value):
         relation_name = field_value.get("relation")
-        comodel_name = relation_name.replace(".", "_")
-        str_model_model = model_model.replace(".", "_")
+        comodel_name = ""
+        if relation_name:
+            comodel_name = relation_name.replace(".", "_")
+            str_model_model = model_model.replace(".", "_")
         if not comodel_name:
             _logger.warning(f"Missing relation for field_value {field_value}")
         else:
@@ -707,8 +733,11 @@ class CodeGeneratorModule(models.Model):
 
     @api.multi
     def unlink(self):
-        o2m_models = self.mapped("o2m_models")
+        o2m_models = self.mapped("o2m_models").filtered(
+            lambda m: m.state == "manual"
+        )
         if o2m_models:
             o2m_models.mapped("view_ids").unlink()
+            # TODO need to support logic unlink depend from interdependency
             o2m_models.unlink()  # I need to delete the created tables
         return super(CodeGeneratorModule, self).unlink()

@@ -6,14 +6,14 @@ from code_writer import CodeWriter
 from odoo import api, fields, models
 from odoo.models import MAGIC_COLUMNS
 
-MAGIC_FIELDS = MAGIC_COLUMNS + [
+MAGIC_FIELDS_MODELS = MAGIC_COLUMNS + [
     "display_name",
     "__last_update",
     "access_url",
     "access_token",
     "access_warning",
-    "name",
 ]
+MAGIC_FIELDS = MAGIC_FIELDS_MODELS + ["name"]
 BREAK_LINE = ["\n"]
 FROM_ODOO_IMPORTS_SUPERUSER = [
     "from odoo import _, api, models, fields, SUPERUSER_ID"
@@ -65,13 +65,13 @@ class CodeGeneratorWriter(models.Model):
     def _write_generated_template(self, module, model_model, cw):
         pass
 
-    def _write_sync_view_component(self, view_item_ids, cw, parent=None):
+    def _write_sync_view_component(
+        self, view_item_ids, cw, view_id, parent=None, sequence_level_parent=1
+    ):
         for view_item_id in view_item_ids:
-            # TODO view_item can be duplicated, use unique name
+            other_name = f"view_item_{view_item_id.section_type}_{view_item_id.item_type}_p{sequence_level_parent}"
             var_create_view_item = (
-                "view_item"
-                if not view_item_id.child_id
-                else f"view_item_{view_item_id.section_type}_{view_item_id.item_type}_{view_item_id.sequence}"
+                "view_item" if not view_item_id.child_id else other_name
             )
             with cw.block(
                 before=(
@@ -122,6 +122,41 @@ class CodeGeneratorWriter(models.Model):
                     if view_item_id.class_attr:
                         cw.emit(f'"class_attr": "{view_item_id.class_attr}",')
 
+                    if view_item_id.attrs:
+                        cw.emit(f'"attrs": "{view_item_id.attrs}",')
+
+                    if view_item_id.tabindex:
+                        cw.emit(f'"tabindex": "{view_item_id.tabindex}",')
+
+                    if view_item_id.invisible:
+                        cw.emit(f'"invisible": "{view_item_id.invisible}",')
+
+                    if view_item_id.groups:
+                        cw.emit(f'"groups": "{view_item_id.groups}",')
+
+                    if view_item_id.options:
+                        options_formatted = view_item_id.options.replace(
+                            "'", "\\'"
+                        )
+                        cw.emit(f"\"options\": '{options_formatted}',")
+
+                    if view_item_id.filter_domain:
+                        cw.emit(
+                            f'"filter_domain": "{view_item_id.filter_domain}",'
+                        )
+
+                    if view_item_id.nolabel:
+                        cw.emit(f'"nolabel": "{view_item_id.nolabel}",')
+
+                    if view_item_id.clickable:
+                        cw.emit(f'"clickable": "{view_item_id.clickable}",')
+
+                    if view_item_id.expand:
+                        cw.emit(f'"expand": "{view_item_id.expand}",')
+
+                    if view_item_id.help:
+                        cw.emit(f'"help": "{view_item_id.help}",')
+
                     if view_item_id.item_type == "button":
                         cw.emit(
                             f'"action_name": "{view_item_id.action_name}",'
@@ -129,6 +164,11 @@ class CodeGeneratorWriter(models.Model):
                         if view_item_id.button_type:
                             cw.emit(
                                 f'"button_type": "{view_item_id.button_type}",'
+                            )
+                        if view_item_id.binding_type:
+                            cw.emit(
+                                '"binding_type":'
+                                f' "{view_item_id.binding_type}",'
                             )
                         if view_item_id.icon:
                             cw.emit(f'"icon": "{view_item_id.icon}",')
@@ -144,9 +184,11 @@ class CodeGeneratorWriter(models.Model):
                             )
                         if view_item_id.password:
                             cw.emit(f'"password": {view_item_id.password},')
-                    elif view_item_id.item_type in ("group", "div"):
-                        if view_item_id.attrs:
-                            cw.emit(f'"attrs": "{view_item_id.attrs}",')
+                    elif view_item_id.item_type == "#text":
+                        cw.emit(f'"inner_text": "{view_item_id.inner_text}",')
+                    # elif view_item_id.item_type in ("group", "div"):
+                    #     if view_item_id.attrs:
+                    #         cw.emit(f'"attrs": "{view_item_id.attrs}",')
                     elif view_item_id.item_type == "xpath":
                         if not view_item_id.expr or not view_item_id.position:
                             _logger.error(
@@ -188,7 +230,11 @@ class CodeGeneratorWriter(models.Model):
 
             if view_item_id.child_id:
                 self._write_sync_view_component(
-                    view_item_id.child_id, cw, parent=var_create_view_item
+                    view_item_id.child_id,
+                    cw,
+                    view_id,
+                    parent=var_create_view_item,
+                    sequence_level_parent=sequence_level_parent + 1,
                 )
 
     def _write_block_template_views(
@@ -205,7 +251,7 @@ class CodeGeneratorWriter(models.Model):
                 and not field.parent_id
             )
 
-            self._write_sync_view_component(view_item_ids, cw)
+            self._write_sync_view_component(view_item_ids, cw, view_id)
 
         cw.emit('view_code_generator = env["code.generator.view"].create(')
         with cw.block(delim=("{", "}")):
@@ -217,6 +263,46 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit(f'"view_attr_string": "{view_id.view_attr_string}",')
             if view_id.view_attr_class:
                 cw.emit(f'"view_attr_class": "{view_id.view_attr_class}",')
+            if view_id.view_attr_decoration_danger:
+                cw.emit(
+                    '"view_attr_decoration_danger":'
+                    f' "{view_id.view_attr_decoration_danger}",'
+                )
+            if view_id.view_attr_decoration_success:
+                cw.emit(
+                    '"view_attr_decoration_success":'
+                    f' "{view_id.view_attr_decoration_success}",'
+                )
+            if view_id.view_attr_decoration_primary:
+                cw.emit(
+                    '"view_attr_decoration_primary":'
+                    f' "{view_id.view_attr_decoration_primary}",'
+                )
+            if view_id.view_attr_decoration_bf:
+                cw.emit(
+                    '"view_attr_decoration_bf":'
+                    f' "{view_id.view_attr_decoration_bf}",'
+                )
+            if view_id.view_attr_decoration_it:
+                cw.emit(
+                    '"view_attr_decoration_it":'
+                    f' "{view_id.view_attr_decoration_it}",'
+                )
+            if view_id.view_attr_decoration_info:
+                cw.emit(
+                    '"view_attr_decoration_info":'
+                    f' "{view_id.view_attr_decoration_info}",'
+                )
+            if view_id.view_attr_decoration_warning:
+                cw.emit(
+                    '"view_attr_decoration_warning":'
+                    f' "{view_id.view_attr_decoration_warning}",'
+                )
+            if view_id.view_attr_decoration_muted:
+                cw.emit(
+                    '"view_attr_decoration_muted":'
+                    f' "{view_id.view_attr_decoration_muted}",'
+                )
             cw.emit(f'"m2o_model": {view_item.var_model_name}.id,')
             cw.emit('"view_item_ids": [(6, 0, lst_item_view)],')
             if view_id.has_body_sheet:
@@ -357,6 +443,19 @@ class CodeGeneratorWriter(models.Model):
                                 cw.emit(
                                     f'"model_name": "{act_win_id.model_name}",'
                                 )
+                            if act_win_id.view_type:
+                                cw.emit(
+                                    f'"view_type": "{act_win_id.view_type}",'
+                                )
+                            if act_win_id.view_mode:
+                                cw.emit(
+                                    f'"view_mode": "{act_win_id.view_mode}",'
+                                )
+                            if (
+                                act_win_id.target
+                                and act_win_id.target != "current"
+                            ):
+                                cw.emit(f'"target": "{act_win_id.target}",')
                     cw.emit()
         cw.emit()
         if view_item.code_generator_id.code_generator_menus_id:
@@ -468,6 +567,8 @@ class CodeGeneratorWriter(models.Model):
                 )
             for line in module.hook_constant_code.split("\n"):
                 cw.emit(line)
+
+        self.code_write_hook_header_inherit(cw, module)
 
         def _add_hook(
             module,
@@ -864,11 +965,8 @@ class CodeGeneratorWriter(models.Model):
                                     continue
                                 lst_model_id.append(model_id)
 
-                            len_model = len(lst_model)
-                            i = -1
                             dct_model_one2many = {}
-                            for model_id in lst_model_id:
-                                i += 1
+                            for i, model_id in enumerate(lst_model_id):
                                 if module.enable_sync_template:
                                     view_file_sync = module.view_file_sync.get(
                                         model_id.model
@@ -941,14 +1039,18 @@ class CodeGeneratorWriter(models.Model):
                                         model_id.model
                                     ] = dct_field_data_one2many
 
-                                self.write_model(
-                                    cw,
-                                    model_id,
-                                    application_name,
-                                    module,
-                                    dct_field_data,
-                                )
-                                if i >= len_model - 1 and dct_model_one2many:
+                                if model_id:
+                                    self.write_model(
+                                        cw,
+                                        model_id,
+                                        application_name,
+                                        module,
+                                        dct_field_data,
+                                    )
+                                if (
+                                    i >= len(lst_model_id) - 1
+                                    and dct_model_one2many
+                                ):
                                     cw.emit()
                                     cw.emit(
                                         "# Added one2many field,"
@@ -993,16 +1095,174 @@ class CodeGeneratorWriter(models.Model):
                                     module, model_id.model, cw
                                 )
                                 cw.emit()
-                                # TODO add data nomenclator, research data from model
-                                # TODO By default, no data will be nomenclator
-                                # cw.emit("# Add data nomenclator")
-                                # cw.emit("value = {")
-                                # with cw.indent():
-                                #     cw.emit("\"field_boolean\": True,")
-                                #     cw.emit("\"name\": \"demo\",")
-                                # cw.emit("}")
-                                # cw.emit(f"env[\"{model_id.model}\"].create(value)")
-                                # cw.emit()
+                                # Nomenclator, export data
+                                data_export_ids = None
+                                if (
+                                    (
+                                        model_id.nomenclator
+                                        or module.template_auto_export_data
+                                    )
+                                    and not module.template_ignore_export_data
+                                ):
+                                    lst_model_exclude = [
+                                        a.strip()
+                                        for a in module.template_auto_export_data_exclude_model.split(
+                                            ";"
+                                        )
+                                    ]
+                                    if not lst_model_exclude or (
+                                        lst_model_exclude
+                                        and model_id.model
+                                        not in lst_model_exclude
+                                    ):
+                                        data_export_ids = self.env[
+                                            model_id.model
+                                        ].search([])
+                                if data_export_ids:
+                                    cw.emit("# Add data nomenclator")
+                                    for data_export_id in data_export_ids:
+                                        cw.emit("value = {")
+                                        with cw.indent():
+                                            for (
+                                                field_name,
+                                                dct_info,
+                                            ) in dct_field_data.items():
+                                                # for field_id in model_id.field_id:
+                                                #     if field_id.name not in MAGIC_FIELDS_MODELS:
+                                                #         value = getattr(data_export_id, field_id.name)
+                                                value = getattr(
+                                                    data_export_id, field_name
+                                                )
+
+                                                info_default = dct_info.get(
+                                                    "default", False
+                                                )
+                                                if (
+                                                    type(info_default) is tuple
+                                                    and info_default[0]
+                                                    == "noquote"
+                                                ):
+                                                    info_default = (
+                                                        info_default[1]
+                                                    )
+                                                if (
+                                                    dct_info.get("ttype")
+                                                    == "boolean"
+                                                ):
+                                                    if info_default is None:
+                                                        info_default = False
+                                                elif (
+                                                    dct_info.get("ttype")
+                                                    == "integer"
+                                                ):
+                                                    if info_default is None:
+                                                        info_default = 0
+                                                elif (
+                                                    dct_info.get("ttype")
+                                                    == "float"
+                                                ):
+                                                    if info_default is None:
+                                                        info_default = 0.0
+                                                if (
+                                                    value == info_default
+                                                    and dct_info.get(
+                                                        "required", False
+                                                    )
+                                                    is False
+                                                ):
+                                                    # Ignore default value
+                                                    continue
+
+                                                if dct_info.get("ttype") in [
+                                                    "boolean",
+                                                    "integer",
+                                                    "float",
+                                                ]:
+                                                    cw.emit(
+                                                        f'"{field_name}":'
+                                                        f" {value},"
+                                                    )
+                                                elif dct_info.get("ttype") in [
+                                                    "char",
+                                                    "text",
+                                                    "html",
+                                                    "selection",
+                                                ]:
+                                                    if value is False:
+                                                        continue
+                                                    if "\n" in value:
+                                                        pass
+                                                        # cw.emit(f'"{field_id.name}": """{value}""",')
+                                                    else:
+                                                        if '"' in value:
+                                                            cw.emit(
+                                                                f'"{field_name}":'
+                                                                f" '{value}',"
+                                                            )
+                                                        else:
+                                                            cw.emit(
+                                                                f'"{field_name}":'
+                                                                f' "{value}",'
+                                                            )
+                                                # elif field_id.ttype == "many2one":
+                                                #     cw.emit(f"\"{field_id.name}\": \"{value}\",")
+                                                else:
+                                                    _logger.warning(
+                                                        "Cannot support type"
+                                                        f" {dct_info.get('ttype')} when"
+                                                        " extract data."
+                                                    )
+                                        cw.emit("}")
+                                        cw.emit(
+                                            f'env["{model_id.model}"].create(value)'
+                                        )
+                                        model_data_id = self.env[
+                                            "ir.model.data"
+                                        ].search(
+                                            [
+                                                (
+                                                    "module",
+                                                    "=",
+                                                    module.template_module_name,
+                                                ),
+                                                ("model", "=", model_id.model),
+                                                (
+                                                    "res_id",
+                                                    "=",
+                                                    data_export_id.id,
+                                                ),
+                                            ]
+                                        )
+                                        if model_data_id:
+                                            with cw.block(
+                                                before="value =",
+                                                delim=("{", "}"),
+                                            ):
+                                                cw.emit(
+                                                    '"name":'
+                                                    f' "{model_data_id.name}",'
+                                                )
+                                                cw.emit(
+                                                    '"model":'
+                                                    f' "{model_data_id.model}",'
+                                                )
+                                                cw.emit(
+                                                    '"module":'
+                                                    f' "{model_data_id.module}",'
+                                                )
+                                                cw.emit(
+                                                    '"res_id":'
+                                                    f" {model_data_id.res_id},"
+                                                )
+                                                cw.emit(
+                                                    '"noupdate":'
+                                                    f" {model_data_id.noupdate},"
+                                                )
+                                            cw.emit(
+                                                'env["ir.model.data"].create(value)'
+                                            )
+                                        cw.emit()
+
                                 # Generate code
                                 self.write_code(cw, model_id, module)
 
@@ -1164,6 +1424,7 @@ class CodeGeneratorWriter(models.Model):
                         cw.emit("if code_generator_id:")
                         with cw.indent():
                             cw.emit("code_generator_id.unlink()")
+                    self.code_write_hook_inherit(cw, module, method_name)
 
         _add_hook(
             module,
@@ -1204,6 +1465,12 @@ class CodeGeneratorWriter(models.Model):
 
         self.code_generator_data.write_file_str(hook_file_path, cw.render())
 
+    def code_write_hook_header_inherit(self, cw, module):
+        pass
+
+    def code_write_hook_inherit(self, cw, module, method_name):
+        pass
+
     def write_model(
         self,
         cw,
@@ -1228,11 +1495,17 @@ class CodeGeneratorWriter(models.Model):
         # Prepare model data
         dct_model_data = {}
         if (
-            model_id
-            and model_id.description
+            model_id.description
             # and model_id.description != model_id.name
         ):
             dct_model_data["description"] = model_id.description
+        if (
+            module.template_auto_export_data
+            and not module.template_ignore_export_data
+        ):
+            dct_model_data["nomenclator"] = True
+        if model_id.order:
+            dct_model_data["order"] = model_id.order
         if application_name.lower() == "demo":
             dct_model_data["menu_name_keep_application"] = True
         if model_id.enable_activity or field_id_track:
@@ -1425,14 +1698,14 @@ class CodeGeneratorWriter(models.Model):
 
             if field_id.comment_before:
                 dct_field_value["comment_before"] = field_id.comment_before
-            elif ast_attr.get("comment_before"):
+            elif ast_attr and ast_attr.get("comment_before"):
                 dct_field_value["comment_before"] = ast_attr.get(
                     "comment_before"
                 )
 
             if field_id.comment_after:
                 dct_field_value["comment_after"] = field_id.comment_after
-            elif ast_attr.get("comment_after"):
+            elif ast_attr and ast_attr.get("comment_after"):
                 dct_field_value["comment_after"] = ast_attr.get(
                     "comment_after"
                 )
@@ -1442,7 +1715,7 @@ class CodeGeneratorWriter(models.Model):
 
             field_domain = extra_info.get("domain")
             if field_domain:
-                dct_field_value["domain"] = field_domain
+                dct_field_value["force_domain"] = field_domain
 
             if field_id.help:
                 dct_field_value["help"] = field_id.help
@@ -1476,14 +1749,17 @@ class CodeGeneratorWriter(models.Model):
                         "html",
                     ):
                         # TODO how better support, remove the quote when it's a variable
-                        dct_field_value["default"] = ("noquote", default_value)
-                        if (
-                            type(default_value) is str
-                            and "\n" in default_value
-                        ):
-                            _logger.error(
-                                "Cannot support endline in default_value"
-                                f" '{default_value}', ast: '{ast_attr}'"
+                        if type(default_value) is str:
+                            if "\n" in default_value:
+                                _logger.error(
+                                    "Cannot support endline in default_value"
+                                    f" '{default_value}', ast: '{ast_attr}'"
+                                )
+                            dct_field_value["default_lambda"] = default_value
+                        else:
+                            dct_field_value["default"] = (
+                                "noquote",
+                                default_value,
                             )
                     else:
                         dct_field_value["default"] = default_value
@@ -1496,6 +1772,19 @@ class CodeGeneratorWriter(models.Model):
                 if "context" in ast_attr.keys():
                     dct_field_value["field_context"] = str(
                         ast_attr.get("context")
+                    )
+
+                if "readonly" in ast_attr.keys():
+                    dct_field_value["readonly"] = bool(
+                        ast_attr.get("readonly")
+                    )
+
+                if "index" in ast_attr.keys():
+                    dct_field_value["index"] = int(ast_attr.get("index"))
+
+                if "ondelete" in ast_attr.keys():
+                    dct_field_value["on_delete"] = str(
+                        ast_attr.get("ondelete")
                     )
 
                 compute = ast_attr.get("compute") if ast_attr else None
@@ -1685,14 +1974,23 @@ class CodeGeneratorWriter(models.Model):
                     for code_id in code_ids:
                         with cw.block(delim=("{", "}")):
                             lst_line = code_id.code.split("\n")
+                            char_str_sep = (
+                                "'''"
+                                if '"""' in code_id.code
+                                or code_id.code.strip()[-1] == '"'
+                                else '"""'
+                            )
                             if len(lst_line) == 1:
-                                cw.emit(f"\"code\": '''{lst_line[0]}''',")
+                                cw.emit(
+                                    '"code":'
+                                    f" {char_str_sep}{lst_line[0]}{char_str_sep},"
+                                )
                             else:
-                                cw.emit(f"\"code\": '''{lst_line[0]}")
+                                cw.emit(f'"code": {char_str_sep}{lst_line[0]}')
                             for line in lst_line[1:-1]:
                                 cw.emit_raw(line + "\n")
                             if len(lst_line) > 1:
-                                cw.emit_raw(f"{lst_line[-1]}''',\n")
+                                cw.emit_raw(f"{lst_line[-1]}{char_str_sep},\n")
                             cw.emit(f'"name": "{code_id.name}",')
                             if code_id.decorator:
                                 cw.emit(f'"decorator": "{code_id.decorator}",')

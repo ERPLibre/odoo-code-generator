@@ -193,6 +193,36 @@ class CodeGeneratorDb(models.Model):
         else:
             raise ValidationError(CONNECTIONPROBLEM)
 
+    @api.multi
+    def get_tables_with_data(self, table_ids=None):
+        """
+        Return code.generator.db.table ids for all tables with data, or search on table_ids parameter
+        """
+        table_result_ids = self.env["code.generator.db.table"]
+        for rec in self:
+            cr = self.get_db_cr(
+                sgdb=rec.m2o_dbtype_name,
+                database=rec.database,
+                host=rec.host,
+                port=rec.port,
+                user=rec.user,
+                password=rec.password,
+            )
+            lst_table = (
+                table_ids
+                if table_ids
+                else self.env["code.generator.db.table"].search(
+                    [("m2o_db", "=", rec.id)]
+                )
+            )
+            for table_id in lst_table:
+                query = f"SELECT COUNT(*) AS nb_elements FROM {table_id.name};"
+                cr.execute(query)
+                for element_count in cr.fetchall():
+                    if element_count[0]:
+                        table_result_ids += table_id
+        return table_result_ids
+
     @staticmethod
     def get_db_query_4_tables(sgdb, schema, database):
         """

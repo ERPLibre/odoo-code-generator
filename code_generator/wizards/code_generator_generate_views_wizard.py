@@ -1949,14 +1949,27 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
     def _generate_xml_button(self, item, model_id, lst_child_update=None):
         button_attributes = {
             "name": item.action_name,
-            "type": "object",
         }
         if item.label:
             button_attributes["string"] = item.label
+        # TODO can have others type
+        button_attributes["type"] = "object"
         if item.button_type:
             button_attributes["class"] = item.button_type
+        if item.binding_type:
+            button_attributes["type"] = item.binding_type
         if item.icon:
             button_attributes["icon"] = item.icon
+        if item.domain:
+            button_attributes["domain"] = item.domain
+        if item.tabindex:
+            button_attributes["tabindex"] = item.tabindex
+        if item.context:
+            button_attributes["context"] = item.context
+        if item.attrs:
+            button_attributes["attrs"] = item.attrs
+        if item.groups:
+            button_attributes["groups"] = item.groups
 
         # Create method
         items = self.env["code.generator.model.code"].search(
@@ -1968,7 +1981,12 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         # TODO get this list from module base
         lst_ignore_code = ["toggle_active"]
-        if not items and item.action_name not in lst_ignore_code:
+        if (
+            not items
+            and item.action_name not in lst_ignore_code
+            and item.binding_type == "object"
+            and not item.action_name.isdigit()
+        ):
             value = {
                 "code": '''"""TODO what to run"""
 pass''',
@@ -1980,9 +1998,7 @@ pass''',
                 "is_wip": True,
             }
             self.env["code.generator.model.code"].create(value)
-        button_attributes = dict(
-            sorted(button_attributes.items(), key=lambda kv: kv[0])
-        )
+        button_attributes = self._order_attributes_item(button_attributes)
         if lst_child_update:
             return E.button(button_attributes, *lst_child_update)
 
@@ -2018,6 +2034,7 @@ pass''',
             if item.name:
                 dct_item["name"] = item.name
             elif item.action_name:
+                # TODO this is maybe the bug where name is a number
                 dct_item["name"] = item.action_name
 
             if item.t_name:
@@ -2044,16 +2061,35 @@ pass''',
                 dct_item["context"] = item.context
             if item.class_attr:
                 dct_item["class"] = item.class_attr
+            if item.invisible:
+                dct_item["invisible"] = item.invisible
+            if item.groups:
+                dct_item["groups"] = item.groups
+            if item.options:
+                dct_item["options"] = item.options
+            if item.filter_domain:
+                dct_item["filter_domain"] = item.filter_domain
+            if item.nolabel:
+                dct_item["nolabel"] = item.nolabel
+            if item.clickable:
+                dct_item["clickable"] = item.clickable
+            if item.help:
+                dct_item["help"] = item.help
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            if item.expand:
+                # TODO change 1 to True and 0 to False
+                dct_item["expand"] = item.expand
 
         if item.item_type == "field":
             if item.placeholder:
                 dct_item["placeholder"] = item.placeholder
             if item.password:
                 dct_item["password"] = "True"
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.field(dct_item)
         elif item.item_type == "filter":
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.filter(dct_item)
         elif item.item_type == "button":
             return self._generate_xml_button(
@@ -2078,29 +2114,29 @@ pass''',
                 elif item.background_type.startswith("bg-danger"):
                     lst_html_child.append(E.h3({}, "Danger:"))
             lst_html_child.append(item.label)
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.div(dct_item, *lst_html_child)
         elif item.item_type == "group":
             if item.label:
                 dct_item["string"] = item.label
             if item.attrs:
                 dct_item["attrs"] = item.attrs
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.group(dct_item, *lst_child_update)
         elif item.item_type == "li":
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.li(dct_item, *lst_child_update)
         elif item.item_type == "ul":
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.ul(dct_item, *lst_child_update)
         elif item.item_type == "i":
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.i(dct_item, *lst_child_update)
         elif item.item_type == "t":
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.t(dct_item, *lst_child_update)
         elif item.item_type == "strong":
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.strong(dct_item, *lst_child_update)
         elif item.item_type == "xpath":
             if not item.expr:
@@ -2114,21 +2150,86 @@ pass''',
             else:
                 dct_item["expr"] = item.expr
                 dct_item["position"] = item.position
-                dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+                dct_item = self._order_attributes_item(dct_item)
                 item_xml = E.xpath(dct_item, *lst_child_update)
         elif item.item_type == "div":
             if item.attrs:
                 dct_item["attrs"] = item.attrs
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.div(dct_item, *lst_child_update)
+        elif item.item_type == "p":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.p(dct_item, *lst_child_update)
+        elif item.item_type == "h1":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.h1(dct_item, *lst_child_update)
+        elif item.item_type == "h2":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.h2(dct_item, *lst_child_update)
+        elif item.item_type == "h3":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.h3(dct_item, *lst_child_update)
+        elif item.item_type == "h4":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.h4(dct_item, *lst_child_update)
+        elif item.item_type == "h5":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.h5(dct_item, *lst_child_update)
+        elif item.item_type == "page":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.page(dct_item, *lst_child_update)
+        elif item.item_type == "notebook":
+            if item.attrs:
+                dct_item["attrs"] = item.attrs
+            dct_item = self._order_attributes_item(dct_item)
+            item_xml = E.notebook(dct_item, *lst_child_update)
         elif item.item_type == "templates":
             if item.attrs:
                 dct_item["attrs"] = item.attrs
-            dct_item = dict(sorted(dct_item.items(), key=lambda kv: kv[0]))
+            dct_item = self._order_attributes_item(dct_item)
             item_xml = E.templates(dct_item, *lst_child_update)
+        elif item.item_type == "#text":
+            item_xml = item.inner_text
         else:
             _logger.warning(f"View item '{item.item_type}' is not supported.")
         return item_xml
+
+    def _order_attributes_item(self, dct_item):
+        # Force sequence. name/string/type/class ... in order ... context/attrs
+        dct_item_copy = dct_item.copy()
+        dct_item_begin = {}
+        dct_item_end = {}
+        lst_key_begin = ["name", "string", "type", "class", "widget"]
+        lst_key_end = ["options", "context", "groups", "attrs", "help"]
+        for key in lst_key_begin:
+            if key in dct_item_copy.keys():
+                dct_item_begin[key] = dct_item_copy[key]
+                del dct_item_copy[key]
+        for key in lst_key_end:
+            if key in dct_item_copy.keys():
+                dct_item_end[key] = dct_item_copy[key]
+                del dct_item_copy[key]
+        dct_item_middle = dict(
+            sorted(dct_item_copy.items(), key=lambda kv: kv[0])
+        )
+        dct_item_result = dct_item_begin
+        dct_item_result.update(dct_item_middle)
+        dct_item_result.update(dct_item_end)
+        return dct_item_result
 
     def _generate_xml_group_div(self, item, lst_xml, dct_replace, model_id):
         """
@@ -2229,7 +2330,8 @@ pass''',
                 lst_item_title.append(view_item)
             else:
                 _logger.warning(
-                    f"View item '{view_item.section_type}' is not supported."
+                    f"View item section '{view_item.section_type}' is not"
+                    " supported."
                 )
 
         lst_item_form = []
@@ -2239,20 +2341,19 @@ pass''',
             lst_item_header = sorted(lst_item_header, key=lambda a: a.sequence)
             lst_child = []
             for item_header in lst_item_header:
-                if item_header.item_type == "field":
-                    item = E.field()
-                    # TODO field in header
-                elif item_header.item_type == "button":
-                    item = self._generate_xml_button(item_header, model_id)
+                if item_header.item_type in ("field", "button"):
+                    item = self._generate_xml_object(item_header, model_id)
                 else:
                     _logger.warning(
                         f"Item header type '{item_header.item_type}' is not"
                         " supported."
                     )
                     continue
-                lst_child.append(item)
-            header_xml = E.header({}, *lst_child)
-            lst_item_form.append(header_xml)
+                if item is not None:
+                    lst_child.append(item)
+            if lst_child:
+                header_xml = E.header({}, *lst_child)
+                lst_item_form.append(header_xml)
 
         if lst_item_title:
             lst_item_title = sorted(lst_item_title, key=lambda a: a.sequence)
@@ -2290,7 +2391,34 @@ pass''',
                         item_body, lst_item_form_sheet, dct_replace
                     )
                     lst_item_form_sheet.append(item_xml)
-                elif item_body.item_type in ("div", "group", "templates"):
+                elif item_body.item_type in ("button", "html"):
+                    if not item_body.child_id:
+                        # Nothing inside
+                        item_xml = self._generate_xml_object(
+                            item_body, model_id
+                        )
+                    else:
+                        # Something inside
+                        item_xml = self._generate_xml_group_div(
+                            item_body,
+                            lst_item_form_sheet,
+                            dct_replace,
+                            model_id,
+                        )
+                    if item_xml is not None:
+                        lst_item_form_sheet.append(item_xml)
+                elif item_body.item_type in (
+                    "div",
+                    "group",
+                    "templates",
+                    "h1",
+                    "h2",
+                    "h3",
+                    "h4",
+                    "h5",
+                    "notebook",
+                    "page",
+                ):
                     if not item_body.child_id:
                         _logger.warning(
                             f"Item type '{item_body.item_type}' missing child."
@@ -2345,12 +2473,78 @@ pass''',
             else:
                 lst_item_form += lst_item_form_sheet
 
+        if (
+            code_generator_view_id.m2o_model.enable_activity
+            and view_type == "form"
+        ):
+            # TODO duplicate
+            xml_activity = E.div(
+                {"class": "oe_chatter"},
+                E.field(
+                    {
+                        # "groups": "base.group_user",
+                        # "help": "",
+                        "name": "message_follower_ids",
+                        "widget": "mail_followers",
+                    }
+                ),
+                E.field({"name": "activity_ids", "widget": "mail_activity"}),
+                E.field(
+                    {
+                        "name": "message_ids",
+                        "options": "{'post_refresh': 'recipients'}",
+                        "widget": "mail_thread",
+                    }
+                ),
+            )
+            lst_item_form.append(xml_activity)
+
         dct_attr_view = {}
         if code_generator_view_id.view_attr_string:
             dct_attr_view["string"] = code_generator_view_id.view_attr_string
 
         if code_generator_view_id.view_attr_class:
             dct_attr_view["class"] = code_generator_view_id.view_attr_class
+
+        if code_generator_view_id.view_attr_decoration_danger:
+            dct_attr_view[
+                "decoration-danger"
+            ] = code_generator_view_id.view_attr_decoration_danger
+
+        if code_generator_view_id.view_attr_decoration_success:
+            dct_attr_view[
+                "decoration-success"
+            ] = code_generator_view_id.view_attr_decoration_success
+
+        if code_generator_view_id.view_attr_decoration_primary:
+            dct_attr_view[
+                "decoration-primary"
+            ] = code_generator_view_id.view_attr_decoration_primary
+
+        if code_generator_view_id.view_attr_decoration_bf:
+            dct_attr_view[
+                "decoration-bf"
+            ] = code_generator_view_id.view_attr_decoration_bf
+
+        if code_generator_view_id.view_attr_decoration_it:
+            dct_attr_view[
+                "decoration-it"
+            ] = code_generator_view_id.view_attr_decoration_it
+
+        if code_generator_view_id.view_attr_decoration_info:
+            dct_attr_view[
+                "decoration-info"
+            ] = code_generator_view_id.view_attr_decoration_info
+
+        if code_generator_view_id.view_attr_decoration_warning:
+            dct_attr_view[
+                "decoration-warning"
+            ] = code_generator_view_id.view_attr_decoration_warning
+
+        if code_generator_view_id.view_attr_decoration_muted:
+            dct_attr_view[
+                "decoration-muted"
+            ] = code_generator_view_id.view_attr_decoration_muted
 
         dct_attr_view = dict(
             sorted(dct_attr_view.items(), key=lambda kv: kv[0])
@@ -2405,6 +2599,7 @@ pass''',
             "m2o_model": code_generator_view_id.m2o_model.id,
         }
         if code_generator_view_id.inherit_view_name:
+            # TODO validate module is installed before assign inherit_id
             dct_view_value["inherit_id"] = self.env.ref(
                 code_generator_view_id.inherit_view_name
             ).id
@@ -2487,20 +2682,6 @@ pass''',
 
         access_value = self.env["ir.model.access"].create(v)
 
-    @staticmethod
-    def _generate_menu_name(lst_unique_menu_name: set, name: str):
-        if name in lst_unique_menu_name:
-            new_name = ""
-            i = 1
-            while not new_name:
-                new_name = f"{name}_{i}"
-                i += 1
-                if new_name in lst_unique_menu_name:
-                    new_name = ""
-            name = new_name
-        lst_unique_menu_name.add(name)
-        return name
-
     def _create_ir_model_data(
         self, module, model, res_id, name, prefix_name="", suffix_name=""
     ):
@@ -2582,6 +2763,10 @@ pass''',
         if self.disable_generate_menu:
             return
 
+        # TODO no menu is generated in case of module is not an application
+        #  and it creates new views, because cannot find views to attach it.
+        #  Need a configuration to attach a root if not create it.
+        #  Can have multiple menu
         # group_id = self.env['res.groups'].search([('name', '=', 'Code Generator / Manager')])
         # group_id = self.env['res.groups'].search([('name', '=', 'Internal User')])
         is_generic_menu = not model_created.m2o_module.code_generator_menus_id
