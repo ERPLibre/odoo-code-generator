@@ -615,7 +615,13 @@ class CodeGeneratorWriter(models.Model):
                         path_cg_module = (
                             module.template_module_path_generated_extension
                         )
+                        if path_cg_module == "." and module.path_sync_code != module._default_path_sync_code():
+                            path_cg_module = module.path_sync_code
                         if path_cg_module and path_cg_module != ".":
+                            has_new_sync_code_path = True
+                        else:
+                            has_new_sync_code_path = False
+                        if has_new_sync_code_path:
                             if path_cg_module[0] == "/":
                                 cw.emit(
                                     "path_module_generate ="
@@ -725,9 +731,7 @@ class CodeGeneratorWriter(models.Model):
                             #     cw.emit('"code_generator_hook",')
                             cw.emit('"enable_sync_code": True,')
                             if (
-                                module.template_module_path_generated_extension
-                                and module.template_module_path_generated_extension
-                                != "."
+                                has_new_sync_code_path
                             ):
                                 cw.emit(
                                     '"path_sync_code": path_module_generate,'
