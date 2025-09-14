@@ -4,7 +4,6 @@ import logging
 import types
 
 import astor
-
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import UserError, ValidationError
 

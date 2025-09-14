@@ -2,7 +2,7 @@
     "name": "Code Generator",
     "category": "Extra Tools",
     "summary": "Code Generator Module",
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     "author": "Mathben (mathben@technolibre.ca)",
     "description": "An application to generate ERPLibre module.",
     "license": "AGPL-3",
@@ -48,7 +48,6 @@
         "views/ir_ui_view.xml",
         "views/menu.xml",
     ],
-    "demo": ["data/code_generator_demo.xml"],
     "installable": True,
     "post_init_hook": "post_init_hook",
 }

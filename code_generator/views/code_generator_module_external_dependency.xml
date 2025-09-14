@@ -119,7 +119,10 @@
         </field>
     </record>
 
-    <record id="code_generator_module_external_dependency_generator_module_external_dependency_action_window" model="ir.actions.act_window">
+    <record
+        id="code_generator_module_external_dependency_generator_module_external_dependency_action_window"
+        model="ir.actions.act_window"
+    >
         <field name="name">Generator module external dependency</field>
         <field name="res_model">code.generator.module.external.dependency</field>
         <field name="view_mode">kanban,tree,pivot,graph,form</field>

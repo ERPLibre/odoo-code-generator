@@ -64,17 +64,14 @@
                             <group>
                                 <field name="category_id" />
                                 <field name="summary" />
-                                <field
-                                    name="enable_sync_code"
-                                    attrs="{'invisible': [('enable_sync_code', '=', True)]}"
-                                />
+                                <field name="enable_sync_code" invisible="enable_sync_code" />
                             </group>
                             <group>
                                 <field name="license" />
                                 <field name="installed_version" />
                             </group>
                         </group>
-                        <group string="Sync code locally" attrs="{'invisible': [('enable_sync_code', '=', False)]}">
+                        <group string="Sync code locally" invisible="not enable_sync_code">
                             <field name="enable_sync_code" />
                             <!-- <field name="clean_before_sync_code"/> -->
                             <field name="path_sync_code" />
@@ -102,20 +99,14 @@
                             </page>
                             <page string="Models">
                                 <field name="o2m_models" context="{'hide_m2o_module': True}" />
-                                <group
-                                    string="Whitelist fields"
-                                    attrs="{'invisible': [('nomenclator_only', '=', False)]}"
-                                >
+                                <group string="Whitelist fields" invisible="not nomenclator_only">
                                     <field name="o2m_nomenclator_whitelist_fields" nolabel="1" widget="one2many_list" />
                                     <!--                                    <tree>-->
                                     <!--                                        <field name="id"/>-->
                                     <!--                                        <field name="name"/>-->
                                     <!--                                    </tree>-->
                                 </group>
-                                <group
-                                    string="Blacklist fields"
-                                    attrs="{'invisible': [('nomenclator_only', '=', False)]}"
-                                >
+                                <group string="Blacklist fields" invisible="not nomenclator_only">
                                     <field name="o2m_nomenclator_blacklist_fields" nolabel="1" widget="one2many_list" />
                                     <!--                                    <tree>-->
                                     <!--                                        <field name="id"/>-->

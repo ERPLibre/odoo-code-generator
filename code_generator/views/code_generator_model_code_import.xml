@@ -145,7 +145,10 @@
         </field>
     </record>
 
-    <record id="code_generator_model_code_import_generator_model_code_import_action_window" model="ir.actions.act_window">
+    <record
+        id="code_generator_model_code_import_generator_model_code_import_action_window"
+        model="ir.actions.act_window"
+    >
         <field name="name">Generator model code import</field>
         <field name="res_model">code.generator.model.code.import</field>
         <field name="view_mode">kanban,tree,pivot,graph,form</field>

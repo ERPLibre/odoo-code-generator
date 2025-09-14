@@ -4,7 +4,6 @@ import os
 
 import lxml
 from docutils.core import publish_string
-
 from odoo import api, fields, models, modules, tools
 from odoo.addons.base.models.ir_module import MyWriter
 
@@ -385,9 +384,11 @@ class CodeGeneratorModule(models.Model):
                         "file_insertion_enabled": False,
                     }
                     output = publish_string(
-                        source=module.description
-                        if not module.application and module.description
-                        else "",
+                        source=(
+                            module.description
+                            if not module.application and module.description
+                            else ""
+                        ),
                         settings_overrides=overrides,
                         writer=MyWriter(),
                     )

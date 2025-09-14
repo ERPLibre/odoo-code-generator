@@ -21,20 +21,14 @@
                     <group>
                         <group string="Options">
                             <field name="option_adding" />
-                            <field
-                                name="option_blacklist"
-                                attrs="{'invisible': [('option_adding', '!=', 'nomenclator')]}"
-                            />
-                            <field
-                                name="clear_fields_blacklist"
-                                attrs="{'invisible': [('option_adding', '!=', 'nomenclator')]}"
-                            />
+                            <field name="option_blacklist" invisible="option_adding != 'nomenclator'" />
+                            <field name="clear_fields_blacklist" invisible="option_adding != 'nomenclator'" />
                         </group>
                     </group>
                     <group string="Models">
                         <field name="model_ids" nolabel="1" />
                     </group>
-                    <group string="Fields" attrs="{'invisible': [('option_adding', '!=', 'nomenclator')]}">
+                    <group string="Fields" invisible="option_adding != 'nomenclator'">
                         <field name="field_ids" nolabel="1" />
                     </group>
                     <footer>

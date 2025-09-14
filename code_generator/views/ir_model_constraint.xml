@@ -12,10 +12,7 @@
                         <field name="definition" />
                         <field name="model_state" />
                         <field name="module" />
-                        <field
-                            name="message"
-                            attrs="{'required': [('type', '==', 'u'), ('model_state', '==', 'manual')]}"
-                        />
+                        <field name="message" required="type == 'u' and model_state == 'manual'" />
                     </group>
                 </group>
             </group>

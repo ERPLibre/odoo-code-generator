@@ -1,10 +1,9 @@
 import logging
 import re
 
-from psycopg2._psycopg import ProgrammingError
-
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import MissingError, ValidationError
+from psycopg2._psycopg import ProgrammingError
 
 _logger = logging.getLogger(__name__)
 
