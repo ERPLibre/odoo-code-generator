@@ -278,7 +278,6 @@ class CodeGeneratorModule(models.Model):
     )
 
     @api.depends("template_module_name")
-    @api.multi
     def _fill_template_module_id(self):
         for module_id in self:
             if module_id.template_module_name:
@@ -286,14 +285,12 @@ class CodeGeneratorModule(models.Model):
                     "ir.module.module"
                 ].search([("name", "=", module_id.template_module_name)])
 
-    @api.multi
     def add_module_dependency_template(self, module_name):
         self.add_module_dependency(
             module_name,
             model_dependency="code.generator.module.template.dependency",
         )
 
-    @api.multi
     def add_module_dependency(
         self, module_name, model_dependency="code.generator.module.dependency"
     ):
@@ -731,7 +728,6 @@ class CodeGeneratorModule(models.Model):
                     vals["icon_image"] = base64.b64encode(image_file.read())
         return super(models.Model, self).create(vals)
 
-    @api.multi
     def unlink(self):
         o2m_models = self.mapped("o2m_models").filtered(
             lambda m: m.state == "manual"

@@ -252,7 +252,6 @@ class IrModel(models.Model):
     def get_rec_name(self):
         return self.rec_name if self.rec_name else self._rec_name
 
-    @api.multi
     def add_model_inherit(self, model_name):
         """
 
@@ -448,7 +447,6 @@ class IrModel(models.Model):
 #
 #         return result
 #
-#     @api.multi
 #     def write(self, vals):
 #         result = super(CodeGeneratorBase, self).write(vals)
 #

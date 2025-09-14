@@ -64,7 +64,6 @@ When blacklist, all selected fields will be ignored.""",
         ]
         self.field_ids = [(6, 0, field_ids)]
 
-    @api.multi
     def button_generate_add_model(self):
         if self.clear_fields_blacklist:
             field_ids = self.env["code.generator.ir.model.fields"].search(

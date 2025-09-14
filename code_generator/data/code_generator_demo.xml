@@ -81,7 +81,7 @@
             <field
                 name="arch_base"
             ><![CDATA[
-<tree string="Code Generator Demo Module Tree">
+<tree>
     <field name="name" />
     <field name="description" />
     <field name="active" widget="boolean_toggle" />

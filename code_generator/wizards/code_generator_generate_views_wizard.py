@@ -180,7 +180,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             if self.code_generator_id.o2m_model_act_url:
                 self.code_generator_id.o2m_model_act_url.unlink()
 
-    @api.multi
     def button_generate_views(self):
         self.ensure_one()
 
@@ -234,7 +233,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         return status
 
-    @api.multi
     def generic_generate_view(self, dct_value_to_create):
         # before_time = time.process_time()
         o2m_models_view_tree = (
@@ -1991,7 +1989,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 "code": '''"""TODO what to run"""
 pass''',
                 "name": item.action_name,
-                "decorator": "@api.multi",
                 "param": "self",
                 "m2o_module": self.code_generator_id.id,
                 "m2o_model": model_id,

@@ -3689,7 +3689,6 @@ _logger = logging.getLogger(__name__)"""
                 )
                 cw.emit('ir_attach_id.write({"datas": datas})')
 
-    @api.multi
     def generate_writer(self, vals):
         modules = self.env["code.generator.module"].browse(
             vals.get("code_generator_ids")

@@ -18,9 +18,9 @@
                             class="m2o_res_model_input"
                         />
                         <field
-                            name="m2o_src_model"
+                            name="m2o_binding_model"
                             options="{'no_create': True, 'no_edit': True}"
-                            class="m2o_src_model_input"
+                            class="m2o_binding_model_input"
                         />
                     </group>
                 </group>
@@ -36,7 +36,7 @@
                 <filter
                     string='Code Generator'
                     name='code_generator'
-                    domain="['|', ('m2o_res_model', '!=', False), ('m2o_src_model', '!=', False)]"
+                    domain="['|', ('m2o_res_model', '!=', False), ('m2o_binding_model', '!=', False)]"
                 />
             </xpath>
         </field>
@@ -48,7 +48,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='context']" position="before">
                 <field name='m2o_res_model' />
-                <field name='m2o_src_model' />
+                <field name='m2o_binding_model' />
             </xpath>
         </field>
     </record>
@@ -73,7 +73,7 @@
                 <field name="res_model" />
                 <field name="search_view" />
                 <field name="search_view_id" />
-                <field name="src_model" />
+                <field name="binding_model" />
                 <field name="target" />
                 <field name="type" />
                 <field name="usage" />
@@ -84,7 +84,7 @@
                 <field name="views" />
                 <field name="xml_id" />
                 <field name="m2o_res_model" />
-                <field name="m2o_src_model" />
+                <field name="m2o_binding_model" />
                 <templates>
                     <t t-name="kanban-box">
                         <div t-attf-class="oe_kanban_global_click">
@@ -170,7 +170,7 @@
                                     </li>
                                     <li class="mb4">
                                         <strong>
-                                            <field name="src_model" />
+                                            <field name="binding_model" />
                                         </strong>
                                     </li>
                                     <li class="mb4">
@@ -225,7 +225,7 @@
                                     </li>
                                     <li class="mb4">
                                         <strong>
-                                            <field name="m2o_src_model" />
+                                            <field name="m2o_binding_model" />
                                         </strong>
                                     </li>
                                 </ul>

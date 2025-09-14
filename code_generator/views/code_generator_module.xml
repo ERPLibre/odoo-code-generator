@@ -89,7 +89,7 @@
                         </group>
                         <group string="Dependencies" />
                         <field name="dependencies_id">
-                            <tree string="Dependencies">
+                            <tree>
                                 <field name="name" />
                                 <field name="state" />
                             </tree>
@@ -208,7 +208,6 @@
     <record model="ir.actions.act_window" id="code_generator_module_actionwindow">
         <field name="name">Modules</field>
         <field name="res_model">code.generator.module</field>
-        <field name="view_type">form</field>
         <field name="view_mode">tree,form</field>
         <field name="domain">[('state', '!=', 'uninstallable')]</field>
         <field name="context">{'search_default_app':0}</field>

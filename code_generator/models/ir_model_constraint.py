@@ -136,7 +136,6 @@ class IrModelConstraint(models.Model):
 
         return imcs
 
-    @api.multi
     def write(self, vals):
         if "definition" in vals:
             for imc in self:
@@ -156,7 +155,6 @@ class IrModelConstraint(models.Model):
 
         return result
 
-    @api.multi
     def unlink(self):
         for imc in self:
             try:
