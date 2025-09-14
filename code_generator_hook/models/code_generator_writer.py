@@ -2,7 +2,6 @@ import logging
 
 import isort
 from code_writer import CodeWriter
-
 from odoo import api, fields, models
 from odoo.models import MAGIC_COLUMNS
 
@@ -1035,9 +1034,9 @@ class CodeGeneratorWriter(models.Model):
                                 ) = self._get_field_data(module, model_id)
 
                                 if dct_field_data_one2many:
-                                    dct_model_one2many[
-                                        model_id.model
-                                    ] = dct_field_data_one2many
+                                    dct_model_one2many[model_id.model] = (
+                                        dct_field_data_one2many
+                                    )
 
                                 if model_id:
                                     self.write_model(
@@ -1520,46 +1519,46 @@ class CodeGeneratorWriter(models.Model):
             and model_id.diagram_arrow_src_field
             and model_id.diagram_arrow_dst_field
         ):
-            dct_model_data[
-                "diagram_node_object"
-            ] = model_id.diagram_node_object
-            dct_model_data[
-                "diagram_node_xpos_field"
-            ] = model_id.diagram_node_xpos_field
-            dct_model_data[
-                "diagram_node_ypos_field"
-            ] = model_id.diagram_node_ypos_field
+            dct_model_data["diagram_node_object"] = (
+                model_id.diagram_node_object
+            )
+            dct_model_data["diagram_node_xpos_field"] = (
+                model_id.diagram_node_xpos_field
+            )
+            dct_model_data["diagram_node_ypos_field"] = (
+                model_id.diagram_node_ypos_field
+            )
             if model_id.diagram_node_shape_field:
-                dct_model_data[
-                    "diagram_node_shape_field"
-                ] = model_id.diagram_node_shape_field
+                dct_model_data["diagram_node_shape_field"] = (
+                    model_id.diagram_node_shape_field
+                )
             if model_id.diagram_node_form_view_ref:
                 # TODO validate it exist and add variable to link name if changed
-                dct_model_data[
-                    "diagram_node_form_view_ref"
-                ] = model_id.diagram_node_form_view_ref
-            dct_model_data[
-                "diagram_arrow_object"
-            ] = model_id.diagram_arrow_object
-            dct_model_data[
-                "diagram_arrow_src_field"
-            ] = model_id.diagram_arrow_src_field
-            dct_model_data[
-                "diagram_arrow_dst_field"
-            ] = model_id.diagram_arrow_dst_field
+                dct_model_data["diagram_node_form_view_ref"] = (
+                    model_id.diagram_node_form_view_ref
+                )
+            dct_model_data["diagram_arrow_object"] = (
+                model_id.diagram_arrow_object
+            )
+            dct_model_data["diagram_arrow_src_field"] = (
+                model_id.diagram_arrow_src_field
+            )
+            dct_model_data["diagram_arrow_dst_field"] = (
+                model_id.diagram_arrow_dst_field
+            )
             if model_id.diagram_arrow_label:
-                dct_model_data[
-                    "diagram_arrow_label"
-                ] = model_id.diagram_arrow_label
+                dct_model_data["diagram_arrow_label"] = (
+                    model_id.diagram_arrow_label
+                )
             if model_id.diagram_arrow_form_view_ref:
                 # TODO validate it exist and add variable to link name if changed
-                dct_model_data[
-                    "diagram_arrow_form_view_ref"
-                ] = model_id.diagram_arrow_form_view_ref
+                dct_model_data["diagram_arrow_form_view_ref"] = (
+                    model_id.diagram_arrow_form_view_ref
+                )
             if model_id.diagram_label_string:
-                dct_model_data[
-                    "diagram_label_string"
-                ] = model_id.diagram_label_string
+                dct_model_data["diagram_label_string"] = (
+                    model_id.diagram_label_string
+                )
 
         cw.emit(f'model_model = "{model_id.model}"')
         model_name = model_id.model.replace(".", "_")
