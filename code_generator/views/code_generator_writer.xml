@@ -45,7 +45,7 @@
                 <field name="list_path_file" />
                 <field name="rootdir" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -111,18 +111,18 @@
         <field name="name">code_generator_writer_tree</field>
         <field name="model">code.generator.writer</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="basename" />
                 <field name="code_generator_ids" />
                 <field name="list_path_file" />
                 <field name="rootdir" />
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="code_generator_writer_generator_writer_action_window" model="ir.actions.act_window">
         <field name="name">Generator writer</field>
         <field name="res_model">code.generator.writer</field>
-        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
     </record>
 </odoo>

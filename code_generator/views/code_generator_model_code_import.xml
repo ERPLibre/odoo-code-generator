@@ -56,7 +56,7 @@
                 <field name="name" />
                 <field name="sequence" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -134,14 +134,14 @@
         <field name="name">code_generator_model_code_import_tree</field>
         <field name="model">code.generator.model.code.import</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="code" />
                 <field name="is_templated" />
                 <field name="m2o_model" />
                 <field name="m2o_module" />
                 <field name="name" />
                 <field name="sequence" />
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -151,6 +151,6 @@
     >
         <field name="name">Generator model code import</field>
         <field name="res_model">code.generator.model.code.import</field>
-        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
     </record>
 </odoo>

@@ -14,6 +14,6 @@
         <field name="name">Module module</field>
         <field name="res_model">ir.module.module</field>
         <field name="context">{'search_default_code_generator': 1}</field>
-        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
 </odoo>

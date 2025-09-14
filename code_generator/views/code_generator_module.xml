@@ -86,10 +86,10 @@
                         </group>
                         <group string="Dependencies" />
                         <field name="dependencies_id">
-                            <tree>
+                            <list>
                                 <field name="name" />
                                 <field name="state" />
-                            </tree>
+                            </list>
                         </field>
                     </page>
                     <page string="Elements" name="Elements">
@@ -101,17 +101,17 @@
                                 <field name="o2m_models" context="{'hide_m2o_module': True}" />
                                 <group string="Whitelist fields" invisible="not nomenclator_only">
                                     <field name="o2m_nomenclator_whitelist_fields" nolabel="1" widget="one2many_list" />
-                                    <!--                                    <tree>-->
+                                    <!--                                    <list>-->
                                     <!--                                        <field name="id"/>-->
                                     <!--                                        <field name="name"/>-->
-                                    <!--                                    </tree>-->
+                                    <!--                                    </list>-->
                                 </group>
                                 <group string="Blacklist fields" invisible="not nomenclator_only">
                                     <field name="o2m_nomenclator_blacklist_fields" nolabel="1" widget="one2many_list" />
-                                    <!--                                    <tree>-->
+                                    <!--                                    <list>-->
                                     <!--                                        <field name="id"/>-->
                                     <!--                                        <field name="name"/>-->
-                                    <!--                                    </tree>-->
+                                    <!--                                    </list>-->
                                 </group>
                             </page>
                             <page string="ACLs">
@@ -125,10 +125,10 @@
                             </page>
                             <page string="Server Constrains">
                                 <field name="o2m_model_server_constrains">
-                                    <tree>
+                                    <list>
                                         <field name="m2o_ir_model" />
                                         <field name="constrained" />
-                                    </tree>
+                                    </list>
                                     <form string="Server Constrain">
                                         <group>
                                             <group>
@@ -164,17 +164,17 @@
     </record>
 
     <record model="ir.ui.view" id="code_generator_module_tree">
-        <field name="name">code.generator.module.tree</field>
+        <field name="name">code.generator.module.list</field>
         <field name="model">code.generator.module</field>
         <field name="mode">primary</field>
         <field name="inherit_id" ref="base.module_tree" />
         <field name="arch" type="xml">
-            <tree position="attributes">
+            <list position="attributes">
                 <attribute name="create">1</attribute>
                 <attribute name="decoration-info">''</attribute>
                 <attribute name="decoration-danger">''</attribute>
                 <attribute name="decoration-muted">''</attribute>
-            </tree>
+            </list>
             <field name="website" position="replace" />
             <field name="installed_version" position="replace" />
             <field name="state" position="replace" />
@@ -199,7 +199,7 @@
     <record model="ir.actions.act_window" id="code_generator_module_actionwindow">
         <field name="name">Modules</field>
         <field name="res_model">code.generator.module</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('state', '!=', 'uninstallable')]</field>
         <field name="context">{'search_default_app':0}</field>
         <field name="search_view_id" ref="code_generator_module_search" />

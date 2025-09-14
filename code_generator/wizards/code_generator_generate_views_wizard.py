@@ -146,7 +146,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
     selected_model_tree_view_ids = fields.Many2many(
         comodel_name="ir.model",
         relation="selected_model_tree_view_ids_ir_model",
-        string="Selected Model Tree View",
+        string="Selected Model List View",
     )
 
     user_id = fields.Many2one(
@@ -710,7 +710,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 )
             )
         else:
-            # Use tree view sequence, or generic sequence
+            # Use list view sequence, or generic sequence
             lst_field_sorted = model_created_fields.filtered(
                 lambda field: not field.ignore_on_code_generator_writer
             ).sorted(lambda field: field.code_generator_tree_view_sequence)
@@ -1094,7 +1094,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         template_item = E.templates(
             {},
             E.t(
-                {"t-name": "kanban-box"},
+                {"t-name": "card"},
                 E.div(
                     {"t-attf-class": "oe_kanban_global_click"},
                     E.div(

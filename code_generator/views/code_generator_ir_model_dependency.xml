@@ -40,7 +40,7 @@
                 <field name="ir_model_ids" />
                 <field name="name" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -95,11 +95,11 @@
         <field name="name">code_generator_ir_model_dependency_tree</field>
         <field name="model">code.generator.ir.model.dependency</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="depend_id" />
                 <field name="ir_model_ids" />
                 <field name="name" />
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -109,6 +109,6 @@
     >
         <field name="name">Generator ir model dependency</field>
         <field name="res_model">code.generator.ir.model.dependency</field>
-        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
     </record>
 </odoo>

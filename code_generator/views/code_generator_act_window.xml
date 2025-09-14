@@ -43,7 +43,7 @@
                 <field name="model_name" />
                 <field name="name" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -106,18 +106,18 @@
         <field name="name">code_generator_act_window_tree</field>
         <field name="model">code.generator.act_window</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="code_generator_id" />
                 <field name="id_name" />
                 <field name="model_name" />
                 <field name="name" />
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="code_generator_act_window_generator_act_window_action_window" model="ir.actions.act_window">
         <field name="name">Generator act window</field>
         <field name="res_model">code.generator.act_window</field>
-        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
     </record>
 </odoo>

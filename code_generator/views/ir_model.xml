@@ -123,6 +123,6 @@
         <field name="name">Model</field>
         <field name="res_model">ir.model</field>
         <field name="context">{'search_default_code_generator': 1}</field>
-        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
 </odoo>
