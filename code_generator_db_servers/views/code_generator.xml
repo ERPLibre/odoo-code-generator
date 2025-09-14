@@ -13,7 +13,7 @@
                         </group>
                         <group>
                             <field name="database" />
-                            <field name="schema" attrs="{'required': [('m2o_dbtype_name', '!=', 'SQLServer')]}" />
+                            <field name="schema" required="m2o_dbtype_name != 'SQLServer'" />
                             <field name="host" />
                             <field name="port" />
                             <field name="user" />
@@ -82,7 +82,7 @@
                 <field name="new_description" />
                 <field name="new_rec_name" />
                 <field name="delete" />
-                <field name="has_update" invisible="1" />
+                <field name="has_update" column_invisible="True" />
             </tree>
         </field>
     </record>
@@ -158,8 +158,8 @@
                 <field name="path_binary" />
                 <field name="sql_select_modify" />
                 <field name="compute_data_function" />
-                <field name="has_update" invisible="1" />
-                <field name="temporary_name_field" invisible="1" />
+                <field name="has_update" column_invisible="True" />
+                <field name="temporary_name_field" column_invisible="True" />
             </tree>
         </field>
     </record>

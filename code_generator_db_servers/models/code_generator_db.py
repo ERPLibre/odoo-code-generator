@@ -1,7 +1,6 @@
 import logging
 
 import psycopg2
-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -109,9 +108,9 @@ class CodeGeneratorDb(models.Model):
                     dct_all_table = dict(
                         m2o_db=result.id,
                         name=table_name,
-                        table_type="view"
-                        if table_info[1] == "VIEW"
-                        else "table",
+                        table_type=(
+                            "view" if table_info[1] == "VIEW" else "table"
+                        ),
                         module_name=module_name,
                     )
 
