@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - Theme website",
-    "version": "13.0.1.0.0",
+    "version": "14.0.1.0.0",
     "summary": "Code Generator - Create theme website module",
     "description": "Code generator builder to create theme website",
     "author": "Mathben (mathben@technolibre.ca)",
