@@ -87,7 +87,6 @@ class CodeGeneratorGeneratePortalWizard(models.TransientModel):
         help="This will activate create form for all model.",
     )
 
-    @api.multi
     def button_generate_views(self):
         status = super(
             CodeGeneratorGeneratePortalWizard, self
