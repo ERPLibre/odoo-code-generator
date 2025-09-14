@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - website snippet generation",
-    "version": "14.0.1.0.0",
+    "version": "15.0.1.0.0",
     "summary": "Code Generator - Create website snippet",
     "description": "Code generator builder to create website snippet",
     "author": "Mathben (mathben@technolibre.ca)",
