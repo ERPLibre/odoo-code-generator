@@ -15,9 +15,9 @@
                     attrs="{'invisible': [('migrate_from_db_server', '=', False)]}"
                 >
                     <field name="migrate_db_server_relation_table_ids" widget="many2many_tags">
-                        <tree editable="top">
+                        <list editable="top">
                             <field name="name" />
-                        </tree>
+                        </list>
                     </field>
                 </group>
             </xpath>
