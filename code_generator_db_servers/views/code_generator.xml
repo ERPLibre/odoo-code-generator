@@ -31,23 +31,23 @@
     </record>
 
     <record model="ir.ui.view" id="code_generator_db_tree">
-        <field name="name">code.generator.db.tree</field>
+        <field name="name">code.generator.db.list</field>
         <field name="model">code.generator.db</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="m2o_dbtype" />
                 <field name="host" />
                 <field name="port" />
                 <field name="user" />
                 <field name="password" password="True" />
-            </tree>
+            </list>
         </field>
     </record>
 
     <record model="ir.actions.act_window" id="code_generator_db_actionwindow">
         <field name="name">Databases</field>
         <field name="res_model">code.generator.db</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_empty_folder">Add a new database</p>
             <p>Databases whose tables could be imported to Odoo and then be exported into code</p>
@@ -71,10 +71,10 @@
     />
 
     <record model="ir.ui.view" id="code_generator_db_table_tree">
-        <field name="name">code.generator.db.table.tree</field>
+        <field name="name">code.generator.db.table.list</field>
         <field name="model">code.generator.db.table</field>
         <field name="arch" type="xml">
-            <tree editable="top" decoration-success="has_update and not delete" decoration-muted="delete">
+            <list editable="top" decoration-success="has_update and not delete" decoration-muted="delete">
                 <field name="m2o_db" />
                 <field name="name" />
                 <field name="nomenclator" widget="boolean_toggle" />
@@ -83,7 +83,7 @@
                 <field name="new_rec_name" />
                 <field name="delete" />
                 <field name="has_update" column_invisible="True" />
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -114,7 +114,7 @@
     <record model="ir.actions.act_window" id="code_generator_db_table_actionwindow">
         <field name="name">Tables</field>
         <field name="res_model">code.generator.db.table</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <!--<field name="context">{'group_by': ['m2o_db']}</field>-->
         <field name="help" type="html">
             <p class="o_view_nocontent_empty_folder">Tables belonging to the inserted Databases</p>
@@ -131,10 +131,10 @@
     />
 
     <record model="ir.ui.view" id="code_generator_db_column_tree">
-        <field name="name">code.generator.db.column.tree</field>
+        <field name="name">code.generator.db.column.list</field>
         <field name="model">code.generator.db.column</field>
         <field name="arch" type="xml">
-            <tree
+            <list
                 editable="top"
                 decoration-success="has_update and not temporary_name_field and not delete and not ignore_field"
                 decoration-muted="temporary_name_field or delete or ignore_field"
@@ -160,7 +160,7 @@
                 <field name="compute_data_function" />
                 <field name="has_update" column_invisible="True" />
                 <field name="temporary_name_field" column_invisible="True" />
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -197,7 +197,7 @@
     <record model="ir.actions.act_window" id="code_generator_db_column_actionwindow">
         <field name="name">Columns</field>
         <field name="res_model">code.generator.db.column</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_empty_folder">Columns belonging to the inserted Databases</p>
         </field>
