@@ -85,7 +85,6 @@ class CodeGeneratorGenerateThemeWebsiteWizard(models.TransientModel):
         string="Text Color", default="#000", help="Choose your text color"
     )
 
-    @api.multi
     def button_generate_views(self):
         status = super(
             CodeGeneratorGenerateThemeWebsiteWizard, self
