@@ -7,6 +7,7 @@
         " capability to import into Odoo tables and its content from other"
         " databases"
     ),
+    "license": "AGPL-3",
     "author": "Bluisknot (bluisknot@gmail.com)",
     "category": "Extra Tools",
     "depends": ["code_generator"],

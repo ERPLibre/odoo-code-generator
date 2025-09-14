@@ -4,6 +4,7 @@
     "summary": "Code Generator - Create website leaflet",
     "description": "Code generator builder to create website leaflet snippet",
     "author": "Mathben (mathben@technolibre.ca)",
+    "license": "AGPL-3",
     "category": "Extra Tools",
     "depends": [
         "code_generator",

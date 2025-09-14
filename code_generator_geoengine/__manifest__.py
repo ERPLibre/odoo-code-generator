@@ -9,6 +9,7 @@
         "code_generator",
         "base_geoengine",
     ],
+    "license": "AGPL-3",
     "installable": True,
     "data": [
         "wizards/code_generator_generate_views_wizard.xml",

@@ -4,6 +4,7 @@
     "summary": "Code Generator - Create website snippet",
     "description": "Code generator builder to create website snippet",
     "author": "Mathben (mathben@technolibre.ca)",
+    "license": "AGPL-3",
     "category": "Extra Tools",
     "depends": [
         "code_generator",

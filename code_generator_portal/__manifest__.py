@@ -5,6 +5,7 @@
     "description": (
         "Code generator builder to create views of portal application"
     ),
+    "license": "AGPL-3",
     "author": "Mathben (mathben@technolibre.ca)",
     "category": "Extra Tools",
     "depends": ["code_generator", "portal"],

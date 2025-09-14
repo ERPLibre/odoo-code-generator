@@ -4,6 +4,7 @@
     "summary": "Code Generator - Create theme website module",
     "description": "Code generator builder to create theme website",
     "author": "Mathben (mathben@technolibre.ca)",
+    "license": "AGPL-3",
     "category": "Extra Tools",
     "depends": [
         "code_generator",
