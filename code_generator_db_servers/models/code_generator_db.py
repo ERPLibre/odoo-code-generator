@@ -193,7 +193,6 @@ class CodeGeneratorDb(models.Model):
         else:
             raise ValidationError(CONNECTIONPROBLEM)
 
-    @api.multi
     def get_tables_with_data(self, table_ids=None):
         """
         Return code.generator.db.table ids for all tables with data, or search on table_ids parameter

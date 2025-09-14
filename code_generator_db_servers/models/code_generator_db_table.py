@@ -162,7 +162,6 @@ class CodeGeneratorDbTable(models.Model):
             )
             obj.module_display_name = obj.model_name.replace(".", " ").title()
 
-    @api.multi
     def toggle_nomenclator(self):
         for table in self:
             table.nomenclator = not table.nomenclator
@@ -248,7 +247,6 @@ class CodeGeneratorDbTable(models.Model):
 
         return _inner_conform
 
-    @api.multi
     def generate_module_data_migration_hook(self, code_generator_id=None):
         db_id = self[0].m2o_db
 
@@ -284,7 +282,6 @@ class CodeGeneratorDbTable(models.Model):
                 " code_generator_db_table"
             )
 
-    @api.multi
     def generate_module(self, code_generator_id=None):
         """
         Function to generate a module

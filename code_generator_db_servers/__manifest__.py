@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 
 {
     "name": "Code Generator - Db Servers",
-    "version": "12.0.0",
+    "version": "13.0.1.0.0",
     "summary": "Code Generator - Db Servers Module",
     "description": (
         "A solution to extend the Code Generator Module by adding the"
