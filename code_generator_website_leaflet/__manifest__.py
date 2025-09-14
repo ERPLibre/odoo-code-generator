@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - website leaflet generation",
-    "version": "13.0.1.0.0",
+    "version": "14.0.1.0.0",
     "summary": "Code Generator - Create website leaflet",
     "description": "Code generator builder to create website leaflet snippet",
     "author": "Mathben (mathben@technolibre.ca)",
