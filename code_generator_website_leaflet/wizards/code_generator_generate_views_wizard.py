@@ -1,6 +1,5 @@
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import _, api, fields, models
 from odoo.models import MAGIC_COLUMNS
 
