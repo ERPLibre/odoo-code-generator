@@ -118,10 +118,9 @@
         </field>
     </record>
 
-    <act_window
-        id="code_generator_module_dependency_generator_module_dependency_action_window"
-        name="Generator module dependency"
-        res_model="code.generator.module.dependency"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+    <record id="code_generator_module_dependency_generator_module_dependency_action_window" model="ir.actions.act_window">
+        <field name="name">Generator module dependency</field>
+        <field name="res_model">code.generator.module.dependency</field>
+        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+    </record>
 </odoo>

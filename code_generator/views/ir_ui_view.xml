@@ -107,11 +107,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_ui_view_ui_view_action_window"
-        name="Ui view"
-        res_model="ir.ui.view"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_ui_view_ui_view_action_window" model="ir.actions.act_window">
+        <field name="name">Ui view</field>
+        <field name="res_model">ir.ui.view</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

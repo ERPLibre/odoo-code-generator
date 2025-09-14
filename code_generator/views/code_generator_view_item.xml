@@ -516,10 +516,9 @@
         </field>
     </record>
 
-    <act_window
-        id="code_generator_view_item_generator_view_item_action_window"
-        name="Generator view item"
-        res_model="code.generator.view.item"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+    <record id="code_generator_view_item_generator_view_item_action_window" model="ir.actions.act_window">
+        <field name="name">Generator view item</field>
+        <field name="res_model">code.generator.view.item</field>
+        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+    </record>
 </odoo>

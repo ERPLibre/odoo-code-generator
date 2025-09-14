@@ -119,11 +119,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_model_model_action_window"
-        name="Model"
-        res_model="ir.model"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_model_model_action_window" model="ir.actions.act_window">
+        <field name="name">Model</field>
+        <field name="res_model">ir.model</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

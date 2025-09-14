@@ -175,11 +175,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_actions_report_actions_report_action_window"
-        name="Actions report"
-        res_model="ir.actions.report"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_actions_report_actions_report_action_window" model="ir.actions.act_window">
+        <field name="name">Actions report</field>
+        <field name="res_model">ir.actions.report</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

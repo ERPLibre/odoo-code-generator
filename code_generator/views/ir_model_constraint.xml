@@ -126,11 +126,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_model_constraint_model_constraint_action_window"
-        name="Model constraint"
-        res_model="ir.model.constraint"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_model_constraint_model_constraint_action_window" model="ir.actions.act_window">
+        <field name="name">Model constraint</field>
+        <field name="res_model">ir.model.constraint</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

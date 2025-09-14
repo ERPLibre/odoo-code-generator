@@ -151,11 +151,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_actions_act_url_actions_act_url_action_window"
-        name="Actions act url"
-        res_model="ir.actions.act_url"
-        context="{'search_default_m2o_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_actions_act_url_actions_act_url_action_window" model="ir.actions.act_window">
+        <field name="name">Actions act url</field>
+        <field name="res_model">ir.actions.act_url</field>
+        <field name="context">{'search_default_m2o_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

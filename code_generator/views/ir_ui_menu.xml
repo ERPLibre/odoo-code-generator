@@ -84,11 +84,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_ui_menu_ui_menu_action_window"
-        name="Ui menu"
-        res_model="ir.ui.menu"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_ui_menu_ui_menu_action_window" model="ir.actions.act_window">
+        <field name="name">Ui menu</field>
+        <field name="res_model">ir.ui.menu</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

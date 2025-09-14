@@ -237,11 +237,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_actions_act_window_actions_act_window_action_window"
-        name="Actions act window"
-        res_model="ir.actions.act_window"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_actions_act_window_actions_act_window_action_window" model="ir.actions.act_window">
+        <field name="name">Actions act window</field>
+        <field name="res_model">ir.actions.act_window</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

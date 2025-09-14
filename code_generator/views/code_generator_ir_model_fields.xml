@@ -276,10 +276,9 @@
         </field>
     </record>
 
-    <act_window
-        id="code_generator_ir_model_fields_generator_ir_model_fields_action_window"
-        name="Generator ir model fields"
-        res_model="code.generator.ir.model.fields"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+    <record id="code_generator_ir_model_fields_generator_ir_model_fields_action_window" model="ir.actions.act_window">
+        <field name="name">Generator ir model fields</field>
+        <field name="res_model">code.generator.ir.model.fields</field>
+        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+    </record>
 </odoo>

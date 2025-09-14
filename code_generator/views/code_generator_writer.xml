@@ -120,10 +120,9 @@
         </field>
     </record>
 
-    <act_window
-        id="code_generator_writer_generator_writer_action_window"
-        name="Generator writer"
-        res_model="code.generator.writer"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+    <record id="code_generator_writer_generator_writer_action_window" model="ir.actions.act_window">
+        <field name="name">Generator writer</field>
+        <field name="res_model">code.generator.writer</field>
+        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+    </record>
 </odoo>

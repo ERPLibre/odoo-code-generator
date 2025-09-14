@@ -92,10 +92,9 @@
         </field>
     </record>
 
-    <act_window
-        id="code_generator_pyclass_generator_pyclass_action_window"
-        name="Generator pyclass"
-        res_model="code.generator.pyclass"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+    <record id="code_generator_pyclass_generator_pyclass_action_window" model="ir.actions.act_window">
+        <field name="name">Generator pyclass</field>
+        <field name="res_model">code.generator.pyclass</field>
+        <field name="view_mode">kanban,tree,pivot,graph,form</field>
+    </record>
 </odoo>

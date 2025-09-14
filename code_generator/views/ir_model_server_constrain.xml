@@ -81,10 +81,9 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_model_server_constrain_model_server_constrain_action_window"
-        name="Model server constrain"
-        res_model="ir.model.server_constrain"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_model_server_constrain_model_server_constrain_action_window" model="ir.actions.act_window">
+        <field name="name">Model server constrain</field>
+        <field name="res_model">ir.model.server_constrain</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
 </odoo>

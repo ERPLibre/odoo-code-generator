@@ -37,11 +37,10 @@
         </field>
     </record>
 
-    <act_window
-        id="res_groups_groups_action_window"
-        name="Groups"
-        res_model="res.groups"
-        context="{'search_default_code_generator': 1}"
-        view_mode="tree,form"
-    />
+    <record id="res_groups_groups_action_window" model="ir.actions.act_window">
+        <field name="name">Groups</field>
+        <field name="res_model">res.groups</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">tree,form</field>
+    </record>
 </odoo>
