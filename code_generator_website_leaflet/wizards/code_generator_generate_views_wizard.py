@@ -123,7 +123,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
 
         return result
 
-    @api.multi
     def button_generate_views(self):
         status = super(
             CodeGeneratorGenerateViewsWizard, self
