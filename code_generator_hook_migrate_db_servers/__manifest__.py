@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - Hook migrate DB servers",
-    "version": "15.0.1.0.0",
+    "version": "16.0.1.0.0",
     "summary": "Code Generator - Create hook migrate DB servers module",
     "description": (
         "Code generator builder to create hook for module installation, with"
