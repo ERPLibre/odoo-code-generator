@@ -12,7 +12,7 @@ class CodeGeneratorModule(models.Model):
         comodel_name="ir.cron",
         inverse_name="m2o_module",
         string="Cron",
-        help="Relative ir.cron"
+        help="Relative ir.cron",
         # compute='_get_models_info'
     )
 

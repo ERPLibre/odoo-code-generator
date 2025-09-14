@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - Cron",
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     "summary": "Code Generator - Create cron module",
     "description": (
         "Code generator builder to create cron for module installation"
