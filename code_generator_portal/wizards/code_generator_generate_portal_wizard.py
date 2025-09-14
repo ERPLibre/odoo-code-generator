@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import _, api, fields, models
 from odoo.models import MAGIC_COLUMNS
 
@@ -978,7 +977,7 @@ for {var_name} in self:
                                 {
                                     "t-field": f"{_fmt_underscores(model.model)}.{model.rec_name}"
                                 }
-                            )
+                            ),
                             # TODO need binding variable
                             # ,
                             # # <span class="float-right">
@@ -999,7 +998,7 @@ for {var_name} in self:
                     E.t(
                         {"t-set": "card_body"},
                         E.div({"class": "row"}, *lst_card_body),
-                    )
+                    ),
                     # TODO support card_body later
                     # # <t t-set="card_body">
                     # E.t({'t-set': 'card_body'},
@@ -1182,9 +1181,9 @@ for {var_name} in self:
                             "#{" + field_id.name + "}"
                         )
                     else:
-                        dct_sub_item[
-                            "t-att-value"
-                        ] = f"default_{field_id.name}"
+                        dct_sub_item["t-att-value"] = (
+                            f"default_{field_id.name}"
+                        )
 
                     if field_id.required:
                         dct_sub_item["required"] = "True"
@@ -1379,9 +1378,9 @@ for {var_name} in self:
                             "#{" + field_id.name + "}"
                         )
                     else:
-                        dct_sub_item[
-                            "t-att-value"
-                        ] = f"default_{field_id.name}"
+                        dct_sub_item["t-att-value"] = (
+                            f"default_{field_id.name}"
+                        )
 
                     if field_id.required:
                         dct_sub_item["required"] = "True"
