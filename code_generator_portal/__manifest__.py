@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - Portal generation",
-    "version": "13.0.1.0.0",
+    "version": "14.0.1.0.0",
     "summary": "Code Generator - Create portal views",
     "description": (
         "Code generator builder to create views of portal application"
