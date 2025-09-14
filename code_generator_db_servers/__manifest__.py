@@ -1,7 +1,7 @@
 
 {
     "name": "Code Generator - Db Servers",
-    "version": "15.0.1.0.0",
+    "version": "16.0.1.0.0",
     "summary": "Code Generator - Db Servers Module",
     "description": (
         "A solution to extend the Code Generator Module by adding the"
