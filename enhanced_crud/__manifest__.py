@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ###################################################################################
 #    Author: Bluisknot (bluisknot@gmail.com)
 #
@@ -19,7 +18,7 @@
 
 {
     "name": "Enhanced CRUD",
-    "version": "12.0.0",
+    "version": "13.0.1.0.0",
     "summary": "The Odoo CRUD operations presented in a different way",
     "description": """
 Enhanced CRUD

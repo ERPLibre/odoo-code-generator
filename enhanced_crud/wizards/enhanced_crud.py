@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -188,7 +187,6 @@ class EnhancedCrudActWindowLink(models.TransientModel):
         ondelete="cascade",
     )
 
-    @api.multi
     def link_window_actions(self):
         opcion = self.m2o_act_window_group.name
         ir_act_window = self.env["ir.actions.act_window"]

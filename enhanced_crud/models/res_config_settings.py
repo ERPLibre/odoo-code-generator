@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 import base64
 
@@ -121,7 +120,6 @@ class EnhancedCrudConfigSettings(models.TransientModel):
         config_parameter="enhanced_crud.boo_contextmenu",
     )
 
-    @api.multi
     def execute(self):
         self.env["ir.actions.act_window"].search(dom_IrActionsActWindow).write(
             dict(limit=self.s_pagination or 80)
