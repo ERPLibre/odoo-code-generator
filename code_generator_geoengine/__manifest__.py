@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - geoengine",
-    "version": "12.0.0",
+    "version": "13.0.1.0.0",
     "summary": "Code Generator - Manage geoengine",
     "description": "Code generator builder to manage geoengine",
     "author": "Mathben (mathben@technolibre.ca)",

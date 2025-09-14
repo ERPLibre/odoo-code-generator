@@ -23,7 +23,6 @@ class CodeGeneratorModule(models.Model):
         ),
     )
 
-    @api.multi
     def unlink(self):
         # Need to unlink geo before view_ids, because they are linked together
         self.o2m_geoengine_vector_layer.unlink()
