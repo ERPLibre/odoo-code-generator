@@ -22,6 +22,13 @@ class CodeGeneratorModule(models.Model):
     author = fields.Char(readonly=False)
 
     category_id = fields.Many2one(readonly=False)
+    country_ids = fields.Many2many(
+        "res.country",
+        "code_generator_module_country_rel",
+        "code_generator_module_id",
+        "country_id",
+        string="Countries",
+    )
 
     code_generator_act_window_id = fields.One2many(
         comodel_name="code.generator.act_window",

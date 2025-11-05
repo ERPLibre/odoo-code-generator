@@ -39,8 +39,8 @@
         <field name="model">ir.model.constraint</field>
         <field name="arch" type="xml">
             <kanban class="o_kanban_mobile">
-                <field name="date_init" />
-                <field name="date_update" />
+<!--                <field name="date_init" />-->
+<!--                <field name="date_update" />-->
                 <field name="definition" />
                 <field name="model" />
                 <field name="module" />
@@ -54,16 +54,16 @@
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
-                                    <li class="mb4">
-                                        <strong>
-                                            <field name="date_init" />
-                                        </strong>
-                                    </li>
-                                    <li class="mb4">
-                                        <strong>
-                                            <field name="date_update" />
-                                        </strong>
-                                    </li>
+<!--                                    <li class="mb4">-->
+<!--                                        <strong>-->
+<!--                                            <field name="date_init" />-->
+<!--                                        </strong>-->
+<!--                                    </li>-->
+<!--                                    <li class="mb4">-->
+<!--                                        <strong>-->
+<!--                                            <field name="date_update" />-->
+<!--                                        </strong>-->
+<!--                                    </li>-->
                                     <li class="mb4">
                                         <strong>
                                             <field name="definition" />

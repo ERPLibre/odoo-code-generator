@@ -99,8 +99,8 @@
             <search string="Code generator module template dependency">
                 <filter domain="[('depend_id','!=',False)]" name="depend_id" string="Dependency" />
                 <filter domain="[('module_id','!=',False)]" name="module_id" string="Module" />
-                <filter domain="[('name','!=',False)]" name="name" string="Name" />
-                <filter domain="[('state','!=',False)]" name="state" string="Status" />
+<!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
+<!--                <filter domain="[('state','!=',False)]" name="state" string="Status" />-->
             </search>
         </field>
     </record>

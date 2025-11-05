@@ -86,7 +86,7 @@
             <search string="Code generator ir model dependency">
                 <filter domain="[('depend_id','!=',False)]" name="depend_id" string="Dependency" />
                 <filter domain="[('ir_model_ids','!=',False)]" name="ir_model_ids" string="Ir model" />
-                <filter domain="[('name','!=',False)]" name="name" string="Name" />
+<!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
             </search>
         </field>
     </record>

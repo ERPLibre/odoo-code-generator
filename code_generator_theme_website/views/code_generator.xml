@@ -19,7 +19,7 @@
             </xpath>
 
             <xpath expr="//field[@name='application']" position="attributes">
-                <attribute name="attrs">{'invisible': [('theme_website','=',True)]}</attribute>
+                <attribute name="invisible">theme_website</attribute>
             </xpath>
 
             <!--      <xpath expr="//button[@name='%(code_generator.code_generator_generate_views_action)d']"-->
@@ -27,29 +27,29 @@
             <!--        <attribute name="attrs">{'invisible': [('theme_website','=',True)]}</attribute>-->
             <!--      </xpath>-->
 
-            <xpath
-                expr="//button[@name='%(code_generator.code_generator_generate_views_action)d']"
-                position="attributes"
-            >
-                <attribute name="context">
-                    {
-          'default_enable_generate_all': theme_website != True,
-          'default_all_model': theme_website != True,
-          'default_enable_generate_theme_website': theme_website == True,
-          'default_code_generator_id': id,
-          'default_user_id': uid,
-          'default_theme_website_primary_color': theme_website_primary_color,
-          'default_theme_website_secondary_color': theme_website_secondary_color,
-          'default_theme_theme_website_extra_1_color': theme_website_extra_1_color,
-          'default_theme_theme_website_extra_2_color': theme_website_extra_2_color,
-          'default_theme_theme_website_extra_3_color': theme_website_extra_3_color,
-          'default_theme_website_body_color': theme_website_body_color,
-          'default_theme_website_footer_color': theme_website_footer_color,
-          'default_theme_website_menu_color': theme_website_menu_color,
-          'default_theme_website_text_color': theme_website_text_color,
-          }
-                </attribute>
-            </xpath>
+<!--            <xpath-->
+<!--                expr="//button[@name='%(code_generator.code_generator_generate_views_action)d']"-->
+<!--                position="attributes"-->
+<!--            >-->
+<!--                <attribute name="context">-->
+<!--                    {-->
+<!--          'default_enable_generate_all': theme_website != True,-->
+<!--          'default_all_model': theme_website != True,-->
+<!--          'default_enable_generate_theme_website': theme_website == True,-->
+<!--          'default_code_generator_id': id,-->
+<!--          'default_user_id': uid,-->
+<!--          'default_theme_website_primary_color': theme_website_primary_color,-->
+<!--          'default_theme_website_secondary_color': theme_website_secondary_color,-->
+<!--          'default_theme_theme_website_extra_1_color': theme_website_extra_1_color,-->
+<!--          'default_theme_theme_website_extra_2_color': theme_website_extra_2_color,-->
+<!--          'default_theme_theme_website_extra_3_color': theme_website_extra_3_color,-->
+<!--          'default_theme_website_body_color': theme_website_body_color,-->
+<!--          'default_theme_website_footer_color': theme_website_footer_color,-->
+<!--          'default_theme_website_menu_color': theme_website_menu_color,-->
+<!--          'default_theme_website_text_color': theme_website_text_color,-->
+<!--          }-->
+<!--                </attribute>-->
+<!--            </xpath>-->
         </field>
     </record>
 </odoo>

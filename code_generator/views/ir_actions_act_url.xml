@@ -123,7 +123,7 @@
                 <filter domain="[('target','!=',False)]" name="target" string="Action Target" />
                 <filter domain="[('type','!=',False)]" name="type" string="Action Type" />
                 <filter domain="[('url','!=',False)]" name="url" string="Action URL" />
-                <filter domain="[('xml_id','!=',False)]" name="xml_id" string="External ID" />
+<!--                <filter domain="[('xml_id','!=',False)]" name="xml_id" string="External ID" />-->
                 <filter
                     domain="[('m2o_code_generator','!=',False)]"
                     name="m2o_code_generator"

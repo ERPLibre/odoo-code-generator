@@ -84,7 +84,7 @@
                 <field name="size" />
                 <field name="state" />
                 <field name="store" />
-                <field name="track_visibility" />
+<!--                <field name="track_visibility" />-->
                 <field name="translate" />
                 <field name="ttype" />
                 <field name="code_generator_calendar_view_sequence" />
@@ -279,11 +279,11 @@
                                     <li class="text-danger float-right mb4" t-if="!record.store.raw_value">
                                         <i aria-label="Invalid" class="fa fa-circle" role="img" title="Invalid" />
                                     </li>
-                                    <li class="mb4">
-                                        <strong>
-                                            <field name="track_visibility" />
-                                        </strong>
-                                    </li>
+<!--                                    <li class="mb4">-->
+<!--                                        <strong>-->
+<!--                                            <field name="track_visibility" />-->
+<!--                                        </strong>-->
+<!--                                    </li>-->
                                     <li class="text-success float-right mb4" t-if="record.translate.raw_value">
                                         <i aria-label="Ok" class="fa fa-circle" role="img" title="Ok" />
                                     </li>

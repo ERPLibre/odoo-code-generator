@@ -238,7 +238,7 @@
                 />
                 <filter domain="[('m2o_fields','!=',False)]" name="m2o_fields" string="Fields" />
                 <filter domain="[('m2o_module','!=',False)]" name="m2o_module" string="Module" />
-                <filter domain="[('name','!=',False)]" name="name" string="Name" />
+<!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
                 <filter
                     domain="[('nomenclature_blacklist','=',True)]"
                     name="nomenclature_blacklist"
