@@ -1,13 +1,13 @@
 {
     "name": "Code Generator - Theme website",
-    "version": "12.0.0",
+    "version": "18.0.1.0.0",
     "summary": "Code Generator - Create theme website module",
     "description": "Code generator builder to create theme website",
     "author": "Mathben (mathben@technolibre.ca)",
+    "license": "AGPL-3",
     "category": "Extra Tools",
     "depends": [
         "code_generator",
-        "web_widget_color",
     ],
     "installable": True,
     "data": [

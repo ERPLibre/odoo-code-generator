@@ -4,7 +4,6 @@ import os
 from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import api, fields, models, modules, tools
 from odoo.models import MAGIC_COLUMNS
 

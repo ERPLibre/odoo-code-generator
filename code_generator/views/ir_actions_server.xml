@@ -49,7 +49,7 @@
                 <field name="comment" />
                 <field name="usage" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -98,11 +98,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_actions_server_actions_server_action_window"
-        name="Actions server"
-        res_model="ir.actions.server"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_actions_server_actions_server_action_window" model="ir.actions.act_window">
+        <field name="name">Actions server</field>
+        <field name="res_model">ir.actions.server</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
 </odoo>

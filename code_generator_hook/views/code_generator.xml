@@ -14,7 +14,7 @@
                         <group
                             string="Feature"
                             name="pre_init_hook_show_feature"
-                            attrs="{'invisible': [('pre_init_hook_show', '=', False)]}"
+                            invisible="not pre_init_hook_show"
                         >
                             <field name="pre_init_hook_feature_general_conf" />
                         </group>
@@ -22,7 +22,7 @@
 
                     <field
                         name="pre_init_hook_code"
-                        attrs="{'invisible': [('pre_init_hook_show', '=', False)]}"
+                        invisible="not pre_init_hook_show"
                         nolabel="1"
                         widget="ace"
                         options="{'mode': 'python'}"
@@ -35,7 +35,7 @@
                         <group
                             string="Feature"
                             name="post_init_hook_show_feature"
-                            attrs="{'invisible': [('post_init_hook_show', '=', False)]}"
+                            invisible="not post_init_hook_show"
                         >
                             <field name="post_init_hook_feature_general_conf" />
                             <field name="post_init_hook_feature_code_generator" />
@@ -43,7 +43,7 @@
                     </group>
                     <field
                         name="post_init_hook_code"
-                        attrs="{'invisible': [('post_init_hook_show', '=', False)]}"
+                        invisible="not post_init_hook_show"
                         nolabel="1"
                         widget="ace"
                         options="{'mode': 'python'}"
@@ -56,7 +56,7 @@
                         <group
                             string="Feature"
                             name="uninstall_hook_show_feature"
-                            attrs="{'invisible': [('uninstall_hook_show', '=', False)]}"
+                            invisible="not uninstall_hook_show"
                         >
                             <field name="uninstall_hook_feature_general_conf" />
                             <field name="uninstall_hook_feature_code_generator" />
@@ -64,7 +64,7 @@
                     </group>
                     <field
                         name="uninstall_hook_code"
-                        attrs="{'invisible': [('uninstall_hook_show', '=', False)]}"
+                        invisible="not uninstall_hook_show"
                         nolabel="1"
                         widget="ace"
                         options="{'mode': 'python'}"

@@ -75,7 +75,7 @@
                 <field name="view_name" />
                 <field name="view_type" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -184,7 +184,7 @@
         <field name="name">code_generator_view_tree</field>
         <field name="model">code.generator.view</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="code_generator_id" />
                 <field name="has_body_sheet" />
                 <field name="id_name" />
@@ -195,14 +195,13 @@
                 <field name="view_item_ids" />
                 <field name="view_name" />
                 <field name="view_type" />
-            </tree>
+            </list>
         </field>
     </record>
 
-    <act_window
-        id="code_generator_view_generator_view_action_window"
-        name="Generator view"
-        res_model="code.generator.view"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+    <record id="code_generator_view_generator_view_action_window" model="ir.actions.act_window">
+        <field name="name">Generator view</field>
+        <field name="res_model">code.generator.view</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
+    </record>
 </odoo>

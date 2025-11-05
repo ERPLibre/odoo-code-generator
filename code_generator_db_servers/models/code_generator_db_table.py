@@ -7,7 +7,6 @@ from collections import defaultdict
 
 import psycopg2
 import unidecode
-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.models import MAGIC_COLUMNS
@@ -162,7 +161,6 @@ class CodeGeneratorDbTable(models.Model):
             )
             obj.module_display_name = obj.model_name.replace(".", " ").title()
 
-    @api.multi
     def toggle_nomenclator(self):
         for table in self:
             table.nomenclator = not table.nomenclator
@@ -248,7 +246,6 @@ class CodeGeneratorDbTable(models.Model):
 
         return _inner_conform
 
-    @api.multi
     def generate_module_data_migration_hook(self, code_generator_id=None):
         db_id = self[0].m2o_db
 
@@ -284,7 +281,6 @@ class CodeGeneratorDbTable(models.Model):
                 " code_generator_db_table"
             )
 
-    @api.multi
     def generate_module(self, code_generator_id=None):
         """
         Function to generate a module
@@ -422,29 +418,29 @@ class CodeGeneratorDbTable(models.Model):
             if field.new_default_value:
                 dct_field["default"] = field.new_default_value
             if field.is_show_whitelist_list_view:
-                dct_field[
-                    "is_show_whitelist_list_view"
-                ] = field.is_show_whitelist_list_view
+                dct_field["is_show_whitelist_list_view"] = (
+                    field.is_show_whitelist_list_view
+                )
             if field.is_hide_blacklist_list_view:
-                dct_field[
-                    "is_hide_blacklist_list_view"
-                ] = field.is_hide_blacklist_list_view
+                dct_field["is_hide_blacklist_list_view"] = (
+                    field.is_hide_blacklist_list_view
+                )
             if field.is_show_whitelist_form_view:
-                dct_field[
-                    "is_show_whitelist_form_view"
-                ] = field.is_show_whitelist_form_view
+                dct_field["is_show_whitelist_form_view"] = (
+                    field.is_show_whitelist_form_view
+                )
             if field.is_hide_blacklist_form_view:
-                dct_field[
-                    "is_hide_blacklist_form_view"
-                ] = field.is_hide_blacklist_form_view
+                dct_field["is_hide_blacklist_form_view"] = (
+                    field.is_hide_blacklist_form_view
+                )
             if field.is_show_whitelist_kanban_view:
-                dct_field[
-                    "is_show_whitelist_kanban_view"
-                ] = field.is_show_whitelist_kanban_view
+                dct_field["is_show_whitelist_kanban_view"] = (
+                    field.is_show_whitelist_kanban_view
+                )
             if field.is_hide_blacklist_kanban_view:
-                dct_field[
-                    "is_hide_blacklist_kanban_view"
-                ] = field.is_hide_blacklist_kanban_view
+                dct_field["is_hide_blacklist_kanban_view"] = (
+                    field.is_hide_blacklist_kanban_view
+                )
             if field.relation_table_id:
                 # Don't share field.relation, it's the relation with the table_name
                 dct_field["relation"] = field.relation_table_id.model_name
@@ -585,9 +581,9 @@ class CodeGeneratorDbTable(models.Model):
                                     path_file,
                                     "rb",
                                 ).read()
-                                data[
-                                    column_binary_char_id.field_name
-                                ] = base64.b64encode(new_data_binary)
+                                data[column_binary_char_id.field_name] = (
+                                    base64.b64encode(new_data_binary)
+                                )
                             else:
                                 _logger.error(
                                     f"Cannot add file path `{path_file}` for"
@@ -1033,9 +1029,11 @@ class CodeGeneratorDbTable(models.Model):
                     t_odoo_field_4insert = self.get_odoo_field_tuple_4insert(
                         column_name,
                         column_name.capitalize(),
-                        "many2one"
-                        if is_m2o
-                        else self.get_odoo_ttype(column_info[7]),
+                        (
+                            "many2one"
+                            if is_m2o
+                            else self.get_odoo_ttype(column_info[7])
+                        ),
                         column_info[6] == "NO",
                     )
 

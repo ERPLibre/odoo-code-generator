@@ -49,7 +49,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         for code_generator in self.code_generator_id:
             code_generator.add_module_dependency(["base_geoengine", "website"])
 
-    @api.multi
     def button_generate_views(self):
         status = super(
             CodeGeneratorGenerateViewsWizard, self

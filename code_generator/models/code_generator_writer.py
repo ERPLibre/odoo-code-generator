@@ -14,11 +14,10 @@ import unidecode
 from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
-from PIL import Image
-
 from odoo import api, fields, models
 from odoo.models import MAGIC_COLUMNS
 from odoo.tools.misc import mute_logger
+from PIL import Image
 
 from ..code_generator_data import CodeGeneratorData
 from ..extractor_controller import ExtractorController
@@ -1310,10 +1309,10 @@ _logger = logging.getLogger(__name__)"""
                                     str(i_attach).encode("utf-8")
                                 ).hexdigest()[:6]
 
-                                new_data_to_write[
-                                    1
-                                ] = self.rename_filename_with_uuid(
-                                    url_path_file_module, unique_str
+                                new_data_to_write[1] = (
+                                    self.rename_filename_with_uuid(
+                                        url_path_file_module, unique_str
+                                    )
                                 )
 
                                 element = ET.tostring(
@@ -1554,13 +1553,13 @@ _logger = logging.getLogger(__name__)"""
 
             abs_path_file = os.path.join("data", f"{model_model}.xml")
 
-            self.code_generator_data.dct_data_metadata_file[
-                abs_path_file
-            ] = lst_id
+            self.code_generator_data.dct_data_metadata_file[abs_path_file] = (
+                lst_id
+            )
             if lst_depend:
-                self.code_generator_data.dct_data_depend[
-                    abs_path_file
-                ] = lst_depend
+                self.code_generator_data.dct_data_depend[abs_path_file] = (
+                    lst_depend
+                )
 
     def _set_module_menus(self, module):
         """
@@ -1736,9 +1735,7 @@ _logger = logging.getLogger(__name__)"""
         for line in content.split("\n"):
             # count first space
             if line.strip():
-                new_content += (
-                    f'{"  " * (len(line) - len(line.lstrip()))}{line.strip()}\n'
-                )
+                new_content += f'{"  " * (len(line) - len(line.lstrip()))}{line.strip()}\n'
             else:
                 new_content += "\n"
         return new_content
@@ -2902,9 +2899,9 @@ _logger = logging.getLogger(__name__)"""
                     dct_field_attribute["comodel_name"] = f2export.relation
 
                 if f2export.ttype == "one2many" and f2export.relation_field:
-                    dct_field_attribute[
-                        "inverse_name"
-                    ] = f2export.relation_field
+                    dct_field_attribute["inverse_name"] = (
+                        f2export.relation_field
+                    )
 
                 if f2export.ttype == "many2many":
                     # elif f2export.relation_table.startswith("x_"):
@@ -2920,9 +2917,9 @@ _logger = logging.getLogger(__name__)"""
                         and f"{f2export.model.replace('.', '_')}_{f2export.relation.replace('.', '_')}"
                         != f2export.relation_table
                     ):
-                        dct_field_attribute[
-                            "relation"
-                        ] = f2export.relation_table
+                        dct_field_attribute["relation"] = (
+                            f2export.relation_table
+                        )
                         dct_field_attribute["column1"] = f2export.column1
                         dct_field_attribute["column2"] = f2export.column2
                     elif (
@@ -2933,9 +2930,7 @@ _logger = logging.getLogger(__name__)"""
                     ):
                         # TODO need to validate it's not exist, the new relation table
                         # relation can be empty, the system will generate it, but crash if highter then 63
-                        new_relation_table = (
-                            f"{f2export.name}_{f2export.model.replace('.', '_')}_rel"
-                        )
+                        new_relation_table = f"{f2export.name}_{f2export.model.replace('.', '_')}_rel"
                         if len(new_relation_table) > 63:
                             # again!
                             lst_split_relation_t = f2export.relation_table[
@@ -2964,9 +2959,9 @@ _logger = logging.getLogger(__name__)"""
                 if f2export.force_domain:
                     try:
                         eval(f2export.force_domain)
-                        dct_field_attribute[
-                            "domain_raw"
-                        ] = f2export.force_domain
+                        dct_field_attribute["domain_raw"] = (
+                            f2export.force_domain
+                        )
                     except Exception as e:
                         # Cannot transform it in string
                         dct_field_attribute["domain"] = f2export.force_domain
@@ -3027,9 +3022,9 @@ _logger = logging.getLogger(__name__)"""
 
             if f2export.track_visibility:
                 if f2export.track_visibility in ("onchange", "always"):
-                    dct_field_attribute[
-                        "track_visibility"
-                    ] = f2export.track_visibility
+                    dct_field_attribute["track_visibility"] = (
+                        f2export.track_visibility
+                    )
                     # TODO is it the good place for this?
                     # lst_depend_model = [
                     #     "mail.thread",
@@ -3689,7 +3684,6 @@ _logger = logging.getLogger(__name__)"""
                 )
                 cw.emit('ir_attach_id.write({"datas": datas})')
 
-    @api.multi
     def generate_writer(self, vals):
         modules = self.env["code.generator.module"].browse(
             vals.get("code_generator_ids")

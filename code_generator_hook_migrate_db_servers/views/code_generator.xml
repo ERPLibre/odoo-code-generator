@@ -12,12 +12,12 @@
                 <group
                     name="db_server_migration_template_script_group"
                     string="DB server conf"
-                    attrs="{'invisible': [('migrate_from_db_server', '=', False)]}"
+                    invisible="not migrate_from_db_server"
                 >
                     <field name="migrate_db_server_relation_table_ids" widget="many2many_tags">
-                        <tree editable="top">
+                        <list editable="top">
                             <field name="name" />
-                        </tree>
+                        </list>
                     </field>
                 </group>
             </xpath>

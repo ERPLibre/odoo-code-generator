@@ -40,7 +40,7 @@
                 <field name="ir_model_ids" />
                 <field name="name" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -86,7 +86,7 @@
             <search string="Code generator ir model dependency">
                 <filter domain="[('depend_id','!=',False)]" name="depend_id" string="Dependency" />
                 <filter domain="[('ir_model_ids','!=',False)]" name="ir_model_ids" string="Ir model" />
-                <filter domain="[('name','!=',False)]" name="name" string="Name" />
+<!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
             </search>
         </field>
     </record>
@@ -95,18 +95,20 @@
         <field name="name">code_generator_ir_model_dependency_tree</field>
         <field name="model">code.generator.ir.model.dependency</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="depend_id" />
                 <field name="ir_model_ids" />
                 <field name="name" />
-            </tree>
+            </list>
         </field>
     </record>
 
-    <act_window
+    <record
         id="code_generator_ir_model_dependency_generator_ir_model_dependency_action_window"
-        name="Generator ir model dependency"
-        res_model="code.generator.ir.model.dependency"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+        model="ir.actions.act_window"
+    >
+        <field name="name">Generator ir model dependency</field>
+        <field name="res_model">code.generator.ir.model.dependency</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
+    </record>
 </odoo>

@@ -53,7 +53,7 @@
                 <field name="xml_id" />
                 <field name="m2o_code_generator" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -123,7 +123,7 @@
                 <filter domain="[('target','!=',False)]" name="target" string="Action Target" />
                 <filter domain="[('type','!=',False)]" name="type" string="Action Type" />
                 <filter domain="[('url','!=',False)]" name="url" string="Action URL" />
-                <filter domain="[('xml_id','!=',False)]" name="xml_id" string="External ID" />
+<!--                <filter domain="[('xml_id','!=',False)]" name="xml_id" string="External ID" />-->
                 <filter
                     domain="[('m2o_code_generator','!=',False)]"
                     name="m2o_code_generator"
@@ -137,7 +137,7 @@
         <field name="name">ir_actions_act_url_tree</field>
         <field name="model">ir.actions.act_url</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="binding_model_id" />
                 <field name="binding_type" />
                 <field name="help" />
@@ -147,15 +147,14 @@
                 <field name="url" />
                 <field name="xml_id" />
                 <field name="m2o_code_generator" />
-            </tree>
+            </list>
         </field>
     </record>
 
-    <act_window
-        id="ir_actions_act_url_actions_act_url_action_window"
-        name="Actions act url"
-        res_model="ir.actions.act_url"
-        context="{'search_default_m2o_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_actions_act_url_actions_act_url_action_window" model="ir.actions.act_window">
+        <field name="name">Actions act url</field>
+        <field name="res_model">ir.actions.act_url</field>
+        <field name="context">{'search_default_m2o_code_generator': 1}</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
 </odoo>

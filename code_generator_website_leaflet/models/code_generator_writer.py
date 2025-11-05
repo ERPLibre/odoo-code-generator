@@ -2,7 +2,6 @@ import os
 
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import api, fields, models, modules, tools
 
 BREAK_LINE = ["\n"]

@@ -1,6 +1,5 @@
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import _, api, fields, models
 from odoo.models import MAGIC_COLUMNS
 
@@ -85,7 +84,6 @@ class CodeGeneratorGenerateThemeWebsiteWizard(models.TransientModel):
         string="Text Color", default="#000", help="Choose your text color"
     )
 
-    @api.multi
     def button_generate_views(self):
         status = super(
             CodeGeneratorGenerateThemeWebsiteWizard, self

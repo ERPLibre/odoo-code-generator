@@ -8,13 +8,10 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='nextcall']" position="before">
                 <field name="force_use_datetime_installation" />
-                <field
-                    name="ignore_threshold_time_upper"
-                    attrs="{'invisible': [('force_use_datetime_installation','=',True)]}"
-                />
+                <field name="ignore_threshold_time_upper" invisible="force_use_datetime_installation" />
             </xpath>
             <xpath expr="//field[@name='nextcall']" position="attributes">
-                <attribute name="attrs">{'invisible': [('force_use_datetime_installation','=',True)]}</attribute>
+                <attribute name="invisible">force_use_datetime_installation</attribute>
             </xpath>
         </field>
     </record>

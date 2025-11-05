@@ -32,9 +32,9 @@
         <field name="model">ir.model.access</field>
         <field name="inherit_id" ref="base.ir_access_view_tree" />
         <field name="arch" type="xml">
-            <tree position="attributes">
+            <list position="attributes">
                 <attribute name="editable" />
-            </tree>
+            </list>
         </field>
     </record>
 </odoo>

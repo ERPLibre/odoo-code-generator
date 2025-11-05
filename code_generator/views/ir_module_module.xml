@@ -10,11 +10,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_module_module_module_module_action_window"
-        name="Module module"
-        res_model="ir.module.module"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_module_module_module_module_action_window" model="ir.actions.act_window">
+        <field name="name">Module module</field>
+        <field name="res_model">ir.module.module</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
 </odoo>

@@ -4,7 +4,6 @@ import os
 
 import lxml
 from docutils.core import publish_string
-
 from odoo import api, fields, models, modules, tools
 from odoo.addons.base.models.ir_module import MyWriter
 
@@ -23,6 +22,13 @@ class CodeGeneratorModule(models.Model):
     author = fields.Char(readonly=False)
 
     category_id = fields.Many2one(readonly=False)
+    country_ids = fields.Many2many(
+        "res.country",
+        "code_generator_module_country_rel",
+        "code_generator_module_id",
+        "country_id",
+        string="Countries",
+    )
 
     code_generator_act_window_id = fields.One2many(
         comodel_name="code.generator.act_window",
@@ -278,7 +284,6 @@ class CodeGeneratorModule(models.Model):
     )
 
     @api.depends("template_module_name")
-    @api.multi
     def _fill_template_module_id(self):
         for module_id in self:
             if module_id.template_module_name:
@@ -286,14 +291,12 @@ class CodeGeneratorModule(models.Model):
                     "ir.module.module"
                 ].search([("name", "=", module_id.template_module_name)])
 
-    @api.multi
     def add_module_dependency_template(self, module_name):
         self.add_module_dependency(
             module_name,
             model_dependency="code.generator.module.template.dependency",
         )
 
-    @api.multi
     def add_module_dependency(
         self, module_name, model_dependency="code.generator.module.dependency"
     ):
@@ -388,9 +391,11 @@ class CodeGeneratorModule(models.Model):
                         "file_insertion_enabled": False,
                     }
                     output = publish_string(
-                        source=module.description
-                        if not module.application and module.description
-                        else "",
+                        source=(
+                            module.description
+                            if not module.application and module.description
+                            else ""
+                        ),
                         settings_overrides=overrides,
                         writer=MyWriter(),
                     )
@@ -731,7 +736,6 @@ class CodeGeneratorModule(models.Model):
                     vals["icon_image"] = base64.b64encode(image_file.read())
         return super(models.Model, self).create(vals)
 
-    @api.multi
     def unlink(self):
         o2m_models = self.mapped("o2m_models").filtered(
             lambda m: m.state == "manual"

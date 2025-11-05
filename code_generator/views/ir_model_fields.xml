@@ -84,7 +84,7 @@
                 <field name="size" />
                 <field name="state" />
                 <field name="store" />
-                <field name="track_visibility" />
+<!--                <field name="track_visibility" />-->
                 <field name="translate" />
                 <field name="ttype" />
                 <field name="code_generator_calendar_view_sequence" />
@@ -124,7 +124,7 @@
                 <field name="is_show_whitelist_pivot_view" />
                 <field name="is_show_whitelist_search_view" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -279,11 +279,11 @@
                                     <li class="text-danger float-right mb4" t-if="!record.store.raw_value">
                                         <i aria-label="Invalid" class="fa fa-circle" role="img" title="Invalid" />
                                     </li>
-                                    <li class="mb4">
-                                        <strong>
-                                            <field name="track_visibility" />
-                                        </strong>
-                                    </li>
+<!--                                    <li class="mb4">-->
+<!--                                        <strong>-->
+<!--                                            <field name="track_visibility" />-->
+<!--                                        </strong>-->
+<!--                                    </li>-->
                                     <li class="text-success float-right mb4" t-if="record.translate.raw_value">
                                         <i aria-label="Ok" class="fa fa-circle" role="img" title="Ok" />
                                     </li>
@@ -625,11 +625,10 @@
         </field>
     </record>
 
-    <act_window
-        id="ir_model_fields_model_fields_action_window"
-        name="Model fields"
-        res_model="ir.model.fields"
-        context="{'search_default_code_generator': 1}"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_model_fields_model_fields_action_window" model="ir.actions.act_window">
+        <field name="name">Model fields</field>
+        <field name="res_model">ir.model.fields</field>
+        <field name="context">{'search_default_code_generator': 1}</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
 </odoo>

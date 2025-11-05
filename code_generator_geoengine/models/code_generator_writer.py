@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
-
 import os
 
 from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import api, fields, models, modules, tools
 
 BREAK_LINE = ["\n"]
@@ -34,9 +31,7 @@ class CodeGeneratorWriter(models.Model):
                 str_view_id = self.code_generator_data.dct_view_id.get(
                     vector.view_id.name
                 )
-                str_geo_field_id = (
-                    f"field_{vector.geo_field_id.model.replace('.', '_')}__{vector.geo_field_id.name}"
-                )
+                str_geo_field_id = f"field_{vector.geo_field_id.model.replace('.', '_')}__{vector.geo_field_id.name}"
                 lst_field = [
                     E.field({"name": "geo_field_id", "ref": str_geo_field_id}),
                     E.field({"name": "name"}, vector.name),

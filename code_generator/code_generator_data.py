@@ -7,7 +7,6 @@ import subprocess
 from collections import defaultdict
 from typing import Tuple
 
-import xmlformatter
 from code_writer import CodeWriter
 
 _logger = logging.getLogger(__name__)
@@ -559,7 +558,6 @@ class CodeGeneratorData:
         use_prettier = True
         use_format_black = True  # Else, oca-autopep8
         use_clean_import_isort = True
-        enable_xml_formatter = False  # Else, prettier-xml
         # Manual format with def with programmer style
         lst_cmd = []
         for path_file in self.lst_path_file:
@@ -581,9 +579,7 @@ class CodeGeneratorData:
                                 first_cut = line.rfind(", ", 0, first_cut) + 1
                                 first_part = line[:first_cut]
                                 last_part = line[first_cut:].lstrip()
-                                str_line = (
-                                    f"{first_part}\n{' ' * next_tab_space}{last_part}"
-                                )
+                                str_line = f"{first_part}\n{' ' * next_tab_space}{last_part}"
                                 lst_line_write.append(str_line[:-1])
                             else:
                                 lst_line_write.append(line[:-1])
@@ -626,7 +622,7 @@ class CodeGeneratorData:
                     lst_cmd.append(cmd)
 
             elif path_file.endswith(".xml"):
-                if use_prettier and not enable_xml_formatter:
+                if use_prettier:
                     if "/data/" in path_file:
                         # Super size --print-width, because wrapping data break information for translation and
                         # visual data
@@ -715,19 +711,4 @@ class CodeGeneratorData:
             if result:
                 _logger.warning(result)
 
-        if enable_xml_formatter:
-            formatter = xmlformatter.Formatter(
-                indent="4",
-                indent_char=" ",
-                selfclose=True,
-                correct=True,
-                preserve=["pre"],
-                blanks=True,
-            )
-            for path_file in self.lst_path_file:
-                if path_file.endswith(".xml"):
-                    relative_path = path_file[len(self.module_path) + 1 :]
-                    self.write_file_binary(
-                        relative_path, formatter.format_file(path_file)
-                    )
         _logger.info("End of auto_format")

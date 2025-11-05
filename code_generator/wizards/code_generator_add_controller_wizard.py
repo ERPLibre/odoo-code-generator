@@ -54,6 +54,5 @@ class CodeGeneratorAddControllerWizard(models.TransientModel):
         ]
         self.field_ids = [(6, 0, field_ids)]
 
-    @api.multi
     def button_generate_add_controller(self):
         pass

@@ -29,7 +29,7 @@
                 <field name="m2o_ir_model" />
                 <field name="txt_code" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -73,18 +73,17 @@
         <field name="name">ir_model_server_constrain_tree</field>
         <field name="model">ir.model.server_constrain</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="constrained" />
                 <field name="m2o_ir_model" />
                 <field name="txt_code" />
-            </tree>
+            </list>
         </field>
     </record>
 
-    <act_window
-        id="ir_model_server_constrain_model_server_constrain_action_window"
-        name="Model server constrain"
-        res_model="ir.model.server_constrain"
-        view_mode="kanban,tree,form"
-    />
+    <record id="ir_model_server_constrain_model_server_constrain_action_window" model="ir.actions.act_window">
+        <field name="name">Model server constrain</field>
+        <field name="res_model">ir.model.server_constrain</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
 </odoo>

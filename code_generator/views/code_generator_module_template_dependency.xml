@@ -46,7 +46,7 @@
                 <field name="name" />
                 <field name="state" />
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="oe_kanban_details">
                                 <ul>
@@ -99,8 +99,8 @@
             <search string="Code generator module template dependency">
                 <filter domain="[('depend_id','!=',False)]" name="depend_id" string="Dependency" />
                 <filter domain="[('module_id','!=',False)]" name="module_id" string="Module" />
-                <filter domain="[('name','!=',False)]" name="name" string="Name" />
-                <filter domain="[('state','!=',False)]" name="state" string="Status" />
+<!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
+<!--                <filter domain="[('state','!=',False)]" name="state" string="Status" />-->
             </search>
         </field>
     </record>
@@ -109,19 +109,21 @@
         <field name="name">code_generator_module_template_dependency_tree</field>
         <field name="model">code.generator.module.template.dependency</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="depend_id" />
                 <field name="module_id" />
                 <field name="name" />
                 <field name="state" />
-            </tree>
+            </list>
         </field>
     </record>
 
-    <act_window
+    <record
         id="code_generator_module_template_dependency_generator_module_template_dependency_action_window"
-        name="Generator module template dependency"
-        res_model="code.generator.module.template.dependency"
-        view_mode="kanban,tree,pivot,graph,form"
-    />
+        model="ir.actions.act_window"
+    >
+        <field name="name">Generator module template dependency</field>
+        <field name="res_model">code.generator.module.template.dependency</field>
+        <field name="view_mode">kanban,list,pivot,graph,form</field>
+    </record>
 </odoo>

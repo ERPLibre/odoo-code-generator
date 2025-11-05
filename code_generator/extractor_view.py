@@ -167,12 +167,12 @@ class ExtractorView:
                                     f" '{menu_id.action.res_model}'"
                                 )
                         ir_actions_windows_id = ir_actions_windows[0]
-                        dct_act_value[
-                            "view_type"
-                        ] = ir_actions_windows_id.view_type
-                        dct_act_value[
-                            "view_mode"
-                        ] = ir_actions_windows_id.view_mode
+                        dct_act_value["view_type"] = (
+                            ir_actions_windows_id.view_type
+                        )
+                        dct_act_value["view_mode"] = (
+                            ir_actions_windows_id.view_mode
+                        )
                         dct_act_value["target"] = ir_actions_windows_id.target
                 # TODO why create act_window and not extract value
                 menu_action = self.env["code.generator.act_window"].create(
@@ -199,9 +199,9 @@ class ExtractorView:
                         ("res_id", "=", menu_id.parent_id.id),
                     ]
                 )
-                dct_menu_value[
-                    "parent_id_name"
-                ] = menu_data_parent_id.complete_name
+                dct_menu_value["parent_id_name"] = (
+                    menu_data_parent_id.complete_name
+                )
 
             if menu_action:
                 dct_menu_value["m2o_act_window"] = menu_action.id
@@ -756,9 +756,9 @@ class ExtractorView:
                 )
                 lst_view_attr_copy.remove("decoration-it")
             if "decoration-view_attr_decoration_info" in dct_view_attr.keys():
-                value[
-                    "view_attr_decoration_view_attr_decoration_info"
-                ] = dct_view_attr.get("decoration-view_attr_decoration_info")
+                value["view_attr_decoration_view_attr_decoration_info"] = (
+                    dct_view_attr.get("decoration-view_attr_decoration_info")
+                )
                 lst_view_attr_copy.remove("decoration-info")
             if "decoration-warning" in dct_view_attr.keys():
                 value["view_attr_decoration_warning"] = dct_view_attr.get(

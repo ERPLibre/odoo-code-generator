@@ -252,7 +252,6 @@ class IrModel(models.Model):
     def get_rec_name(self):
         return self.rec_name if self.rec_name else self._rec_name
 
-    @api.multi
     def add_model_inherit(self, model_name):
         """
 
@@ -333,17 +332,17 @@ class IrModel(models.Model):
                     tpl_relation = ("many2one", "many2many", "one2many")
                     tpl_relation_field = ("many2many", "one2many")
                     if new_field_id.ttype in tpl_relation:
-                        value_field_backup_format[
-                            "relation"
-                        ] = new_field_id.relation
+                        value_field_backup_format["relation"] = (
+                            new_field_id.relation
+                        )
 
                     if (
                         new_field_id.ttype in tpl_relation_field
                         and new_field_id.relation_field
                     ):
-                        value_field_backup_format[
-                            "relation_field"
-                        ] = new_field_id.relation_field
+                        value_field_backup_format["relation_field"] = (
+                            new_field_id.relation_field
+                        )
 
                     lst_dct_field.append(value_field_backup_format)
             if lst_dct_field:
@@ -448,7 +447,6 @@ class IrModel(models.Model):
 #
 #         return result
 #
-#     @api.multi
 #     def write(self, vals):
 #         result = super(CodeGeneratorBase, self).write(vals)
 #

@@ -1,6 +1,6 @@
 {
     "name": "Code Generator - geoengine",
-    "version": "12.0.0",
+    "version": "18.0.1.0.0",
     "summary": "Code Generator - Manage geoengine",
     "description": "Code generator builder to manage geoengine",
     "author": "Mathben (mathben@technolibre.ca)",
@@ -9,6 +9,7 @@
         "code_generator",
         "base_geoengine",
     ],
+    "license": "AGPL-3",
     "installable": True,
     "data": [
         "wizards/code_generator_generate_views_wizard.xml",

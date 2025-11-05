@@ -6,7 +6,6 @@ from collections import defaultdict
 import unidecode
 from lxml import etree as ET
 from lxml.builder import E
-
 from odoo import _, api, fields, models
 from odoo.models import MAGIC_COLUMNS
 
@@ -147,7 +146,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
     selected_model_tree_view_ids = fields.Many2many(
         comodel_name="ir.model",
         relation="selected_model_tree_view_ids_ir_model",
-        string="Selected Model Tree View",
+        string="Selected Model List View",
     )
 
     user_id = fields.Many2one(
@@ -180,7 +179,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             if self.code_generator_id.o2m_model_act_url:
                 self.code_generator_id.o2m_model_act_url.unlink()
 
-    @api.multi
     def button_generate_views(self):
         self.ensure_one()
 
@@ -234,7 +232,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         return status
 
-    @api.multi
     def generic_generate_view(self, dct_value_to_create):
         # before_time = time.process_time()
         o2m_models_view_tree = (
@@ -713,7 +710,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 )
             )
         else:
-            # Use tree view sequence, or generic sequence
+            # Use list view sequence, or generic sequence
             lst_field_sorted = model_created_fields.filtered(
                 lambda field: not field.ignore_on_code_generator_writer
             ).sorted(lambda field: field.code_generator_tree_view_sequence)
@@ -1097,7 +1094,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         template_item = E.templates(
             {},
             E.t(
-                {"t-name": "kanban-box"},
+                {"t-name": "card"},
                 E.div(
                     {"t-attf-class": "oe_kanban_global_click"},
                     E.div(
@@ -1991,7 +1988,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 "code": '''"""TODO what to run"""
 pass''',
                 "name": item.action_name,
-                "decorator": "@api.multi",
                 "param": "self",
                 "m2o_module": self.code_generator_id.id,
                 "m2o_model": model_id,
@@ -2507,44 +2503,44 @@ pass''',
             dct_attr_view["class"] = code_generator_view_id.view_attr_class
 
         if code_generator_view_id.view_attr_decoration_danger:
-            dct_attr_view[
-                "decoration-danger"
-            ] = code_generator_view_id.view_attr_decoration_danger
+            dct_attr_view["decoration-danger"] = (
+                code_generator_view_id.view_attr_decoration_danger
+            )
 
         if code_generator_view_id.view_attr_decoration_success:
-            dct_attr_view[
-                "decoration-success"
-            ] = code_generator_view_id.view_attr_decoration_success
+            dct_attr_view["decoration-success"] = (
+                code_generator_view_id.view_attr_decoration_success
+            )
 
         if code_generator_view_id.view_attr_decoration_primary:
-            dct_attr_view[
-                "decoration-primary"
-            ] = code_generator_view_id.view_attr_decoration_primary
+            dct_attr_view["decoration-primary"] = (
+                code_generator_view_id.view_attr_decoration_primary
+            )
 
         if code_generator_view_id.view_attr_decoration_bf:
-            dct_attr_view[
-                "decoration-bf"
-            ] = code_generator_view_id.view_attr_decoration_bf
+            dct_attr_view["decoration-bf"] = (
+                code_generator_view_id.view_attr_decoration_bf
+            )
 
         if code_generator_view_id.view_attr_decoration_it:
-            dct_attr_view[
-                "decoration-it"
-            ] = code_generator_view_id.view_attr_decoration_it
+            dct_attr_view["decoration-it"] = (
+                code_generator_view_id.view_attr_decoration_it
+            )
 
         if code_generator_view_id.view_attr_decoration_info:
-            dct_attr_view[
-                "decoration-info"
-            ] = code_generator_view_id.view_attr_decoration_info
+            dct_attr_view["decoration-info"] = (
+                code_generator_view_id.view_attr_decoration_info
+            )
 
         if code_generator_view_id.view_attr_decoration_warning:
-            dct_attr_view[
-                "decoration-warning"
-            ] = code_generator_view_id.view_attr_decoration_warning
+            dct_attr_view["decoration-warning"] = (
+                code_generator_view_id.view_attr_decoration_warning
+            )
 
         if code_generator_view_id.view_attr_decoration_muted:
-            dct_attr_view[
-                "decoration-muted"
-            ] = code_generator_view_id.view_attr_decoration_muted
+            dct_attr_view["decoration-muted"] = (
+                code_generator_view_id.view_attr_decoration_muted
+            )
 
         dct_attr_view = dict(
             sorted(dct_attr_view.items(), key=lambda kv: kv[0])

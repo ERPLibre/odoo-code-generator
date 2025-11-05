@@ -8,10 +8,7 @@
             <xpath expr="//form/sheet/notebook/page[@name='internal_view']" position="after">
                 <page name="portal" string="Portal">
                     <group>
-                        <field
-                            name="enable_generate_portal"
-                            attrs="{'invisible': [('enable_generate_all', '=', True)]}"
-                        />
+                        <field name="enable_generate_portal" invisible="enable_generate_all" />
                     </group>
                     <!--              <group string="Model" attrs="{'invisible': [('all_model', '=', True)]}">-->
                     <!--                <field name="selected_model_ids" nolabel="1"/>-->

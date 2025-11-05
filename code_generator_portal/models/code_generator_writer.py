@@ -2,7 +2,6 @@ import logging
 import os
 
 from code_writer import CodeWriter
-
 from odoo import api, fields, models, modules, tools
 from odoo.models import MAGIC_COLUMNS
 
@@ -363,7 +362,7 @@ class CodeGeneratorWriter(models.Model):
             #         cw.emit("# extends filterby criteria with project (criteria name is the project id)")
             #         cw.emit("# Note: portal users can't view projects they don't follow")
             #         cw.emit(
-            #             "project_groups = request.env['project.task'].read_group([('project_id', 'not in', projects.ids)], "
+            #             "project_groups = request.env['project.task']._read_group([('project_id', 'not in', projects.ids)], "
             #             "['project_id'], ['project_id'])")
             #     with cw.indent():
             #         cw.emit("for group in project_groups:")

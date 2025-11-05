@@ -32,10 +32,10 @@
                     </group>
                     <notebook>
                         <page name="internal_view" string="Internal view">
-                            <group string="Model View Tree" attrs="{'invisible': [('all_model', '=', True)]}">
+                            <group string="Model View Tree" invisible="all_model">
                                 <field name="selected_model_tree_view_ids" nolabel="1" />
                             </group>
-                            <group string="Model View Form" attrs="{'invisible': [('all_model', '=', True)]}">
+                            <group string="Model View Form" invisible="all_model">
                                 <field name="selected_model_form_view_ids" nolabel="1" />
                             </group>
                         </page>

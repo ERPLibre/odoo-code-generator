@@ -1,7 +1,6 @@
 import logging
 
 import psycopg2
-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -109,9 +108,9 @@ class CodeGeneratorDb(models.Model):
                     dct_all_table = dict(
                         m2o_db=result.id,
                         name=table_name,
-                        table_type="view"
-                        if table_info[1] == "VIEW"
-                        else "table",
+                        table_type=(
+                            "view" if table_info[1] == "VIEW" else "table"
+                        ),
                         module_name=module_name,
                     )
 
@@ -193,7 +192,6 @@ class CodeGeneratorDb(models.Model):
         else:
             raise ValidationError(CONNECTIONPROBLEM)
 
-    @api.multi
     def get_tables_with_data(self, table_ids=None):
         """
         Return code.generator.db.table ids for all tables with data, or search on table_ids parameter

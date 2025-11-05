@@ -4,7 +4,6 @@ import logging
 import types
 
 import astor
-
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import UserError, ValidationError
 
@@ -190,9 +189,9 @@ class IrModelFields(models.Model):
     # TODO This was a work around
     # TODO or maybe it's useful in first iteration of code generator, remove this later when A USE C GENERATE B
     code_generator_tree_view_sequence = fields.Integer(
-        string="Tree view sequence",
+        string="List view sequence",
         default=-1,
-        help="Sequence to write this field in tree view from Code Generator.",
+        help="Sequence to write this field in list view from Code Generator.",
     )
 
     comment_after = fields.Char(
