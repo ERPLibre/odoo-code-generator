@@ -5,22 +5,25 @@ from odoo.addons.base.models.ir_model import SAFE_EVAL_BASE
 from odoo.exceptions import ValidationError
 from odoo.tools.safe_eval import safe_eval
 
-CONSTRAINEDLS = _(
+CONSTRAINEDLS = (
     "The field Constrained lists the fields that the server constrain will"
     " check. It is a comma-separated list of field names, like name, size."
 )
-SERVERCONSTRAIN = _("%s Server constrain ")
-SYNTAXERRORMSG = _("There is a syntax error in your %scode definition.")
-
-SAFE_EVAL_BASE["re"] = re
-SAFE_EVAL_BASE["ValidationError"] = ValidationError
+SERVERCONSTRAIN = "%s Server constrain "
+SYNTAXERRORMSG = "There is a syntax error in your %scode definition."
 
 SAFE_EVAL_4FUNCTION = SAFE_EVAL_BASE
-SAFE_EVAL_4FUNCTION["api"] = api
-SAFE_EVAL_4FUNCTION["models"] = models
-SAFE_EVAL_4FUNCTION["fields"] = fields
-SAFE_EVAL_4FUNCTION["_"] = _
-PREDEFINEDVARS = _(
+SAFE_EVAL_4FUNCTION.update(
+    {
+        "re": re,
+        "ValidationError": ValidationError,
+        "api": api,
+        "models": models,
+        "fields": fields,
+        "_": _,
+    }
+)
+PREDEFINEDVARS = (
     "You specified a non predefined variable. The predefined variables are"
     " self, datetime, dateutil, time, re, ValidationError and the ones"
     " accessible through self, like self.env."

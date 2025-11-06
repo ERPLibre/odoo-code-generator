@@ -255,7 +255,6 @@ class CodeGeneratorModule(models.Model):
 
     website = fields.Char(readonly=False)
 
-    @api.model
     def _default_path_sync_code(self):
         # sibling directory odoo-code-generator-template
         sibling = os.path.normpath(
@@ -421,7 +420,6 @@ class CodeGeneratorModule(models.Model):
                 with tools.file_open(path, "rb") as image_file:
                     module.icon_image = base64.b64encode(image_file.read())
 
-    @api.model
     def add_update_model(
         self,
         model_model,
@@ -615,7 +613,7 @@ class CodeGeneratorModule(models.Model):
                             )
                         )
 
-            model_id = self.env["ir.model"].create(value)
+            model_id = self.env["ir.model"].create([value])
 
         # Model inherit
         if lst_depend_model:
@@ -645,7 +643,6 @@ class CodeGeneratorModule(models.Model):
                     f" ({len(relation)}) '{relation}'"
                 )
 
-    @api.model
     def add_update_model_one2many(self, model_model, dct_field):
         # When this is called, all field is in whitelist
         for field_name, field_info in dct_field.items():
@@ -720,13 +717,11 @@ class CodeGeneratorModule(models.Model):
                 " CodeGeneratorModule."
             )
 
-    @api.model
     def _update_dict(self, key_name, field_info, value_field_id):
         filter_field_attribute = field_info.get(key_name)
         if filter_field_attribute:
             value_field_id[key_name] = filter_field_attribute
 
-    @api.model
     def create(self, vals):
         if "icon" in vals.keys():
             icon_path = vals["icon"]

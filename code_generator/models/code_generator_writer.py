@@ -2008,7 +2008,7 @@ _logger = logging.getLogger(__name__)"""
                         E.field({"name": "target"}, act_window.target)
                     )
 
-                if view_mode != "tree,form" and view_mode != "form,tree":
+                if view_mode != "list,form" and view_mode != "form,list":
                     lst_field.append(E.field({"name": "view_mode"}, view_mode))
 
                 if view_type != "form":
@@ -2104,7 +2104,7 @@ _logger = logging.getLogger(__name__)"""
                 if act_window.target != "current":
                     dct_act_window["target"] = act_window.target
 
-                if view_mode != "tree,form":
+                if view_mode != "list,form":
                     dct_act_window["view_mode"] = view_mode
 
                 if view_type != "form":
@@ -3494,7 +3494,6 @@ _logger = logging.getLogger(__name__)"""
         if inherit_default != actual_default:
             dct_field_attr_diff["default"] = inherit_default
 
-    @api.model_create_multi
     def create(self, vals_list):
         """
         Create log of code generator writer

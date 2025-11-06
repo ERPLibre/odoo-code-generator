@@ -29,7 +29,7 @@
         </field>
     </record>
 
-    <record id="act_report_xml_view_tree_inherit" model="ir.ui.view">
+    <record id="act_report_xml_view_list_inherit" model="ir.ui.view">
         <field name="model">ir.actions.report</field>
         <field name="inherit_id" ref="base.act_report_xml_view_tree" />
         <field name="arch" type="xml">

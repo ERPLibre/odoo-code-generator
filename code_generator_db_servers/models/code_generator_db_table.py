@@ -201,7 +201,6 @@ class CodeGeneratorDbTable(models.Model):
         if nomenclator:
             table_id.nomenclator = True
 
-    @api.model_create_multi
     def create(self, vals_list):
         for value in vals_list:
             result = super(CodeGeneratorDbTable, self).create(value)
@@ -228,7 +227,6 @@ class CodeGeneratorDbTable(models.Model):
                     )
                 self.env["code.generator.db.column"].create(column_value)
 
-    @api.model
     def _conform_model_created_data(self, model_created_fields):
         """
         Function to conform the data for a created model
@@ -1178,16 +1176,6 @@ class CodeGeneratorDbTable(models.Model):
 
         except psycopg2.OperationalError:
             raise ValidationError(TABLEDATAPROBLEM)
-
-    @staticmethod
-    def replace_in(text, regex="\d"):
-        """
-        Util function to replace some content in a text
-        :param text:
-        :param regex:
-        :return:
-        """
-        return re.sub(regex, "", text)
 
     def search_new_field_name(self, module_id, model_name, old_field_name):
         update_ids = self.env[

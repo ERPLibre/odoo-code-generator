@@ -11,6 +11,7 @@
     ],
     "installable": True,
     "data": [
+        "security/ir.model.access.csv",
         "views/code_generator.xml",
         "wizards/code_generator_generate_theme_website_wizard.xml",
     ],

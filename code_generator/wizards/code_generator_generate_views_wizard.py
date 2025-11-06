@@ -24,13 +24,12 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
     _name = "code.generator.generate.views.wizard"
     _description = "Code Generator Generate Views Wizard"
 
-    # @api.model
     # def default_get(self, fields):
     #     result = super(CodeGeneratorGenerateViewsWizard, self).default_get(fields)
     #     code_generator_id = self.env["code.generator.module"].browse(result.get("code_generator_id"))
     #     lst_model_id = [a.id for a in code_generator_id.o2m_models]
     # Don't need that solution
-    #     result["selected_model_tree_view_ids"] = [(6, 0, lst_model_id)]
+    #     result["selected_model_list_view_ids"] = [(6, 0, lst_model_id)]
     #     result["selected_model_form_view_ids"] = [(6, 0, lst_model_id)]
     #     return result
 
@@ -143,9 +142,9 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         string="Selected Model Timeline View",
     )
 
-    selected_model_tree_view_ids = fields.Many2many(
+    selected_model_list_view_ids = fields.Many2many(
         comodel_name="ir.model",
-        relation="selected_model_tree_view_ids_ir_model",
+        relation="selected_model_list_view_ids_ir_model",
         string="Selected Model List View",
     )
 
@@ -155,14 +154,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         required=True,
         default=lambda s: s.env.user.id,
     )
-
-    generated_root_menu = None
-    generated_parent_menu = None
-    dct_group_generated_menu = {}
-    dct_parent_generated_menu = {}
-    lst_group_generated_menu_name = []
-    lst_parent_generated_menu_name = []
-    nb_sub_menu = 0
 
     def clear_all(self):
         # if self.clear_all_view and self.code_generator_id.o2m_model_views:
@@ -234,10 +225,10 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
 
     def generic_generate_view(self, dct_value_to_create):
         # before_time = time.process_time()
-        o2m_models_view_tree = (
+        o2m_models_view_list = (
             self.code_generator_id.o2m_models
             if self.all_model
-            else self.selected_model_tree_view_ids
+            else self.selected_model_list_view_ids
         ).filtered(lambda x: not x.blacklist_all_ir_ui_view)
         o2m_models_view_form = (
             self.code_generator_id.o2m_models
@@ -289,7 +280,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         # Get unique list order by name of all model to generate
         lst_model = sorted(
             set(
-                o2m_models_view_tree
+                o2m_models_view_list
                 + o2m_models_view_form
                 + o2m_models_view_kanban
                 + o2m_models_view_search
@@ -314,11 +305,11 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 lst_view_generated.append("activity")
 
             # Different view
-            if model_id in o2m_models_view_tree:
+            if model_id in o2m_models_view_list:
                 is_whitelist = any(
                     [a.is_show_whitelist_list_view for a in model_id.field_id]
                 )
-                # model_created_fields_tree = list(
+                # model_created_fields_list = list(
                 #     filter(
                 #         lambda x: x.name not in MAGIC_FIELDS
                 #                   and not x.is_hide_blacklist_list_view
@@ -329,7 +320,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 #         [a for a in model_id.field_id],
                 #     )
                 # )
-                model_created_fields_tree = model_id.field_id.filtered(
+                model_created_fields_list = model_id.field_id.filtered(
                     lambda field: field.name not in MAGIC_FIELDS
                     and not field.is_hide_blacklist_list_view
                     and (
@@ -337,16 +328,16 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                         or (is_whitelist and field.is_show_whitelist_list_view)
                     )
                 )
-                model_created_fields_tree = self._update_model_field_tree_view(
-                    model_created_fields_tree
+                model_created_fields_list = self._update_model_field_list_view(
+                    model_created_fields_list
                 )
                 self._generate_list_views_models(
                     model_id,
-                    model_created_fields_tree,
+                    model_created_fields_list,
                     model_id.m2o_module,
                     dct_value_to_create,
                 )
-                lst_view_generated.append("tree")
+                lst_view_generated.append("list")
 
             if model_id in o2m_models_view_form:
                 is_whitelist = any(
@@ -640,8 +631,8 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
 
             code_generator.add_module_dependency("mail")
 
-    def _update_model_field_tree_view(self, model_created_fields_tree):
-        return model_created_fields_tree
+    def _update_model_field_list_view(self, model_created_fields_list):
+        return model_created_fields_list
 
     def _generate_list_views_models(
         self, model_created, model_created_fields, module, dct_value_to_create
@@ -653,26 +644,26 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
 
         has_sequence = False
         for field_id in model_created_fields:
-            if field_id.code_generator_tree_view_sequence >= 0:
+            if field_id.code_generator_list_view_sequence >= 0:
                 has_sequence = True
                 break
 
         if not has_sequence:
             lst_order_field_id = [[], [], []]
-            # code_generator_tree_view_sequence all -1, default value
+            # code_generator_list_view_sequence all -1, default value
             # Move rec_name in beginning
             # Move one2many at the end
             for field_id in model_created_fields:
                 if field_id.name == model_created.rec_name:
                     # TODO write this value
                     lst_order_field_id[0].append(field_id.id)
-                    # field_id.code_generator_tree_view_sequence = 0
+                    # field_id.code_generator_list_view_sequence = 0
                 elif field_id.ttype == "one2many":
                     lst_order_field_id[2].append(field_id.id)
-                    # field_id.code_generator_tree_view_sequence = 2
+                    # field_id.code_generator_list_view_sequence = 2
                 else:
                     lst_order_field_id[1].append(field_id.id)
-                    # field_id.code_generator_tree_view_sequence = 1
+                    # field_id.code_generator_list_view_sequence = 1
             new_lst_order_field_id = (
                 lst_order_field_id[0]
                 + lst_order_field_id[1]
@@ -713,21 +704,21 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             # Use list view sequence, or generic sequence
             lst_field_sorted = model_created_fields.filtered(
                 lambda field: not field.ignore_on_code_generator_writer
-            ).sorted(lambda field: field.code_generator_tree_view_sequence)
+            ).sorted(lambda field: field.code_generator_list_view_sequence)
 
         # lst_field = [E.field({"name": a.name}) for a in model_created_fields]
         lst_field = []
         for field_id in lst_field_sorted:
             if field_id.name in lst_field_to_remove:
                 continue
-            # TODO validate code_generator_tree_view_sequence is supported
-            # if a.code_generator_tree_view_sequence >= 0
+            # TODO validate code_generator_list_view_sequence is supported
+            # if a.code_generator_list_view_sequence >= 0
             dct_value = {"name": field_id.name}
             if field_id.force_widget:
                 dct_value["widget"] = field_id.force_widget
             dct_value = dict(sorted(dct_value.items(), key=lambda kv: kv[0]))
             lst_field.append(E.field(dct_value))
-        arch_xml = E.tree(
+        arch_xml = E.list(
             {
                 # TODO enable this when missing form
                 # "editable": "top",
@@ -737,8 +728,8 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         str_arch = ET.tostring(arch_xml, pretty_print=True)
         str_arch = b'<?xml version="1.0"?>\n' + str_arch
         # ir_ui_view_value = {
-        #     "name": f"{model_name_str}_tree",
-        #     "type": "tree",
+        #     "name": f"{model_name_str}_list",
+        #     "type": "list",
         #     "model": model_name,
         #     "arch": str_arch,
         #     "m2o_model": model_created.id,
@@ -746,8 +737,8 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         # dct_value_to_create["ir.ui.view"].append(ir_ui_view_value)
         view_value = self.env["ir.ui.view"].search(
             [
-                # ("name", "=", f"{model_name_str}_tree"),
-                ("type", "=", "tree"),
+                # ("name", "=", f"{model_name_str}_list"),
+                ("type", "=", "list"),
                 ("model", "=", model_name),
                 # ("arch", "=", str_arch),
                 # ("m2o_model", "=", model_created.id),
@@ -756,8 +747,8 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
                 {
-                    "name": f"{model_name_str}_tree",
-                    "type": "tree",
+                    "name": f"{model_name_str}_list",
+                    "type": "list",
                     "model": model_name,
                     "arch": str_arch,
                     "m2o_model": model_created.id,
@@ -765,7 +756,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             )
         else:
             _logger.warning(
-                f"View '{model_name_str}_tree' of model '{model_name}' already"
+                f"View '{model_name_str}_list' of model '{model_name}' already"
                 " exist."
             )
 
@@ -2555,8 +2546,8 @@ pass''',
             form_xml = E.form(dct_attr_view, *lst_item_form)
         elif view_type == "search":
             form_xml = E.search(dct_attr_view, *lst_item_form)
-        elif view_type == "tree":
-            form_xml = E.tree(dct_attr_view, *lst_item_form)
+        elif view_type == "list":
+            form_xml = E.list(dct_attr_view, *lst_item_form)
         elif view_type == "kanban":
             form_xml = E.kanban(dct_attr_view, *lst_item_form)
         elif view_type == "graph":
@@ -2759,6 +2750,14 @@ pass''',
         if self.disable_generate_menu:
             return
 
+        generated_root_menu = None
+        generated_parent_menu = None
+        dct_group_generated_menu = {}
+        dct_parent_generated_menu = {}
+        lst_group_generated_menu_name = []
+        lst_parent_generated_menu_name = []
+        nb_sub_menu = 0
+
         # TODO no menu is generated in case of module is not an application
         #  and it creates new views, because cannot find views to attach it.
         #  Need a configuration to attach a root if not create it.
@@ -2776,7 +2775,7 @@ pass''',
         menu_parent_id = None
         if module.application and is_generic_menu:
             # Create root if not exist
-            if not self.generated_root_menu:
+            if not generated_root_menu:
                 v = {
                     "name": module_name.replace("_", " ").title(),
                     "sequence": 20,
@@ -2784,37 +2783,37 @@ pass''',
                     # 'group_id': group_id.id,
                     "m2o_module": module.id,
                 }
-                self.generated_root_menu = self.env["ir.ui.menu"].create(v)
-            if not self.generated_parent_menu:
+                generated_root_menu = self.env["ir.ui.menu"].create(v)
+            if not generated_parent_menu:
                 v = {
                     "name": _("Menu"),
                     "sequence": 1,
-                    "parent_id": self.generated_root_menu.id,
+                    "parent_id": generated_root_menu.id,
                     # 'group_id': group_id.id,
                     "m2o_module": module.id,
                 }
-                self.generated_parent_menu = self.env["ir.ui.menu"].create(v)
+                generated_parent_menu = self.env["ir.ui.menu"].create(v)
 
         # Create list of menu_parent
-        if not self.lst_parent_generated_menu_name:
-            self.lst_parent_generated_menu_name = sorted(
+        if not lst_parent_generated_menu_name:
+            lst_parent_generated_menu_name = sorted(
                 list(set([a.menu_parent for a in model_ids if a.menu_parent]))
             )
 
         # Create list of menu_group
-        if not self.lst_group_generated_menu_name:
-            self.lst_group_generated_menu_name = sorted(
+        if not lst_group_generated_menu_name:
+            lst_group_generated_menu_name = sorted(
                 list(set([a.menu_group for a in model_ids if a.menu_group]))
             )
 
         # Create menu_parent item
         if is_generic_menu and menu_parent:
-            menu_parent_id = self.dct_parent_generated_menu.get(menu_parent)
+            menu_parent_id = dct_parent_generated_menu.get(menu_parent)
             if menu_parent == "Configuration":
                 sequence = 99
             else:
                 sequence = (
-                    self.lst_parent_generated_menu_name.index(menu_parent) + 1
+                    lst_parent_generated_menu_name.index(menu_parent) + 1
                 )
 
             if not menu_parent_id:
@@ -2823,11 +2822,11 @@ pass''',
                     "sequence": sequence,
                     # 'group_id': group_id.id,
                     "m2o_module": module.id,
-                    "parent_id": self.generated_root_menu.id,
+                    "parent_id": generated_root_menu.id,
                 }
 
                 menu_parent_id = self.env["ir.ui.menu"].create(v)
-                self.dct_parent_generated_menu[menu_parent] = menu_parent_id
+                dct_parent_generated_menu[menu_parent] = menu_parent_id
 
                 # Create id name
                 self._create_ir_model_data(
@@ -2841,8 +2840,8 @@ pass''',
 
         # Create menu_group item
         if is_generic_menu and menu_group:
-            menu_group_id = self.dct_group_generated_menu.get(menu_group)
-            sequence = self.lst_group_generated_menu_name.index(menu_group)
+            menu_group_id = dct_group_generated_menu.get(menu_group)
+            sequence = lst_group_generated_menu_name.index(menu_group)
             if not menu_group_id:
                 v = {
                     "name": menu_group,
@@ -2852,13 +2851,13 @@ pass''',
                 }
                 if menu_parent_id:
                     v["parent_id"] = menu_parent_id.id
-                elif self.generated_parent_menu:
-                    v["parent_id"] = self.generated_parent_menu.id
+                elif generated_parent_menu:
+                    v["parent_id"] = generated_parent_menu.id
                 else:
-                    v["parent_id"] = self.generated_root_menu.id
+                    v["parent_id"] = generated_root_menu.id
 
                 menu_group_id = self.env["ir.ui.menu"].create(v)
-                self.dct_group_generated_menu[menu_group] = menu_group_id
+                dct_group_generated_menu[menu_group] = menu_group_id
 
                 # Create id name
                 self._create_ir_model_data(
@@ -2944,7 +2943,7 @@ pass''',
                     "res_model": model_name,
                     "type": "ir.actions.act_window",
                     "view_mode": view_mode,
-                    "view_type": view_type,
+                    # "view_type": view_type,
                     # 'help': help_str,
                     # 'search_view_id': self.search_view_id.id,
                     "context": {},
@@ -2975,11 +2974,11 @@ pass''',
                 suffix_name="action_window",
             )
 
-            self.nb_sub_menu += 1
+            nb_sub_menu += 1
 
             v = {
                 "name": menu_name,
-                "sequence": self.nb_sub_menu,
+                "sequence": nb_sub_menu,
                 "action": "ir.actions.act_window,%s" % action_id.id,
                 # 'group_id': group_id.id,
                 "m2o_module": module.id,
@@ -2989,8 +2988,8 @@ pass''',
                 v["parent_id"] = menu_group_id.id
             elif menu_parent_id:
                 v["parent_id"] = menu_parent_id.id
-            elif self.generated_parent_menu:
-                v["parent_id"] = self.generated_parent_menu.id
+            elif generated_parent_menu:
+                v["parent_id"] = generated_parent_menu.id
 
             new_menu_id = self.env["ir.ui.menu"].create(v)
 
@@ -3049,7 +3048,7 @@ pass''',
                         "name": menu_id.m2o_act_window.name,
                         "type": "ir.actions.act_window",
                         "view_mode": view_mode,
-                        "view_type": view_type,
+                        # "view_type": view_type,
                         # 'help': help_str,
                         # 'search_view_id': self.search_view_id.id,
                         "context": {},
@@ -3110,7 +3109,7 @@ pass''',
                         "res_model": model_name,
                         "type": "ir.actions.act_window",
                         "view_mode": view_mode,
-                        "view_type": view_type,
+                        # "view_type": view_type,
                         # 'help': help_str,
                         # 'search_view_id': self.search_view_id.id,
                         "context": {},

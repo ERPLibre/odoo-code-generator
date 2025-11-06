@@ -25,7 +25,7 @@
         </field>
     </record>
 
-    <record id="view_server_action_tree_inherit" model="ir.ui.view">
+    <record id="view_server_action_list_inherit" model="ir.ui.view">
         <field name="model">ir.actions.server</field>
         <field name="inherit_id" ref="base.view_server_action_tree" />
         <field name="arch" type="xml">

@@ -79,13 +79,11 @@ class ExtractorModuleFile:
     def _fill_search_field(self, ast_obj, var_name=""):
         ast_obj_type = type(ast_obj)
         result = None
-        if ast_obj_type is ast.Str:
-            result = ast_obj.s
-        elif ast_obj_type is ast.Lambda:
+        if ast_obj_type is ast.Lambda:
             result = self.extract_lambda(ast_obj)
-        elif ast_obj_type is ast.NameConstant:
-            result = ast_obj.value
-        elif ast_obj_type is ast.Num:
+        elif ast_obj_type is ast.Constant:
+            # result = ast_obj.s
+            # result = ast_obj.value
             result = ast_obj.n
         elif ast_obj_type is ast.UnaryOp:
             if type(ast_obj.op) is ast.USub:
@@ -404,12 +402,13 @@ class ExtractorModuleFile:
             elif type(lst_attr_item) in (
                 ast.Compare,
                 ast.Call,
-                ast.Str,
-                ast.Num,
+                # ast.Str,
+                # ast.Num,
                 ast.Attribute,
                 ast.JoinedStr,
                 ast.BinOp,
-                ast.NameConstant,
+                # ast.NameConstant,
+                ast.Constant,
                 ast.Name,
                 ast.arguments,
                 ast.Load,

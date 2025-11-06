@@ -102,8 +102,8 @@
         </field>
     </record>
 
-    <record id="code_generator_act_window_view_tree" model="ir.ui.view">
-        <field name="name">code_generator_act_window_tree</field>
+    <record id="code_generator_act_window_view_list" model="ir.ui.view">
+        <field name="name">code_generator_act_window_list</field>
         <field name="model">code.generator.act_window</field>
         <field name="arch" type="xml">
             <list>

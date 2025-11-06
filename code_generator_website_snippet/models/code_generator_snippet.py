@@ -91,7 +91,7 @@ class CodeGeneratorSnippet(models.Model):
         (
             "module_snippet_name_uniq",
             "unique (module_snippet_name)",
-            _("Module snippet name already exists!"),
+            "Module snippet name already exists!",
         ),
     ]
 
@@ -122,7 +122,6 @@ class CodeGeneratorSnippet(models.Model):
                 module_snippet_name += rec.name.replace(" ", "_")
             rec.module_snippet_name = module_snippet_name.lower()
 
-    @api.model
     def get_model_list(self):
         """
         case 1: []
@@ -143,7 +142,6 @@ class CodeGeneratorSnippet(models.Model):
             return self.model_name.split(";")
         return []
 
-    @api.model
     def get_snippet_template_xml_id(self):
         """
         case 1: 's_demo_website_multiple_snippet_helloworld_static_structure'
@@ -162,7 +160,6 @@ class CodeGeneratorSnippet(models.Model):
         """
         return f"s_{self.module_snippet_name}"
 
-    @api.model
     def get_snippet_template_class(self):
         """
         case 1: 'o_demo_website_multiple_snippet_helloworld_static_structure'
@@ -181,7 +178,6 @@ class CodeGeneratorSnippet(models.Model):
         """
         return f"o_{self.module_snippet_name}"
 
-    @api.model
     def get_snippet_list_name(self):
         """
         case 1: '_list'
@@ -217,7 +213,6 @@ class CodeGeneratorSnippet(models.Model):
         )
         return model_name_list_xml_name.replace(".", "_").lower()
 
-    @api.model
     def get_snippet_xml_id_list_name(self):
         """
         case 1: '_list_helloworld_static_structure'
@@ -244,7 +239,6 @@ class CodeGeneratorSnippet(models.Model):
             model_name_list_xml_name += "_" + self.name.replace(" ", "_")
         return model_name_list_xml_name.replace(".", "_").lower()
 
-    @api.model
     def get_snippet_url_list_section_name(self):
         """
         case 1:
@@ -273,7 +267,6 @@ class CodeGeneratorSnippet(models.Model):
             lst_section = lst_model_name
         return [a.replace(".", "_") for a in lst_section]
 
-    @api.model
     def get_snippet_xml_id_unit_name(self):
         """
         case 1: []
@@ -296,7 +289,6 @@ class CodeGeneratorSnippet(models.Model):
         lst_model_name = [a + "_unit" + suffix for a in self.get_model_list()]
         return [a.replace(".", "_").lower() for a in lst_model_name]
 
-    @api.model
     def get_model_var_class_name(self):
         """
         case 1: []
@@ -315,7 +307,6 @@ class CodeGeneratorSnippet(models.Model):
         """
         return [a.replace(".", "_") + "_cls" for a in self.get_model_list()]
 
-    @api.model
     def get_model_var_id(self):
         """
         case 1: []
@@ -334,7 +325,6 @@ class CodeGeneratorSnippet(models.Model):
         """
         return [a.replace(".", "_") + "_id" for a in self.get_model_list()]
 
-    @api.model
     def get_model_var_ids(self):
         """
         case 1: []
@@ -353,7 +343,6 @@ class CodeGeneratorSnippet(models.Model):
         """
         return [a.replace(".", "_") + "_ids" for a in self.get_model_list()]
 
-    @api.model
     def get_model_var_short(self):
         """
         case 1: []
@@ -387,7 +376,6 @@ class CodeGeneratorSnippet(models.Model):
             lst_value = lst_model_name
         return [a.replace(".", "_") for a in lst_value]
 
-    @api.model
     def get_snippet_xml_name_title(self):
         """
         case 1: []
@@ -408,7 +396,6 @@ class CodeGeneratorSnippet(models.Model):
             a.replace("_", " ").title() for a in self.get_model_var_short()
         ]
 
-    @api.model
     def get_snippet_xml_name_title_list(self):
         """
         case 3: 'Demo Model Portal'
@@ -419,7 +406,6 @@ class CodeGeneratorSnippet(models.Model):
         """
         return self.get_snippet_list_name().replace("_", " ").title()
 
-    @api.model
     def get_model_var_s(self):
         """
         case 1: []
@@ -460,7 +446,6 @@ class CodeGeneratorSnippet(models.Model):
             ]
         return lst_value
 
-    @api.model
     def get_model_var(self):
         """
         case 1: []
@@ -494,19 +479,16 @@ class CodeGeneratorSnippet(models.Model):
             lst_value = [a.replace(".", "_") for a in lst_model_name]
         return lst_value
 
-    @api.model
     def get_url_get_page(self):
         lst_section_name = self.get_snippet_url_list_section_name()
         return [
             f"/{self.code_generator_id.name}/{a}/" for a in lst_section_name
         ]
 
-    @api.model
     def get_url_get_list(self):
         model_short_name_list = self.get_snippet_list_name()
         return f"/{self.code_generator_id.name}/{model_short_name_list}"
 
-    @api.model
     def get_model_var_prefix_associate_var(self):
         """
         case 1: []

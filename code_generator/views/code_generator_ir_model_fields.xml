@@ -238,7 +238,7 @@
                 />
                 <filter domain="[('m2o_fields','!=',False)]" name="m2o_fields" string="Fields" />
                 <filter domain="[('m2o_module','!=',False)]" name="m2o_module" string="Module" />
-<!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
+                <!--                <filter domain="[('name','!=',False)]" name="name" string="Name" />-->
                 <filter
                     domain="[('nomenclature_blacklist','=',True)]"
                     name="nomenclature_blacklist"
@@ -254,8 +254,8 @@
         </field>
     </record>
 
-    <record id="code_generator_ir_model_fields_view_tree" model="ir.ui.view">
-        <field name="name">code_generator_ir_model_fields_tree</field>
+    <record id="code_generator_ir_model_fields_view_list" model="ir.ui.view">
+        <field name="name">code_generator_ir_model_fields_list</field>
         <field name="model">code.generator.ir.model.fields</field>
         <field name="arch" type="xml">
             <list>

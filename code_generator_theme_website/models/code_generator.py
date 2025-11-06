@@ -48,3 +48,12 @@ class CodeGeneratorModule(models.Model):
     theme_website_text_color = fields.Char(
         string="Text Color", default="#000", help="Choose your text color"
     )
+
+    enable_generate_theme_website = fields.Boolean(
+        string="Enable theme website feature",
+        default=False,
+        help=(
+            "This variable need to be True to generate theme_website if"
+            " enable_generate_all is False"
+        ),
+    )

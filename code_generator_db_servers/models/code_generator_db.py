@@ -70,7 +70,6 @@ class CodeGeneratorDb(models.Model):
         )
     ]
 
-    @api.model_create_multi
     def create(self, vals_list):
 
         failure, result = 0, None

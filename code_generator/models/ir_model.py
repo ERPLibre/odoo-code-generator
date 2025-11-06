@@ -232,22 +232,22 @@ class IrModel(models.Model):
             )
         )
 
-    @api.constrains("model")
-    def _check_model_name(self):
-        for model in self:
-            if model.state == "manual":
-                if not model.m2o_module and not model.model.startswith("x_"):
-                    raise ValidationError(
-                        _("The model name must start with 'x_'.")
-                    )
-            if not models.check_object_name(model.model):
-                raise ValidationError(
-                    _(
-                        "The model name %s can only contain lowercase"
-                        " characters, digits, underscores and dots."
-                    )
-                    % model.model
-                )
+    # @api.constrains("model")
+    # def _check_model_name(self):
+    #     for model in self:
+    #         if model.state == "manual":
+    #             if not model.m2o_module and not model.model.startswith("x_"):
+    #                 raise ValidationError(
+    #                     _("The model name must start with 'x_'.")
+    #                 )
+    #         if not models.check_object_name(model.model):
+    #             raise ValidationError(
+    #                 _(
+    #                     "The model name %s can only contain lowercase"
+    #                     " characters, digits, underscores and dots."
+    #                 )
+    #                 % model.model
+    #             )
 
     def get_rec_name(self):
         return self.rec_name if self.rec_name else self._rec_name
@@ -348,7 +348,6 @@ class IrModel(models.Model):
             if lst_dct_field:
                 self.env["ir.model.fields"].create(lst_dct_field)
 
-    @api.model
     def has_same_model_in_inherit_model(self):
         for inherit_model_id in self.inherit_model_ids:
             # if inherit_model_id.ir_model_ids.ids == self.ids:
@@ -357,7 +356,6 @@ class IrModel(models.Model):
                 return True
         return False
 
-    @api.model
     def _instanciate(self, model_data):
         custommodelclass = super(IrModel, self)._instanciate(model_data)
 

@@ -82,7 +82,7 @@ class CodeGeneratorView(models.Model):
             ("pivot", "Pivot"),
             ("search", "Search"),
             ("timeline", "Timeline"),
-            ("tree", "Tree"),
+            ("list", "List"),
         ],
         default="form",
         help="Choose view type to generate.",

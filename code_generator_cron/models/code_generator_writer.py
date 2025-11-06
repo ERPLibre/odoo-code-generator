@@ -31,7 +31,6 @@ class CodeGeneratorWriter(models.Model):
                         "code": '''"""TODO what to run"""
     return''',
                         "name": function_name,
-                        "decorator": "@api.model",
                         "param": "self",
                         "m2o_module": module.id,
                         "m2o_model": model.id,
@@ -196,7 +195,6 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit('"code": \'\'\'"""Run all scheduled backups."""')
                 cw.emit_raw("return self.search([]).action_backup()''',\n")
                 cw.emit(f'"name": "{code_name}",')
-                cw.emit('"decorator": "@api.model",')
                 cw.emit('"param": "self",')
                 cw.emit('"m2o_module": code_generator_id.id,')
                 cw.emit(f'"m2o_model": {var_model_id}.id,')

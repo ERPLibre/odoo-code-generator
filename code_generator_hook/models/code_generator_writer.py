@@ -1725,7 +1725,7 @@ class CodeGeneratorWriter(models.Model):
                     lst_attr += [
                         "code_generator_sequence",
                         "code_generator_form_simple_view_sequence",
-                        "code_generator_tree_view_sequence",
+                        "code_generator_list_view_sequence",
                     ]
                 for attr in lst_attr:
                     item = ast_attr.get(attr)

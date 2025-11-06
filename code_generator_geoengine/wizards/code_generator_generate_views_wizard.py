@@ -19,16 +19,16 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         ),
     )
 
-    def _update_model_field_tree_view(self, model_created_fields_tree):
-        model_created_fields_tree = super(
+    def _update_model_field_list_view(self, model_created_fields_list):
+        model_created_fields_list = super(
             CodeGeneratorGenerateViewsWizard, self
-        )._update_model_field_tree_view(model_created_fields_tree)
+        )._update_model_field_list_view(model_created_fields_list)
         if not self.enable_generate_all and not self.enable_generate_geoengine:
-            return model_created_fields_tree
+            return model_created_fields_list
 
-        # TODO remove this patch when geo_* will be accepted in tree view
-        # Remove ttype geo_ in tree view
-        return model_created_fields_tree.filtered(
+        # TODO remove this patch when geo_* will be accepted in list view
+        # Remove ttype geo_ in list view
+        return model_created_fields_list.filtered(
             lambda x: not x.ttype.startswith("geo_")
         )
 

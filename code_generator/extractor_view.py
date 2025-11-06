@@ -6,6 +6,7 @@ from collections import defaultdict
 from xml.dom import Node, minidom
 
 import unidecode
+from xlrd.formula import listsep
 
 _logger = logging.getLogger(__name__)
 
@@ -293,30 +294,30 @@ class ExtractorView:
                         }
                     sequence_form += 1
 
-            # Search tree
-            lst_tree_xml = mydoc.getElementsByTagName("tree")
-            if lst_tree_xml:
-                if len(lst_tree_xml) != 1:
+            # Search list
+            lst_list_xml = mydoc.getElementsByTagName("list")
+            if lst_list_xml:
+                if len(lst_list_xml) != 1:
                     _logger.warning(
-                        "Cannot support multiple tree in view name"
+                        "Cannot support multiple list in view name"
                         f" {view_id.name}"
                     )
                 else:
-                    tree_view = lst_tree_xml[0]
-                    dct_view_attr.update(dict(tree_view.attributes.items()))
-                sequence_tree = 10
-                lst_tree_field_xml = mydoc.getElementsByTagName("field")
-                for field_xml in lst_tree_field_xml:
+                    list_view = lst_list_xml[0]
+                    dct_view_attr.update(dict(list_view.attributes.items()))
+                sequence_list = 10
+                lst_list_field_xml = mydoc.getElementsByTagName("field")
+                for field_xml in lst_list_field_xml:
                     field_name = dict(field_xml.attributes.items()).get("name")
                     if field_name in self.dct_model[view_id.model]:
                         self.dct_model[view_id.model][field_name][
-                            "code_generator_tree_view_sequence"
-                        ] = sequence_tree
+                            "code_generator_list_view_sequence"
+                        ] = sequence_list
                     else:
                         self.dct_model[view_id.model][field_name] = {
-                            "code_generator_tree_view_sequence": sequence_tree
+                            "code_generator_list_view_sequence": sequence_list
                         }
-                    sequence_tree += 1
+                    sequence_list += 1
 
             # Search timeline
             lst_timeline_xml = mydoc.getElementsByTagName("timeline")

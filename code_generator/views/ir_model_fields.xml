@@ -18,7 +18,7 @@
                         <field name="code_generator_search_sequence" />
                         <field name="code_generator_search_view_sequence" />
                         <field name="code_generator_sequence" />
-                        <field name="code_generator_tree_view_sequence" />
+                        <field name="code_generator_list_view_sequence" />
                         <field name="comment_after" />
                         <field name="comment_before" />
                         <field name="default" />
@@ -84,7 +84,7 @@
                 <field name="size" />
                 <field name="state" />
                 <field name="store" />
-<!--                <field name="track_visibility" />-->
+                <!--                <field name="track_visibility" />-->
                 <field name="translate" />
                 <field name="ttype" />
                 <field name="code_generator_calendar_view_sequence" />
@@ -97,7 +97,7 @@
                 <field name="code_generator_search_sequence" />
                 <field name="code_generator_search_view_sequence" />
                 <field name="code_generator_sequence" />
-                <field name="code_generator_tree_view_sequence" />
+                <field name="code_generator_list_view_sequence" />
                 <field name="comment_after" />
                 <field name="comment_before" />
                 <field name="default" />
@@ -279,11 +279,11 @@
                                     <li class="text-danger float-right mb4" t-if="!record.store.raw_value">
                                         <i aria-label="Invalid" class="fa fa-circle" role="img" title="Invalid" />
                                     </li>
-<!--                                    <li class="mb4">-->
-<!--                                        <strong>-->
-<!--                                            <field name="track_visibility" />-->
-<!--                                        </strong>-->
-<!--                                    </li>-->
+                                    <!--                                    <li class="mb4">-->
+                                    <!--                                        <strong>-->
+                                    <!--                                            <field name="track_visibility" />-->
+                                    <!--                                        </strong>-->
+                                    <!--                                    </li>-->
                                     <li class="text-success float-right mb4" t-if="record.translate.raw_value">
                                         <i aria-label="Ok" class="fa fa-circle" role="img" title="Ok" />
                                     </li>
@@ -347,7 +347,7 @@
                                     </li>
                                     <li class="mb4">
                                         <strong>
-                                            <field name="code_generator_tree_view_sequence" />
+                                            <field name="code_generator_list_view_sequence" />
                                         </strong>
                                     </li>
                                     <li class="mb4">
@@ -605,7 +605,7 @@
         </field>
     </record>
 
-    <record id="view_model_fields_tree_inherit" model="ir.ui.view">
+    <record id="view_model_fields_list_inherit" model="ir.ui.view">
         <field name="model">ir.model.fields</field>
         <field name="inherit_id" ref="base.view_model_fields_tree" />
         <field name="arch" type="xml">

@@ -106,8 +106,8 @@
         </field>
     </record>
 
-    <record id="code_generator_module_external_dependency_view_tree" model="ir.ui.view">
-        <field name="name">code_generator_module_external_dependency_tree</field>
+    <record id="code_generator_module_external_dependency_view_list" model="ir.ui.view">
+        <field name="name">code_generator_module_external_dependency_list</field>
         <field name="model">code.generator.module.external.dependency</field>
         <field name="arch" type="xml">
             <list>

@@ -184,11 +184,11 @@ class IrModelFields(models.Model):
         help="Sequence to write this field from Code Generator.",
     )
 
-    # TODO remove code_generator_tree_view_sequence and code_generator_search_sequence
+    # TODO remove code_generator_list_view_sequence and code_generator_search_sequence
     # TODO wrong architecture, separate view order from model
     # TODO This was a work around
     # TODO or maybe it's useful in first iteration of code generator, remove this later when A USE C GENERATE B
-    code_generator_tree_view_sequence = fields.Integer(
+    code_generator_list_view_sequence = fields.Integer(
         string="List view sequence",
         default=-1,
         help="Sequence to write this field in list view from Code Generator.",
@@ -361,30 +361,29 @@ class IrModelFields(models.Model):
                     if rec.model_id.id in model_ids.ids:
                         rec.is_code_generator = True
 
-    @api.constrains("name", "state")
-    def _check_name(self):
-        for field in self:
-            if field.state == "manual":
-                if (
-                    not field.model_id.m2o_module
-                    and not field.name.startswith("x_")
-                ):
-                    raise ValidationError(
-                        _(
-                            "Custom fields must have a name that starts with"
-                            " 'x_' !"
-                        )
-                    )
-            try:
-                models.check_pg_name(field.name)
-            except ValidationError:
-                msg = _(
-                    "Field names can only contain characters, digits and"
-                    " underscores (up to 63)."
-                )
-                raise ValidationError(msg)
+    # @api.constrains("name", "state")
+    # def _check_name(self):
+    #     for field in self:
+    #         if field.state == "manual":
+    #             if (
+    #                 not field.model_id.m2o_module
+    #                 and not field.name.startswith("x_")
+    #             ):
+    #                 raise ValidationError(
+    #                     _(
+    #                         "Custom fields must have a name that starts with"
+    #                         " 'x_' !"
+    #                     )
+    #                 )
+    #         try:
+    #             models.check_pg_name(field.name)
+    #         except ValidationError:
+    #             msg = _(
+    #                 "Field names can only contain characters, digits and"
+    #                 " underscores (up to 63)."
+    #             )
+    #             raise ValidationError(msg)
 
-    @api.model
     def is_show_whitelist_model_inherit_call(self):
         # TODO bug when multiple id
         if self.code_generator_ir_model_fields_ids:
@@ -393,31 +392,26 @@ class IrModelFields(models.Model):
             )
         return self.is_show_whitelist_model_inherit
 
-    @api.model
     def get_default_lambda(self):
         if self.code_generator_ir_model_fields_ids:
             return self.code_generator_ir_model_fields_ids.default_lambda
         return self.default_lambda
 
-    @api.model
     def get_comment_before(self):
         if self.code_generator_ir_model_fields_ids:
             return self.code_generator_ir_model_fields_ids.comment_before
         return self.comment_before
 
-    @api.model
     def get_comment_after(self):
         if self.code_generator_ir_model_fields_ids:
             return self.code_generator_ir_model_fields_ids.comment_after
         return self.comment_after
 
-    @api.model
     def get_field_context(self):
         if self.code_generator_ir_model_fields_ids:
             return self.code_generator_ir_model_fields_ids.field_context
         return self.field_context
 
-    @api.model
     def get_code_generator_compute(self):
         if self.code_generator_ir_model_fields_ids:
             if len(self.code_generator_ir_model_fields_ids) > 1:
@@ -441,7 +435,6 @@ class IrModelFields(models.Model):
                 )
         return self.code_generator_compute
 
-    @api.model
     def get_selection(self):
         return_value = []
 
@@ -499,7 +492,7 @@ class IrModelFields(models.Model):
     def _extract_lambda_in_selection(self, source_code):
         # TODO move this function in code extractor
         # Extract lambda name
-        tree = ast.parse(source_code)
+        list = ast.parse(source_code)
 
         class LambdaVisitor(ast.NodeVisitor):
             def __init__(self):
@@ -514,72 +507,72 @@ class IrModelFields(models.Model):
                 return self._new_source
 
         visitor = LambdaVisitor()
-        visitor.visit(tree)
+        visitor.visit(list)
         return visitor.get_result()
 
-    @api.model
-    def create(self, vals):
-        model_data = None
-        if "model_id" in vals:
-            model_data = self.env["ir.model"].browse(vals["model_id"])
-            vals["model"] = model_data.model
-        if vals.get("ttype") == "selection":
-            if not vals.get("selection"):
-                raise UserError(
-                    _(
-                        "For selection fields, the Selection Options must be"
-                        " given!"
-                    )
-                )
-            self._check_selection(vals["selection"])
-
-        res = super(models.Model, self).create(vals)
-
-        if vals.get("state", "manual") == "manual":
-
-            check_relation = True
-            if vals.get("relation") and vals.get("model_id") and model_data:
-                check_relation = not model_data.m2o_module
-
-            if (
-                vals.get("relation")
-                and not self.env["ir.model"].search(
-                    [("model", "=", vals["relation"])]
-                )
-                and check_relation
-            ):
-                raise UserError(
-                    _("Model %s does not exist!") % vals["relation"]
-                )
-
-            if vals.get("ttype") == "one2many":
-                # TODO check relation exist, but some times, it's created later to respect many2one order
-                # if not self.env[""].search(
-                #     [
-                #         ("model_id", "=", vals["relation"]),
-                #         ("name", "=", vals["relation_field"]),
-                #         ("ttype", "=", "many2one"),
-                #     ]
-                # ):
-                #     raise UserError(
-                #         _("Many2one %s on model %s does not exist!")
-                #         % (vals["relation_field"], vals["relation"])
-                #     )
-                pass
-
-            self.clear_caches()  # for _existing_field_data()
-
-            if vals["model"] in self.pool:
-                # setup models; this re-initializes model in registry
-                self.pool.setup_models(self._cr)
-                # update database schema of model and its descendant models
-                descendants = self.pool.descendants(
-                    [vals["model"]], "_inherits"
-                )
-                self.pool.init_models(
-                    self._cr,
-                    descendants,
-                    dict(self._context, update_custom_fields=True),
-                )
-
-        return res
+    # def create(self, vals):
+    #     model_data = None
+    #     for val in vals:
+    #         if "model_id" in vals:
+    #             model_data = self.env["ir.model"].browse(vals["model_id"])
+    #             vals["model"] = model_data.model
+    #         if vals.get("ttype") == "selection":
+    #             if not vals.get("selection"):
+    #                 raise UserError(
+    #                     _(
+    #                         "For selection fields, the Selection Options must be"
+    #                         " given!"
+    #                     )
+    #                 )
+    #             self._check_selection(vals["selection"])
+    #
+    #         res = super(models.Model, self).create(vals)
+    #
+    #         if vals.get("state", "manual") == "manual":
+    #
+    #             check_relation = True
+    #             if vals.get("relation") and vals.get("model_id") and model_data:
+    #                 check_relation = not model_data.m2o_module
+    #
+    #             if (
+    #                 vals.get("relation")
+    #                 and not self.env["ir.model"].search(
+    #                     [("model", "=", vals["relation"])]
+    #                 )
+    #                 and check_relation
+    #             ):
+    #                 raise UserError(
+    #                     _("Model %s does not exist!") % vals["relation"]
+    #                 )
+    #
+    #             if vals.get("ttype") == "one2many":
+    #                 # TODO check relation exist, but some times, it's created later to respect many2one order
+    #                 # if not self.env[""].search(
+    #                 #     [
+    #                 #         ("model_id", "=", vals["relation"]),
+    #                 #         ("name", "=", vals["relation_field"]),
+    #                 #         ("ttype", "=", "many2one"),
+    #                 #     ]
+    #                 # ):
+    #                 #     raise UserError(
+    #                 #         _("Many2one %s on model %s does not exist!")
+    #                 #         % (vals["relation_field"], vals["relation"])
+    #                 #     )
+    #                 pass
+    #
+    #             self.clear_caches()  # for _existing_field_data()
+    #
+    #             if vals["model"] in self.pool:
+    #                 # setup models; this re-initializes model in registry
+    #                 self.pool.setup_models(self._cr)
+    #                 # update database schema of model and its descendant models
+    #                 descendants = self.pool.descendants(
+    #                     [vals["model"]], "_inherits"
+    #                 )
+    #                 self.pool.init_models(
+    #                     self._cr,
+    #                     descendants,
+    #                     dict(self._context, update_custom_fields=True),
+    #                 )
+    #
+    #     return res

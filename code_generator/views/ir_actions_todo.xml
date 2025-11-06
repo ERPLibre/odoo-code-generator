@@ -59,7 +59,7 @@
         </field>
     </record>
 
-    <record id="ir_actions_todo_tree_inherit" model="ir.ui.view">
+    <record id="ir_actions_todo_list_inherit" model="ir.ui.view">
         <field name="model">ir.actions.todo</field>
         <field name="inherit_id" ref="base.ir_actions_todo_tree" />
         <field name="arch" type="xml">

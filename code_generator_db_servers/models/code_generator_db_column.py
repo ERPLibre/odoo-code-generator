@@ -68,7 +68,7 @@ class CodeGeneratorDbColumn(models.Model):
         selection=SELECTION_TYPE,
     )
 
-    field_type = fields.Char(
+    field_type = fields.Selection(
         selection=SELECTION_TYPE, compute="_compute_field_type"
     )
 
