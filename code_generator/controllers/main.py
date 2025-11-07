@@ -54,7 +54,7 @@ class CodeGeneratorController(http.Controller):
 
         value = {"code_generator_ids": id_code_generator_ids}
         code_generator_writer = request.env["code.generator.writer"].create(
-            value
+            [value]
         )
 
         bytesio = io.BytesIO()

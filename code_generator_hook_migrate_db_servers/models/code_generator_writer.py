@@ -273,7 +273,7 @@ class CodeGeneratorWriter(models.Model):
                     with cw.indent():
                         cw.emit(
                             "event_config ="
-                            ' env["res.config.settings"].sudo().create(values)'
+                            ' env["res.config.settings"].sudo().create([values])'
                         )
                         cw.emit("event_config.execute()")
                 cw.emit()
@@ -322,7 +322,7 @@ class CodeGeneratorWriter(models.Model):
                         cw.emit()
                         cw.emit(
                             "obj_res_partner_id ="
-                            " env[model_name].create(value)"
+                            " env[model_name].create([value])"
                         )
                         cw.emit()
                         cw.emit(

@@ -252,7 +252,7 @@ class CodeGeneratorWriter(models.Model):
 
             self._write_sync_view_component(view_item_ids, cw, view_id)
 
-        cw.emit('view_code_generator = env["code.generator.view"].create(')
+        cw.emit('view_code_generator = env["code.generator.view"].create([')
         with cw.block(delim=("{", "}")):
             cw.emit('"code_generator_id": code_generator_id.id,')
             cw.emit(f'"view_type": "{view_type}",')
@@ -310,7 +310,7 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit(f'"id_name": "{view_id.id_name}",')
             if view_id.inherit_view_name:
                 cw.emit(f'"inherit_view_name": "{view_id.inherit_view_name}",')
-        cw.emit(")")
+        cw.emit("])")
         cw.emit("lst_view_id.append(view_code_generator.id)")
 
     def _write_sync_template_action(self, cw, module, act_server_ids):
@@ -471,11 +471,11 @@ class CodeGeneratorWriter(models.Model):
                         # TODO need to associate menu to his view, or find a way to not associate like this
                         continue
                     # env["code.generator.menu"].create(
-                    #     {
+                    #     [{
                     #         "code_generator_id": code_generator_id.id,
                     #         "parent_id_name": "base.next_id_9",
                     #         "id_name": "backup_conf_menu",
-                    #     }
+                    #     }]
                     # )
                     with cw.block(
                         before='env["code.generator.menu"].create',
@@ -605,7 +605,7 @@ class CodeGeneratorWriter(models.Model):
 
                         cw.emit(
                             "event_config ="
-                            " env['res.config.settings'].sudo().create(values)"
+                            " env['res.config.settings'].sudo().create([values])"
                         )
                         cw.emit("event_config.execute()")
                     if post_init_hook_feature_code_generator:
@@ -861,7 +861,7 @@ class CodeGeneratorWriter(models.Model):
                         cw.emit()
                         cw.emit(
                             "code_generator_id ="
-                            ' env["code.generator.module"].create(value)'
+                            ' env["code.generator.module"].create([value])'
                         )
                         cw.emit()
                         lst_module_depend = []
@@ -927,7 +927,7 @@ class CodeGeneratorWriter(models.Model):
                                     )
                                 cw.emit("}")
                                 cw.emit(
-                                    "env['code.generator.module.external.dependency'].create(value)"
+                                    "env['code.generator.module.external.dependency'].create([value])"
                                 )
                                 cw.emit()
 
@@ -1021,7 +1021,7 @@ class CodeGeneratorWriter(models.Model):
                                             f" '{module.template_generate_website_snippet_type}',"
                                         )
                                     cw.emit(
-                                        'env["code.generator.snippet"].create(value_snippet)'
+                                        'env["code.generator.snippet"].create([value_snippet])'
                                     )
 
                                 cw.emit()
@@ -1213,7 +1213,7 @@ class CodeGeneratorWriter(models.Model):
                                                     )
                                         cw.emit("}")
                                         cw.emit(
-                                            f'env["{model_id.model}"].create(value)'
+                                            f'env["{model_id.model}"].create([value])'
                                         )
                                         model_data_id = self.env[
                                             "ir.model.data"
@@ -1258,7 +1258,7 @@ class CodeGeneratorWriter(models.Model):
                                                     f" {model_data_id.noupdate},"
                                                 )
                                             cw.emit(
-                                                'env["ir.model.data"].create(value)'
+                                                'env["ir.model.data"].create([value])'
                                             )
                                         cw.emit()
 
@@ -1413,7 +1413,7 @@ class CodeGeneratorWriter(models.Model):
                                 '"code_generator_ids": code_generator_id.ids'
                             )
                         cw.emit("}")
-                        cw.emit('env["code.generator.writer"].create(value)')
+                        cw.emit('env["code.generator.writer"].create([value])')
                     if uninstall_hook_feature_code_generator:
                         cw.emit(
                             "code_generator_id ="
@@ -1841,7 +1841,7 @@ class CodeGeneratorWriter(models.Model):
         cw.emit("# Action generate view")
         cw.emit(
             "wizard_view ="
-            " env['code.generator.generate.views.wizard'].create({"
+            " env['code.generator.generate.views.wizard'].create([{"
         )
         with cw.indent():
             cw.emit("'code_generator_id': code_generator_id.id,")
@@ -1857,7 +1857,7 @@ class CodeGeneratorWriter(models.Model):
             if module.enable_cg_portal_enable_create:
                 cw.emit("'portal_enable_create': True,")
 
-        cw.emit("})")
+        cw.emit("}])")
         cw.emit("")
         cw.emit("wizard_view.button_generate_views()")
         cw.emit()
@@ -1959,7 +1959,7 @@ class CodeGeneratorWriter(models.Model):
                         var_model_name = f"model_{model_name}"
                         cw.emit(f'"m2o_model": {var_model_name}.id,')
                     cw.emit(
-                        'env["code.generator.model.code.import"].create(value)'
+                        'env["code.generator.model.code.import"].create([value])'
                     )
                     cw.emit()
 
@@ -2056,7 +2056,7 @@ class CodeGeneratorWriter(models.Model):
             cw.emit(
                 f'group_id = env.ref("{group_name}").with_context(lang=lang)'
             )
-            cw.emit('access_id = env["ir.model.access"].create({')
+            cw.emit('access_id = env["ir.model.access"].create([{')
             cw.emit(f'"name": "{access_id.name}",')
             cw.emit(f'"model_id": {variable_model_model}.id,')
             cw.emit('"group_id": group_id.id,')
@@ -2064,7 +2064,7 @@ class CodeGeneratorWriter(models.Model):
             cw.emit(f'"perm_create": {access_id.perm_create},')
             cw.emit(f'"perm_write": {access_id.perm_write},')
             cw.emit(f'"perm_unlink": {access_id.perm_unlink},')
-            cw.emit("})")
+            cw.emit("}])")
             cw.emit()
             access_xml_id = (
                 self.env["ir.model.data"]

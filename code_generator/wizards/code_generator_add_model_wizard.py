@@ -111,7 +111,7 @@ When blacklist, all selected fields will be ignored.""",
                             "name": module_id.display_name,
                         }
                         self.env["code.generator.module.dependency"].create(
-                            value_dependencies
+                            [value_dependencies]
                         )
 
             if is_nomenclator:
@@ -131,5 +131,5 @@ When blacklist, all selected fields will be ignored.""",
                             == "whitelist",
                         }
                         self.env["code.generator.ir.model.fields"].create(
-                            value
+                            [value]
                         )

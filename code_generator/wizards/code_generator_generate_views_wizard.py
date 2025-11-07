@@ -746,13 +746,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_list",
-                    "type": "list",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_list",
+                        "type": "list",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -932,13 +934,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
 
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_form",
-                    "type": "form",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_form",
+                        "type": "form",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
 
             self._create_ir_model_data(
@@ -1123,13 +1127,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_kanban",
-                    "type": "kanban",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_kanban",
+                        "type": "kanban",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1278,13 +1284,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_search",
-                    "type": "search",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_search",
+                        "type": "search",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1421,13 +1429,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_pivot",
-                    "type": "pivot",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_pivot",
+                        "type": "pivot",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1569,13 +1579,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_calendar",
-                    "type": "calendar",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_calendar",
+                        "type": "calendar",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1712,13 +1724,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_graph",
-                    "type": "graph",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_graph",
+                        "type": "graph",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1783,13 +1797,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_timeline",
-                    "type": "timeline",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_timeline",
+                        "type": "timeline",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1918,13 +1934,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         )
         if not view_value:
             view_value = self.env["ir.ui.view"].create(
-                {
-                    "name": f"{model_name_str}_diagram",
-                    "type": "diagram",
-                    "model": model_name,
-                    "arch": str_arch,
-                    "m2o_model": model_created.id,
-                }
+                [
+                    {
+                        "name": f"{model_name_str}_diagram",
+                        "type": "diagram",
+                        "model": model_name,
+                        "arch": str_arch,
+                        "m2o_model": model_created.id,
+                    }
+                ]
             )
         else:
             _logger.warning(
@@ -1984,7 +2002,7 @@ pass''',
                 "m2o_model": model_id,
                 "is_wip": True,
             }
-            self.env["code.generator.model.code"].create(value)
+            self.env["code.generator.model.code"].create([value])
         button_attributes = self._order_attributes_item(button_attributes)
         if lst_child_update:
             return E.button(button_attributes, *lst_child_update)
@@ -2603,7 +2621,7 @@ pass''',
             elif not dct_view_value.get("arch"):
                 _logger.error(f"Cannot generate view name '{dct_view_value}'")
             else:
-                view_value = self.env["ir.ui.view"].create(dct_view_value)
+                view_value = self.env["ir.ui.view"].create([dct_view_value])
         else:
             view_value.m2o_model = code_generator_view_id.m2o_model.id
             # dct_value_to_create["ir.ui.view"].append(ir_ui_view_value)
@@ -2667,7 +2685,7 @@ pass''',
             "perm_unlink": True,
         }
 
-        access_value = self.env["ir.model.access"].create(v)
+        access_value = self.env["ir.model.access"].create([v])
 
     def _create_ir_model_data(
         self, module, model, res_id, name, prefix_name="", suffix_name=""
@@ -2734,14 +2752,16 @@ pass''',
                 new_name = ""
 
         return self.env["ir.model.data"].create(
-            {
-                "name": new_name,
-                "model": model,
-                "module": module.name,
-                "res_id": res_id,
-                "noupdate": True,
-                # If it's False, target record (res_id) will be removed while module update
-            }
+            [
+                {
+                    "name": new_name,
+                    "model": model,
+                    "module": module.name,
+                    "res_id": res_id,
+                    "noupdate": True,
+                    # If it's False, target record (res_id) will be removed while module update
+                }
+            ]
         )
 
     def _generate_menu(
@@ -2783,7 +2803,7 @@ pass''',
                     # 'group_id': group_id.id,
                     "m2o_module": module.id,
                 }
-                generated_root_menu = self.env["ir.ui.menu"].create(v)
+                generated_root_menu = self.env["ir.ui.menu"].create([v])
             if not generated_parent_menu:
                 v = {
                     "name": _("Menu"),
@@ -2792,7 +2812,7 @@ pass''',
                     # 'group_id': group_id.id,
                     "m2o_module": module.id,
                 }
-                generated_parent_menu = self.env["ir.ui.menu"].create(v)
+                generated_parent_menu = self.env["ir.ui.menu"].create([v])
 
         # Create list of menu_parent
         if not lst_parent_generated_menu_name:
@@ -2825,7 +2845,7 @@ pass''',
                     "parent_id": generated_root_menu.id,
                 }
 
-                menu_parent_id = self.env["ir.ui.menu"].create(v)
+                menu_parent_id = self.env["ir.ui.menu"].create([v])
                 dct_parent_generated_menu[menu_parent] = menu_parent_id
 
                 # Create id name
@@ -2856,7 +2876,7 @@ pass''',
                 else:
                     v["parent_id"] = generated_root_menu.id
 
-                menu_group_id = self.env["ir.ui.menu"].create(v)
+                menu_group_id = self.env["ir.ui.menu"].create([v])
                 dct_group_generated_menu[menu_group] = menu_group_id
 
                 # Create id name
@@ -2949,7 +2969,7 @@ pass''',
                     "context": {},
                     "m2o_res_model": model_created.id,
                 }
-                action_id = self.env["ir.actions.act_window"].create(v)
+                action_id = self.env["ir.actions.act_window"].create([v])
             else:
                 s_more_info = ""
                 if len(action_data_value) > 1:
@@ -2991,7 +3011,7 @@ pass''',
             elif generated_parent_menu:
                 v["parent_id"] = generated_parent_menu.id
 
-            new_menu_id = self.env["ir.ui.menu"].create(v)
+            new_menu_id = self.env["ir.ui.menu"].create([v])
 
             self._create_ir_model_data(
                 module,
@@ -3073,7 +3093,9 @@ pass''',
                         lst_action
                     )
                     if not action_id:
-                        action_id = self.env["ir.actions.act_window"].create(v)
+                        action_id = self.env["ir.actions.act_window"].create(
+                            [v]
+                        )
                     else:
                         action_id.m2o_res_model = model_created.id
                     if menu_id.m2o_act_window.id_name:
@@ -3093,14 +3115,16 @@ pass''',
                         else:
                             # Write id name
                             self.env["ir.model.data"].create(
-                                {
-                                    "name": menu_id.m2o_act_window.id_name,
-                                    "model": "ir.actions.act_window",
-                                    "module": module.name,
-                                    "res_id": action_id.id,
-                                    "noupdate": True,
-                                    # If it's False, target record (res_id) will be removed while module update
-                                }
+                                [
+                                    {
+                                        "name": menu_id.m2o_act_window.id_name,
+                                        "model": "ir.actions.act_window",
+                                        "module": module.name,
+                                        "res_id": action_id.id,
+                                        "noupdate": True,
+                                        # If it's False, target record (res_id) will be removed while module update
+                                    }
+                                ]
                             )
                 elif not menu_id.ignore_act_window:
                     # Create action
@@ -3115,7 +3139,7 @@ pass''',
                         "context": {},
                         "m2o_res_model": model_created.id,
                     }
-                    action_id = self.env["ir.actions.act_window"].create(v)
+                    action_id = self.env["ir.actions.act_window"].create([v])
 
                 v = {
                     "name": menu_id.name,
@@ -3153,7 +3177,7 @@ pass''',
                             f" {menu_id.id_name} to associate parent_id."
                         )
 
-                new_menu_id = self.env["ir.ui.menu"].create(v)
+                new_menu_id = self.env["ir.ui.menu"].create([v])
 
                 ir_model_data_id = self.env["ir.model.data"].search(
                     [

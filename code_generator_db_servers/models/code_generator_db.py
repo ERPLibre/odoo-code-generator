@@ -91,7 +91,7 @@ class CodeGeneratorDb(models.Model):
                     password=value["password"],
                 )
 
-                result = super(CodeGeneratorDb, self).create(value)
+                result = super(CodeGeneratorDb, self).create([value])
 
                 str_query_4_tables = self.get_db_query_4_tables(
                     sgdb, value["schema"], value["database"]
@@ -114,7 +114,7 @@ class CodeGeneratorDb(models.Model):
                     )
 
                     self.env["code.generator.db.table"].sudo().create(
-                        dct_all_table
+                        [dct_all_table]
                     )
 
             except Exception as e:

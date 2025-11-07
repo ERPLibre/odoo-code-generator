@@ -498,7 +498,7 @@ class ExtractorModuleFile:
             ],
             limit=1,
         ):
-            self.module.env["code.generator.model.code.import"].create(d)
+            self.module.env["code.generator.model.code.import"].create([d])
 
     def search_model_inherit(self):
         has_transient_model = False
@@ -573,6 +573,7 @@ class ExtractorModuleFile:
                                 constraint_id.definition = definition
                                 constraint_id.message = message
             elif type(node) is ast.FunctionDef:
+                d = {}
                 if use_astor:
                     # This technique is not working perfectly, it removes comments
                     codes = "".join(
@@ -637,4 +638,4 @@ class ExtractorModuleFile:
                 )
                 d["code"] = codes.strip()
 
-                self.module.env["code.generator.model.code"].create(d)
+                self.module.env["code.generator.model.code"].create([d])

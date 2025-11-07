@@ -35,7 +35,7 @@ class CodeGeneratorWriter(models.Model):
                         "m2o_module": module.id,
                         "m2o_model": model.id,
                     }
-                    self.env["code.generator.model.code"].create(value)
+                    self.env["code.generator.model.code"].create([value])
         super(CodeGeneratorWriter, self)._set_model_py_file(
             module, model, model_model
         )
@@ -140,7 +140,7 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit(f'"model_id": {var_model_id}.id,')
                 cw.emit(f'"state": "{state}",')
                 cw.emit(f'"code": "{code}",')
-            cw.emit('cron_id = env["ir.cron"].create(value)')
+            cw.emit('cron_id = env["ir.cron"].create([value])')
         cw.emit()
 
         with cw.block(
@@ -177,7 +177,7 @@ class CodeGeneratorWriter(models.Model):
                     cw.emit(f'"module": MODULE_NAME,')
                     cw.emit(f'"res_id": cron_id.id,')
                     cw.emit(f'"noupdate": True,')
-                cw.emit('env["ir.model.data"].create(value)')
+                cw.emit('env["ir.model.data"].create([value])')
         cw.emit()
         code_ids = self.env["code.generator.model.code"].search(
             [
@@ -198,7 +198,7 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit('"param": "self",')
                 cw.emit('"m2o_module": code_generator_id.id,')
                 cw.emit(f'"m2o_model": {var_model_id}.id,')
-            cw.emit('env["code.generator.model.code"].create(value)')
+            cw.emit('env["code.generator.model.code"].create([value])')
         cw.emit()
 
     def set_xml_data_file(self, module):

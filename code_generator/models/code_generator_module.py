@@ -333,7 +333,7 @@ class CodeGeneratorModule(models.Model):
                         "depend_id": dependency.id,
                         "name": dependency.display_name,
                     }
-                    self.env[model_dependency].create(value)
+                    self.env[model_dependency].create([value])
 
     @api.depends("o2m_models")
     def _get_models_info(self):
@@ -467,7 +467,7 @@ class CodeGeneratorModule(models.Model):
                                 value_ir_model_fields,
                             )
                         self.env["ir.model.fields"].create(
-                            value_ir_model_fields
+                            [value_ir_model_fields]
                         )
                     else:
                         # Support model of code generator or model already existing (like inherit)
@@ -502,7 +502,7 @@ class CodeGeneratorModule(models.Model):
                         )
 
                         self.env["code.generator.ir.model.fields"].create(
-                            value_ir_model_fields
+                            [value_ir_model_fields]
                         )
 
             if dct_model:
@@ -676,7 +676,7 @@ class CodeGeneratorModule(models.Model):
                             value_field_one2many,
                         )
 
-                    self.env["ir.model.fields"].create(value_field_one2many)
+                    self.env["ir.model.fields"].create([value_field_one2many])
                 else:
                     # Support model of code generator or model already existing (like inherit)
                     if (
@@ -707,7 +707,7 @@ class CodeGeneratorModule(models.Model):
                                 value_ir_model_fields,
                             )
                         self.env["code.generator.ir.model.fields"].create(
-                            value_ir_model_fields
+                            [value_ir_model_fields]
                         )
                     # _logger.error("What to do to update a one2many?")
         else:
@@ -723,12 +723,13 @@ class CodeGeneratorModule(models.Model):
             value_field_id[key_name] = filter_field_attribute
 
     def create(self, vals):
-        if "icon" in vals.keys():
-            icon_path = vals["icon"]
+        for val in vals:
+            if "icon" in val.keys():
+                icon_path = val["icon"]
 
-            if icon_path and os.path.isfile(icon_path):
-                with tools.file_open(icon_path, "rb") as image_file:
-                    vals["icon_image"] = base64.b64encode(image_file.read())
+                if icon_path and os.path.isfile(icon_path):
+                    with tools.file_open(icon_path, "rb") as image_file:
+                        val["icon_image"] = base64.b64encode(image_file.read())
         return super(models.Model, self).create(vals)
 
     def unlink(self):

@@ -906,7 +906,7 @@ class CodeGeneratorWriter(models.Model):
 
                 cw.emit(
                     f"new_{_fmt_underscores(model_id.model)} ="
-                    f" request.env['{model_id.model}'].sudo().create(vals)"
+                    f" request.env['{model_id.model}'].sudo().create([vals])"
                 )
                 has_mail = bool(
                     model_id.inherit_model_ids.filtered(

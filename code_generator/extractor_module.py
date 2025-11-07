@@ -83,7 +83,7 @@ class ExtractorModule:
                                 }
                                 self.module.env[
                                     "code.generator.module.external.dependency"
-                                ].create(v)
+                                ].create([v])
                         else:
                             _logger.warning(
                                 "Unknown value type external_dependencies"

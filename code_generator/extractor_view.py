@@ -48,7 +48,7 @@ class ExtractorView:
                 "shortdesc": "None",
             }
             self.code_generator_id = self.env["code.generator.module"].create(
-                value
+                [value]
             )
             self._parse_view_ids()
 
@@ -177,7 +177,7 @@ class ExtractorView:
                         dct_act_value["target"] = ir_actions_windows_id.target
                 # TODO why create act_window and not extract value
                 menu_action = self.env["code.generator.act_window"].create(
-                    dct_act_value
+                    [dct_act_value]
                 )
             # Create menu
             menu_data_id = self.env["ir.model.data"].search(
@@ -209,7 +209,7 @@ class ExtractorView:
             else:
                 dct_menu_value["ignore_act_window"] = True
 
-            self.env["code.generator.menu"].create(dct_menu_value)
+            self.env["code.generator.menu"].create([dct_menu_value])
             # If need to associated
             # menu_id.m2o_module = self._module.id
 
@@ -614,7 +614,7 @@ class ExtractorView:
                                 }
                                 view_item_id = self.env[
                                     "code.generator.view.item"
-                                ].create(dct_attributes)
+                                ].create([dct_attributes])
                                 lst_view_item_id.append(view_item_id.id)
                                 lst_ignore_node.append(div_xml)
                                 no_sequence += 1
@@ -810,7 +810,9 @@ class ExtractorView:
                     f"Missing model data id view_name {view_id.name}"
                 )
 
-            view_code_generator = self.env["code.generator.view"].create(value)
+            view_code_generator = self.env["code.generator.view"].create(
+                [value]
+            )
 
     def _extract_child_xml(
         self,
@@ -1055,7 +1057,7 @@ class ExtractorView:
                         f" : {button_type_value}"
                     )
         view_item_id = self.env["code.generator.view.item"].create(
-            dct_attributes
+            [dct_attributes]
         )
         lst_view_item_id.append(view_item_id.id)
         sequence += 1

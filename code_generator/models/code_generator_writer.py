@@ -436,7 +436,7 @@ class CodeGeneratorWriter(models.Model):
 
         # Create pot
         export = self.env["base.language.export"].create(
-            {"format": "po", "modules": [(6, 0, [module_id.id])]}
+            [{"format": "po", "modules": [(6, 0, [module_id.id])]}]
         )
 
         export.act_getfile()
@@ -464,10 +464,10 @@ class CodeGeneratorWriter(models.Model):
             ):
                 with mute_logger("odoo.addons.base.models.ir_translation"):
                     self.env["base.language.install"].create(
-                        {"lang": lang_local, "overwrite": True}
+                        [{"lang": lang_local, "overwrite": True}]
                     ).lang_install()
                 self.env["base.update.translations"].create(
-                    {"lang": lang_local}
+                    [{"lang": lang_local}]
                 ).act_update()
 
             # Load existing translations
@@ -477,11 +477,13 @@ class CodeGeneratorWriter(models.Model):
             # ])
 
             export = self.env["base.language.export"].create(
-                {
-                    "lang": lang_local,
-                    "format": "po",
-                    "modules": [(6, 0, [module_id.id])],
-                }
+                [
+                    {
+                        "lang": lang_local,
+                        "format": "po",
+                        "modules": [(6, 0, [module_id.id])],
+                    }
+                ]
             )
             export.act_getfile()
             po_file = export.data
@@ -792,13 +794,15 @@ class CodeGeneratorWriter(models.Model):
                 )
 
             self.env["ir.model.data"].create(
-                {
-                    "name": new_result,
-                    "model": record._name,
-                    "module": module_name,
-                    "res_id": record.id,
-                    "noupdate": True,  # If it's False, target record (res_id) will be removed while module update
-                }
+                [
+                    {
+                        "name": new_result,
+                        "model": record._name,
+                        "module": module_name,
+                        "res_id": record.id,
+                        "noupdate": True,  # If it's False, target record (res_id) will be removed while module update
+                    }
+                ]
             )
             result = new_result
         else:

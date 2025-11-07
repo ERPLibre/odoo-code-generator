@@ -169,7 +169,7 @@ class CodeGeneratorGenerateThemeWebsiteWizard(models.TransientModel):
             "target": "self",
             "m2o_code_generator": self.code_generator_id.id,
         }
-        ir_actions_act_url = self.env["ir.actions.act_url"].create(value)
+        ir_actions_act_url = self.env["ir.actions.act_url"].create([value])
 
         value = {
             "action_id": ir_actions_act_url.id,

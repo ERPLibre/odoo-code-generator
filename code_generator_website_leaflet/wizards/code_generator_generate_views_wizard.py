@@ -75,13 +75,15 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         form_xml = E.geoengine({}, *lst_field)
         str_arch = ET.tostring(form_xml, pretty_print=True)
         view_value = self.env["ir.ui.view"].create(
-            {
-                "name": f"{model_name_str}_geoengine",
-                "type": "form",
-                "model": model_name,
-                "arch": str_arch,
-                "m2o_model": model_created.id,
-            }
+            [
+                {
+                    "name": f"{model_name_str}_geoengine",
+                    "type": "form",
+                    "model": model_name,
+                    "arch": str_arch,
+                    "m2o_model": model_created.id,
+                }
+            ]
         )
 
         # Add layer
@@ -96,7 +98,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 "begin_color": "#FF680A",
                 "m2o_code_generator": module.id,
             }
-            self.env["geoengine.vector.layer"].create(value)
+            self.env["geoengine.vector.layer"].create([value])
 
         # Add raster
         # OSM
@@ -107,7 +109,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             "raster_type": "osm",
             "m2o_code_generator": module.id,
         }
-        self.env["geoengine.raster.layer"].create(value)
+        self.env["geoengine.raster.layer"].create([value])
 
         # d_wms
         value = {
@@ -118,7 +120,7 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             "raster_type": "d_wms",
             "m2o_code_generator": module.id,
         }
-        self.env["geoengine.raster.layer"].create(value)
+        self.env["geoengine.raster.layer"].create([value])
 
         return result
 
@@ -181,5 +183,5 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         if inherit_id:
             value["inherit_id"] = inherit_id
 
-        view_value = self.env["ir.ui.view"].create(value)
+        view_value = self.env["ir.ui.view"].create([value])
         return view_value
