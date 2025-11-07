@@ -8,6 +8,7 @@ from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models, modules, tools
+from odoo.addons.code_generator import code_generator_data
 from odoo.models import MAGIC_COLUMNS
 
 _logger = logging.getLogger(__name__)
@@ -95,6 +96,8 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         lst_header = [
             "from odoo import http",
             "from odoo.http import request",
@@ -104,7 +107,7 @@ class CodeGeneratorWriter(models.Model):
             lst_header.append("import humanize")
             lst_header.append("from datetime import datetime")
 
-        file_path = f"{self.code_generator_data.controllers_path}/main.py"
+        file_path = f"{cg_data.controllers_path}/main.py"
 
         python_controller_writer.add_controller(
             file_path,
@@ -376,6 +379,9 @@ class CodeGeneratorWriter(models.Model):
         :param code_generator_snippet_id:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         cw = CodeWriter()
         cw_before_empty_data = CodeWriter()
         cw_inside_empty_data = CodeWriter()
@@ -526,7 +532,7 @@ class CodeGeneratorWriter(models.Model):
             "js",
             f"website.{code_generator_snippet_id.module_snippet_name}.animation.js",
         )
-        self.code_generator_data.write_file_str(file_path, content)
+        cg_data.write_file_str(file_path, content)
 
     def _set_website_snippet_static_scss_file(self, code_generator_snippet_id):
         """
@@ -534,6 +540,8 @@ class CodeGeneratorWriter(models.Model):
         :param code_generator_snippet_id:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         content = ""
 
@@ -543,7 +551,7 @@ class CodeGeneratorWriter(models.Model):
             "scss",
             f"{code_generator_snippet_id.module_snippet_name}.scss",
         )
-        self.code_generator_data.write_file_str(file_path, content)
+        cg_data.write_file_str(file_path, content)
 
     def set_xml_views_file(self, module):
         super(CodeGeneratorWriter, self).set_xml_views_file(module)
@@ -800,6 +808,8 @@ class CodeGeneratorWriter(models.Model):
         #
         # template scss
         #
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         lst_template_xml = []
         # TODO can write generic code
         dct_snippet_content = {
@@ -1076,19 +1086,16 @@ class CodeGeneratorWriter(models.Model):
 
         if lst_template_xml:
             module_file = E.odoo({}, *lst_template_xml)
-            data_file_path = os.path.join(
-                self.code_generator_data.views_path, "snippets.xml"
-            )
+            data_file_path = os.path.join(cg_data.views_path, "snippets.xml")
             result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
                 module_file, pretty_print=True
             )
             result_str = result.decode().replace("&gt;", ">")
-            self.code_generator_data.write_file_str(
-                data_file_path, result_str, data_file=True
-            )
+            cg_data.write_file_str(data_file_path, result_str, data_file=True)
 
     def _set_xml_views_file_website(self, lst_snippet_id):
         lst_template_xml = []
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         for snippet_id in lst_snippet_id:
             if snippet_id.controller_feature == "model_show_item_list":
@@ -1156,7 +1163,7 @@ class CodeGeneratorWriter(models.Model):
         if lst_template_xml:
             module_file = E.odoo({}, *lst_template_xml)
             data_file_path = os.path.join(
-                self.code_generator_data.templates_path, "website.xml"
+                cg_data.templates_path, "website.xml"
             )
             result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
                 module_file, pretty_print=True
@@ -1164,9 +1171,7 @@ class CodeGeneratorWriter(models.Model):
             result_str = result.decode()
             # TODO < is not supported in xml attribute, so why support > ?
             result_str = result_str.replace("&gt;", ">")
-            self.code_generator_data.write_file_str(
-                data_file_path, result_str, data_file=True
-            )
+            cg_data.write_file_str(data_file_path, result_str, data_file=True)
 
     def _set_xml_views_file_one_pager_model_website(
         self,

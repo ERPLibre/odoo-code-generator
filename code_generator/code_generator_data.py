@@ -49,6 +49,9 @@ class CodeGeneratorData:
         # Copy not_supported_files first and permit code to overwrite it
         self.copy_not_supported_files(module)
 
+        self._view_file_sync = {}
+        self._module_file_sync = {}
+
     def copy_not_supported_files(self, module):
         # TODO this is an hack to get code_generator module to search not_supported_files
         # TODO refactor this and move not_supported_files in models, this is wrong conception
@@ -96,6 +99,14 @@ class CodeGeneratorData:
     @property
     def module_path(self):
         return self._module_path
+
+    @property
+    def view_file_sync(self):
+        return self._view_file_sync
+
+    @property
+    def module_file_sync(self):
+        return self._module_file_sync
 
     @property
     def data_path(self):
@@ -537,21 +548,21 @@ class CodeGeneratorData:
 
     def auto_format(self):
         workspace_path = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..")
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
         )
 
         use_only_erplibre_format = True
 
         if use_only_erplibre_format:
-            cmd = f"cd {workspace_path};cp .editorconfig {self.module_path}/"
-            self.subprocess_cmd(cmd)
+            # cmd = f"cd {workspace_path};cp .editorconfig {self.module_path}/"
+            # self.subprocess_cmd(cmd)
             cmd = (
                 f"cd {workspace_path};./script/maintenance/format.sh"
                 f" {self.module_path}"
             )
             self.subprocess_cmd(cmd)
-            cmd = f"cd {workspace_path};rm {self.module_path}/.editorconfig "
-            self.subprocess_cmd(cmd)
+            # cmd = f"cd {workspace_path};rm {self.module_path}/.editorconfig "
+            # self.subprocess_cmd(cmd)
 
             _logger.info("End of auto_format")
             return
@@ -715,3 +726,9 @@ class CodeGeneratorData:
                 _logger.warning(result)
 
         _logger.info("End of auto_format")
+
+
+def get_code_generator_data(env, module=None, path=None) -> CodeGeneratorData:
+    if not hasattr(env.cr, "_code_generator_data"):
+        env.cr._code_generator_data = CodeGeneratorData(module, path)
+    return env.cr._code_generator_data

@@ -6,6 +6,7 @@ import os
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models
+from odoo.addons.code_generator import code_generator_data
 
 BREAK_LINE_OFF = "\n"
 XML_VERSION_HEADER = '<?xml version="1.0" encoding="utf-8"?>' + BREAK_LINE_OFF
@@ -212,6 +213,8 @@ class CodeGeneratorWriter(models.Model):
         if not ir_crons:
             return
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         #
         # Cron
         #
@@ -292,15 +295,11 @@ class CodeGeneratorWriter(models.Model):
         # TODO need to separate noupdate cron_id to no noupdate, different group
         odoo_data = {} if not model_data_id.noupdate else {"noupdate": "1"}
         module_file = E.odoo(odoo_data, *lst_record_xml)
-        data_file_path = os.path.join(
-            self.code_generator_data.data_path, "ir_cron.xml"
-        )
+        data_file_path = os.path.join(cg_data.data_path, "ir_cron.xml")
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_file, pretty_print=True
         )
-        self.code_generator_data.write_file_binary(
-            data_file_path, result, data_file=True
-        )
+        cg_data.write_file_binary(data_file_path, result, data_file=True)
 
     @staticmethod
     def _process_nextcall(ir_cron_id):

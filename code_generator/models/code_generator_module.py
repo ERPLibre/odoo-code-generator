@@ -292,6 +292,8 @@ class CodeGeneratorModule(models.Model):
                 module_id.template_module_id = self.env[
                     "ir.module.module"
                 ].search([("name", "=", module_id.template_module_name)])
+            else:
+                module_id.template_module_id = False
 
     def add_module_dependency_template(self, module_name):
         self.add_module_dependency(

@@ -6,6 +6,7 @@ import logging
 import isort
 from code_writer import CodeWriter
 from odoo import api, fields, models
+from odoo.addons.code_generator import code_generator_data
 from odoo.models import MAGIC_COLUMNS
 
 MAGIC_FIELDS_MODELS = MAGIC_COLUMNS + [
@@ -49,7 +50,8 @@ class CodeGeneratorWriter(models.Model):
             if module.uninstall_hook_show:
                 lst_import.append("uninstall_hook")
             # Specify root component
-            self.code_generator_data.add_module_init_path(
+            cg_data = code_generator_data.get_code_generator_data(self.env)
+            cg_data.add_module_init_path(
                 "", f'from .hooks import {", ".join(lst_import)}'
             )
 
@@ -543,6 +545,8 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         cw = CodeWriter()
 
         for line in MODEL_SUPERUSER_HEAD:
@@ -585,6 +589,7 @@ class CodeGeneratorWriter(models.Model):
         ):
             if not hook_show:
                 return
+            cg_data = code_generator_data.get_code_generator_data(self.env)
             cw.emit()
             cw.emit()
             if has_second_arg:
@@ -970,8 +975,10 @@ class CodeGeneratorWriter(models.Model):
                             dct_model_one2many = {}
                             for i, model_id in enumerate(lst_model_id):
                                 if module.enable_sync_template:
-                                    view_file_sync = module.view_file_sync.get(
-                                        model_id.model
+                                    view_file_sync = (
+                                        cg_data.view_file_sync.get(
+                                            model_id.model
+                                        )
                                     )
                                     if view_file_sync:
                                         lst_view_item_code_generator.append(
@@ -1465,7 +1472,7 @@ class CodeGeneratorWriter(models.Model):
 
         hook_file_path = "hooks.py"
 
-        self.code_generator_data.write_file_str(hook_file_path, cw.render())
+        cg_data.write_file_str(hook_file_path, cw.render())
 
     def code_write_hook_header_inherit(self, cw, module):
         pass
@@ -1624,6 +1631,7 @@ class CodeGeneratorWriter(models.Model):
             cw.emit(f'"{key}": {value},')
 
     def _get_field_data(self, module, model_id):
+        cg_data = code_generator_data.get_code_generator_data(self.env)
         dct_field_data = {}
         dct_field_data_one2many = {}
 
@@ -1631,8 +1639,8 @@ class CodeGeneratorWriter(models.Model):
             return dct_field_data, dct_field_data_one2many
 
         dct_field_ast = {}
-        module_file_sync = module.module_file_sync.get(model_id.model)
-        view_file_sync = module.view_file_sync.get(model_id.model)
+        module_file_sync = cg_data.module_file_sync.get(model_id.model)
+        view_file_sync = cg_data.view_file_sync.get(model_id.model)
         lst_ignored_field = (
             module.ignore_fields.split(";") if module.ignore_fields else []
         )
