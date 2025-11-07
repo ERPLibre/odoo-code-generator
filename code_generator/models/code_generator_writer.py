@@ -431,6 +431,7 @@ class CodeGeneratorWriter(models.Model):
             return
 
         i18n_path = os.path.join(module_path, "i18n")
+        # TODO can be move to util
         data = CodeGeneratorData(module_id, module_path)
         data.check_mkdir_and_create(i18n_path, is_file=False)
 
