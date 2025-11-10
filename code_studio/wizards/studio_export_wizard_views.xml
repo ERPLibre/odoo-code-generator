@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Export Wizard Form View -->
+    <record id="studio_export_wizard_form" model="ir.ui.view">
+        <field name="name">studio.export.wizard.form</field>
+        <field name="model">studio.export.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Export Studio Customizations">
+                <field name="state" invisible="1" />
+                <group invisible="state == 'done'">
+                    <group>
+                        <field name="name" />
+                        <field name="export_type" />
+                    </group>
+                    <group>
+                        <field name="include_data" />
+                        <field name="include_demo" />
+                        <field name="include_security" />
+                        <field name="include_translations" />
+                    </group>
+                </group>
+                <group invisible="state == 'done'">
+                    <field name="studio_model_ids" nolabel="1">
+                        <list>
+                            <field name="name" />
+                            <field name="description" />
+                            <field name="state" />
+                        </list>
+                    </field>
+                </group>
+                <div invisible="state != 'done'" class="alert alert-success" role="alert">
+                    <h4 class="alert-heading">Export Complete!</h4>
+                    <p>Your Studio customizations have been exported successfully.</p>
+                    <field name="file_name" invisible="1" />
+                    <field name="file_data" filename="file_name" nolabel="1" widget="binary" />
+                </div>
+                <footer>
+                    <button
+                        name="action_export"
+                        type="object"
+                        string="Export"
+                        class="btn-primary"
+                        invisible="state == 'done'"
+                    />
+                    <button string="Cancel" class="btn-secondary" special="cancel" invisible="state == 'done'" />
+                    <button string="Close" class="btn-primary" special="cancel" invisible="state != 'done'" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Export Wizard Action -->
+    <record id="action_studio_export_wizard" model="ir.actions.act_window">
+        <field name="name">Export Studio Customizations</field>
+        <field name="res_model">studio.export.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Add export menu -->
+    <menuitem
+        id="menu_studio_export"
+        name="Export Customizations"
+        parent="studio_configuration_menu"
+        action="action_studio_export_wizard"
+        sequence="50"
+    />
+</odoo>

@@ -1,0 +1,383 @@
+// Odoo Studio Editor Styles
+
+.o_studio_editor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1050;
+    background-color: $o-view-background-color;
+    display: flex;
+    flex-direction: column;
+
+    // Header
+    .o_studio_editor_header {
+        background-color: $o-brand-primary;
+        color: white;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        .o_studio_editor_title {
+            font-size: 1.2rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .o_studio_model_name {
+                font-size: 0.9rem;
+                opacity: 0.8;
+            }
+        }
+
+        .o_studio_editor_actions {
+            display: flex;
+            gap: 0.5rem;
+
+            .btn {
+                padding: 0.25rem 0.75rem;
+                font-size: 0.875rem;
+            }
+        }
+    }
+
+    // Main content
+    .o_studio_editor_content {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        position: relative;
+    }
+
+    // View area
+    .o_studio_view_area {
+        flex: 1;
+        background-color: $o-gray-100;
+        overflow: auto;
+        position: relative;
+        padding: 2rem;
+
+        .o_studio_view_container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            min-height: 600px;
+            position: relative;
+
+            &.o_studio_editing {
+                .o_studio_draggable {
+                    position: relative;
+                    transition: all 0.2s;
+
+                    &:hover {
+                        outline: 2px dashed $o-brand-primary;
+                        outline-offset: 2px;
+                        cursor: move;
+                    }
+
+                    &.o_studio_selected {
+                        outline: 2px solid $o-brand-primary;
+                        outline-offset: 2px;
+                    }
+                }
+
+                .o_studio_drop_zone {
+                    min-height: 40px;
+                    border: 2px dashed $o-gray-300;
+                    border-radius: 4px;
+                    margin: 0.5rem;
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: $o-gray-500;
+                    font-size: 0.875rem;
+
+                    &:hover {
+                        border-color: $o-brand-primary;
+                        background-color: rgba($o-brand-primary, 0.05);
+                    }
+
+                    &.o_studio_drag_over {
+                        border-color: $o-brand-primary;
+                        background-color: rgba($o-brand-primary, 0.1);
+                    }
+
+                    .o_studio_drop_hint {
+                        pointer-events: none;
+                    }
+                }
+            }
+
+            // Form view specific
+            &.o_form_view {
+                .o_form_sheet {
+                    padding: 2rem;
+                    margin: 0;
+                }
+
+                .o_group {
+                    margin-bottom: 1rem;
+
+                    .o_inner_group {
+                        display: grid;
+                        grid-template-columns: 150px 1fr;
+                        gap: 0.5rem;
+                        align-items: start;
+
+                        > .o_form_label {
+                            text-align: right;
+                            padding-right: 0.5rem;
+                            font-weight: 500;
+                        }
+                    }
+                }
+
+                .o_field_widget {
+                    width: 100%;
+                }
+            }
+
+            // List view specific
+            &.o_list_view {
+                .o_list_table {
+                    width: 100%;
+                    margin: 0;
+
+                    th {
+                        background-color: $o-gray-100;
+                        font-weight: 500;
+                        padding: 0.75rem;
+                        border-bottom: 2px solid $o-gray-200;
+                    }
+
+                    td {
+                        padding: 0.75rem;
+                        border-bottom: 1px solid $o-gray-200;
+                    }
+                }
+            }
+
+            // Kanban view specific
+            &.o_kanban_view {
+                padding: 1rem;
+
+                .o_kanban_group {
+                    display: inline-block;
+                    vertical-align: top;
+                    width: 300px;
+                    margin: 0 0.5rem;
+                    background-color: $o-gray-100;
+                    border-radius: 4px;
+                    padding: 0.5rem;
+
+                    .o_kanban_header {
+                        padding: 0.5rem;
+                        font-weight: 500;
+                        border-bottom: 2px solid $o-gray-200;
+                        margin-bottom: 0.5rem;
+                    }
+
+                    .o_kanban_record {
+                        background-color: white;
+                        border-radius: 4px;
+                        padding: 1rem;
+                        margin-bottom: 0.5rem;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                    }
+                }
+            }
+        }
+    }
+
+    // Drag and drop
+    .o_studio_dragging {
+        opacity: 0.5;
+        cursor: grabbing !important;
+    }
+
+    .o_studio_drag_placeholder {
+        background-color: rgba($o-brand-primary, 0.2);
+        border: 2px solid $o-brand-primary;
+        border-radius: 4px;
+        height: 40px;
+        margin: 0.25rem 0;
+    }
+
+    // Element actions
+    .o_studio_element_actions {
+        position: absolute;
+        top: -30px;
+        right: 0;
+        display: flex;
+        gap: 0.25rem;
+        background-color: white;
+        padding: 0.25rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+    }
+
+    // Loading overlay
+    .o_studio_loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+
+        .o_studio_loading_spinner {
+            font-size: 3rem;
+            color: $o-brand-primary;
+        }
+    }
+
+    // Mobile responsiveness
+    @include media-breakpoint-down(lg) {
+        .o_studio_view_area {
+            padding: 1rem;
+        }
+
+        .o_studio_sidebar {
+            position: absolute;
+            right: -300px;
+            transition: right 0.3s;
+
+            &.o_studio_sidebar_open {
+                right: 0;
+            }
+        }
+    }
+}
+
+// Studio-specific form elements
+.o_studio_form_element {
+    position: relative;
+    min-height: 32px;
+
+    &.o_studio_field {
+        .o_field_widget {
+            pointer-events: none;
+
+            input,
+            textarea,
+            select {
+                background-color: $o-gray-100;
+                border-style: dashed;
+            }
+        }
+    }
+
+    &.o_studio_button {
+        display: inline-block;
+        margin: 0.25rem;
+    }
+
+    &.o_studio_separator {
+        margin: 1rem 0;
+        border-bottom: 1px solid $o-gray-300;
+        position: relative;
+
+        .o_horizontal_separator {
+            font-weight: 500;
+            color: $o-gray-600;
+            background-color: white;
+            padding: 0 0.5rem;
+            position: absolute;
+            top: -0.75rem;
+            left: 1rem;
+        }
+    }
+}
+
+// View type selector
+.o_studio_view_type_selector {
+    background-color: white;
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+
+    .o_studio_view_type {
+        padding: 0.5rem 1rem;
+        border: 1px solid $o-gray-300;
+        background-color: white;
+        color: $o-gray-700;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &:hover {
+            background-color: $o-gray-100;
+        }
+
+        &.active {
+            background-color: $o-brand-primary;
+            color: white;
+            border-color: $o-brand-primary;
+        }
+
+        i {
+            font-size: 1.2rem;
+        }
+    }
+}
+
+// Animations
+@keyframes studio-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.o_studio_fade_in {
+    animation: studio-fade-in 0.3s ease-out;
+}
+
+// Utility classes
+.o_studio_no_content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: $o-gray-500;
+
+    i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    p {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+}

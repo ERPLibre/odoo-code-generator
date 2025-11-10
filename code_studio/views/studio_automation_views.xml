@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Studio Automation List View -->
+    <record id="studio_automation_view_list" model="ir.ui.view">
+        <field name="name">studio.automation.list</field>
+        <field name="model">studio.automation</field>
+        <field name="arch" type="xml">
+            <list string="Studio Automations" create="1" edit="1" multi_edit="1" sample="1">
+                <field name="name" string="Name" />
+                <field name="studio_model_id" string="Model" />
+                <field
+                    name="trigger"
+                    string="Trigger"
+                    widget="badge"
+                    decoration-info="trigger == 'on_create'"
+                    decoration-warning="trigger == 'on_write'"
+                    decoration-success="trigger == 'on_time'"
+                    decoration-danger="trigger == 'on_unlink'"
+                />
+                <field name="state" string="Action Type" />
+                <field name="active" string="Active" widget="boolean_toggle" />
+                <field name="automation_id" invisible="1" />
+                <field name="create_date" string="Created" widget="date" optional="hide" />
+                <field name="create_uid" string="Created By" widget="many2one_avatar_user" optional="hide" />
+                <button
+                    name="action_create_automation"
+                    type="object"
+                    string="Create"
+                    class="btn-sm btn-primary"
+                    icon="fa-check"
+                    invisible="automation_id"
+                    confirm="Are you sure you want to create this automation?"
+                />
+                <button
+                    name="action_test_automation"
+                    type="object"
+                    string="Test"
+                    class="btn-sm btn-secondary"
+                    icon="fa-play"
+                    invisible="not automation_id"
+                />
+            </list>
+        </field>
+    </record>
+
+    <!-- Studio Automation Form View -->
+    <record id="studio_automation_view_form" model="ir.ui.view">
+        <field name="name">studio.automation.form</field>
+        <field name="model">studio.automation</field>
+        <field name="arch" type="xml">
+            <form string="Studio Automation">
+                <header>
+                    <button
+                        name="action_create_automation"
+                        type="object"
+                        string="Create Automation"
+                        class="oe_highlight"
+                        invisible="automation_id"
+                        confirm="This will create the automation rule. Continue?"
+                    />
+                    <button
+                        name="action_test_automation"
+                        type="object"
+                        string="Test Automation"
+                        class="btn-secondary"
+                        invisible="not automation_id"
+                        help="Test the automation on sample records"
+                    />
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active" />
+                    <div class="oe_button_box" name="button_box">
+                        <button
+                            class="oe_stat_button"
+                            type="object"
+                            name="action_view_logs"
+                            icon="fa-history"
+                            invisible="not automation_id"
+                        >
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">View Logs</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Automation Name" />
+                        <h1>
+                            <field
+                                name="name"
+                                placeholder="e.g., Send Email on Invoice Validation"
+                                class="text-break"
+                            />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Configuration">
+                            <field name="studio_model_id" options="{'no_create': True, 'no_open': True}" />
+                            <field name="model_id" invisible="1" />
+                            <field name="automation_id" invisible="1" />
+                            <field name="active" widget="boolean_toggle" />
+                        </group>
+                        <group string="Trigger">
+                            <field name="trigger" widget="radio" options="{'horizontal': True}" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Trigger Conditions" name="trigger">
+                            <group
+                                invisible="trigger not in ['on_write', 'on_create_or_write']"
+                                string="Watched Fields"
+                            >
+                                <field
+                                    name="trigger_field_ids"
+                                    widget="many2many_tags"
+                                    options="{'no_create': True}"
+                                    placeholder="Select fields that trigger this automation..."
+                                    help="Leave empty to trigger on any field change"
+                                />
+                            </group>
+                            <group invisible="trigger != 'on_time'" string="Time-Based Trigger">
+                                <group>
+                                    <field
+                                        name="trg_date_field_id"
+                                        required="trigger == 'on_time'"
+                                        options="{'no_create': True}"
+                                    />
+                                    <label for="trg_date_range" string="Execute" />
+                                    <div class="o_row">
+                                        <field name="trg_date_range" class="oe_inline" />
+                                        <field name="trg_date_range_type" class="oe_inline" />
+                                        <span>after trigger date</span>
+                                    </div>
+                                </group>
+                            </group>
+                            <group string="Domain Filters">
+                                <label for="filter_domain" string="Records to Include" />
+                                <div>
+                                    <field
+                                        name="filter_domain"
+                                        widget="domain"
+                                        options="{'model': 'studio_model_id.name', 'in_dialog': True}"
+                                        placeholder="Define which records this automation applies to..."
+                                    />
+                                    <div class="text-muted">
+                                        <i class="fa fa-info-circle" />
+                                        Leave empty to apply to all records
+                                    </div>
+                                </div>
+                                <label
+                                    for="filter_pre_domain"
+                                    string="Before Update Domain"
+                                    invisible="trigger not in ['on_write', 'on_create_or_write']"
+                                />
+                                <div invisible="trigger not in ['on_write', 'on_create_or_write']">
+                                    <field
+                                        name="filter_pre_domain"
+                                        widget="domain"
+                                        options="{'model': 'studio_model_id.name', 'in_dialog': True}"
+                                        placeholder="Additional conditions on record state before update..."
+                                    />
+                                </div>
+                            </group>
+                        </page>
+                        <page string="Actions" name="actions">
+                            <group>
+                                <field name="state" widget="radio" />
+                            </group>
+                            <separator string="Python Code" invisible="state != 'code'" />
+                            <field
+                                name="code"
+                                widget="ace"
+                                options="{'mode': 'python'}"
+                                invisible="state != 'code'"
+                                nolabel="1"
+                                placeholder="# Available variables:&#10;#  - env: Odoo Environment&#10;#  - model: Current model&#10;#  - record: Current record(s)&#10;#  - records: Current recordset&#10;#  - time, datetime, dateutil, timezone: useful Python libraries&#10;#  - float_compare: utility function to compare floats&#10;#  - Command: x2many commands namespace&#10;#  - log: log(message, level='info')&#10;&#10;# Example:&#10;# record.message_post(body='Automation triggered!')"
+                            />
+
+                            <group invisible="state != 'email'" string="Email Configuration">
+                                <field
+                                    name="template_id"
+                                    context="{'default_model_id': model_id}"
+                                    domain="[('model_id', '=', model_id)]"
+                                    required="state == 'email'"
+                                />
+                                <div colspan="2" class="text-muted">
+                                    <i class="fa fa-lightbulb-o" />
+                                    Tip: Create email templates in Settings > Technical > Email Templates
+                                </div>
+                            </group>
+
+                            <!--                            <div class="oe_chatter">-->
+                            <!--                                <field name="message_follower_ids" widget="mail_followers" />-->
+                            <!--                                <field name="activity_ids" widget="mail_activity" />-->
+                            <!--                                <field name="message_ids" widget="mail_thread" />-->
+                            <!--                            </div>-->
+
+                            <group invisible="state != 'next_activity'" string="Activity Configuration">
+                                <group>
+                                    <field name="activity_type_id" required="state == 'next_activity'" />
+                                    <field name="activity_summary" placeholder="e.g., Review and approve" />
+                                    <field name="activity_user_id" widget="many2one_avatar_user" />
+                                </group>
+                                <group>
+                                    <label for="activity_date_deadline_range" string="Due In" />
+                                    <div class="o_row">
+                                        <field name="activity_date_deadline_range" class="oe_inline" />
+                                        <field name="activity_date_deadline_range_type" class="oe_inline" />
+                                    </div>
+                                </group>
+                                <separator string="Activity Description" />
+                                <field
+                                    name="activity_note"
+                                    nolabel="1"
+                                    colspan="2"
+                                    placeholder="Detailed instructions for the activity..."
+                                />
+                            </group>
+
+                            <group
+                                invisible="state not in ['object_create', 'object_write']"
+                                string="Record Operations"
+                            >
+                                <div colspan="2" class="alert alert-info" role="alert">
+                                    <i class="fa fa-info-circle" />
+                                    This feature is coming soon
+                                </div>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <group>
+                                <field
+                                    name="description"
+                                    nolabel="1"
+                                    placeholder="Add any notes or documentation about this automation..."
+                                />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <!--                <div class="oe_chatter">-->
+                <!--                    <field name="message_follower_ids" />-->
+                <!--                    <field name="message_ids" options="{'post_refresh': 'always'}" />-->
+                <!--                </div>-->
+            </form>
+        </field>
+    </record>
+
+    <!-- Studio Automation Kanban View -->
+    <record id="studio_automation_view_kanban" model="ir.ui.view">
+        <field name="name">studio.automation.kanban</field>
+        <field name="model">studio.automation</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" sample="1">
+                <field name="name" />
+                <field name="studio_model_id" />
+                <field name="trigger" />
+                <field name="state" />
+                <field name="active" />
+                <field name="automation_id" />
+                <templates>
+                    <t t-name="kanban-box">
+                        <div
+                            t-attf-class="oe_kanban_global_click #{!selection_mode ? kanban_color(record.color.raw_value) : ''}"
+                        >
+                            <div class="o_kanban_record_top mb16">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name" />
+                                    </strong>
+                                </div>
+                                <field name="active" widget="boolean_toggle" nolabel="1" />
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div class="text-muted">
+                                    <i class="fa fa-database" />
+                                    <field name="studio_model_id" />
+                                </div>
+                                <field name="trigger" widget="badge" />
+                                <field name="state" widget="badge" />
+                            </div>
+                            <div class="o_kanban_record_bottom" t-if="!selection_mode">
+                                <div class="oe_kanban_bottom_left">
+                                    <button
+                                        t-if="!record.automation_id.raw_value"
+                                        name="action_create_automation"
+                                        type="object"
+                                        class="btn btn-sm btn-primary"
+                                    >
+                                        <i class="fa fa-check" />
+                                        Create
+                                    </button>
+                                    <button
+                                        t-if="record.automation_id.raw_value"
+                                        name="action_test_automation"
+                                        type="object"
+                                        class="btn btn-sm btn-secondary"
+                                    >
+                                        <i class="fa fa-play" />
+                                        Test
+                                    </button>
+                                </div>
+                                <!--                                <div class="oe_kanban_bottom_right">-->
+                                <!--                                    <field name="activity_ids" widget="kanban_activity" />-->
+                                <!--                                </div>-->
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Studio Automation Search View -->
+    <record id="studio_automation_view_search" model="ir.ui.view">
+        <field name="name">studio.automation.search</field>
+        <field name="model">studio.automation</field>
+        <field name="arch" type="xml">
+            <search string="Search Automations">
+                <field
+                    name="name"
+                    string="Name"
+                    filter_domain="['|', ('name', 'ilike', self), ('description', 'ilike', self)]"
+                />
+                <field name="studio_model_id" string="Model" />
+                <field name="trigger" string="Trigger" />
+                <field name="state" string="Action Type" />
+                <separator />
+                <filter string="Active" name="active" domain="[('active', '=', True)]" help="Active automations" />
+                <filter
+                    string="Inactive"
+                    name="inactive"
+                    domain="[('active', '=', False)]"
+                    help="Inactive automations"
+                />
+                <separator />
+                <filter string="On Create" name="on_create" domain="[('trigger', '=', 'on_create')]" />
+                <filter string="On Update" name="on_write" domain="[('trigger', '=', 'on_write')]" />
+                <filter string="On Delete" name="on_unlink" domain="[('trigger', '=', 'on_unlink')]" />
+                <filter string="Time Based" name="on_time" domain="[('trigger', '=', 'on_time')]" />
+                <separator />
+                <filter string="Created" name="has_automation" domain="[('automation_id', '!=', False)]" />
+                <filter string="Not Created" name="no_automation" domain="[('automation_id', '=', False)]" />
+                <group expand="0" string="Group By">
+                    <filter string="Model" name="group_model" context="{'group_by': 'studio_model_id'}" />
+                    <filter string="Trigger" name="group_trigger" context="{'group_by': 'trigger'}" />
+                    <filter string="Action Type" name="group_state" context="{'group_by': 'state'}" />
+                    <filter string="Active" name="group_active" context="{'group_by': 'active'}" />
+                    <separator />
+                    <filter
+                        string="Creation Date"
+                        name="group_create_date"
+                        context="{'group_by': 'create_date:month'}"
+                    />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Studio Automation Action -->
+    <record id="studio_automation_action" model="ir.actions.act_window">
+        <field name="name">Automations</field>
+        <field name="res_model">studio.automation</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first automation</p>
+            <p>Automations allow you to trigger actions automatically based on specific conditions:</p>
+            <ul>
+                <li>
+                    <b>On Creation:</b>
+                    When a new record is created
+                </li>
+                <li>
+                    <b>On Update:</b>
+                    When specific fields are modified
+                </li>
+                <li>
+                    <b>On Delete:</b>
+                    Before a record is deleted
+                </li>
+                <li>
+                    <b>Time-Based:</b>
+                    Based on date fields (e.g., 3 days before deadline)
+                </li>
+            </ul>
+            <p>
+                Common use cases include sending emails, creating activities, updating fields, or executing custom
+                Python code.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="studio_automation_menu"
+        name="Automations"
+        parent="studio_models_menu"
+        action="studio_automation_action"
+        sequence="30"
+    />
+
+    <!-- Server action to view automation logs -->
+    <record id="action_view_automation_logs" model="ir.actions.act_window">
+        <field name="name">Automation Logs</field>
+        <field name="res_model">ir.logging</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('type', '=', 'server'), ('name', 'ilike', 'base.automation')]</field>
+        <field name="context">{'search_default_today': 1}</field>
+    </record>
+</odoo>

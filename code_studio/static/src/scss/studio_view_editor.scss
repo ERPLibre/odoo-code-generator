@@ -1,0 +1,657 @@
+// Odoo Studio View Editor Styles
+
+.o_studio_view_editor {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: $o-gray-100;
+
+    // Toolbar
+    .o_studio_toolbar {
+        background-color: white;
+        border-bottom: 1px solid $o-gray-300;
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+        .o_studio_toolbar_left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            .o_studio_view_name {
+                font-size: 1.1rem;
+                font-weight: 500;
+                color: $o-gray-800;
+            }
+
+            .o_studio_view_type {
+                background-color: $o-brand-primary;
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: 4px;
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+        }
+
+        .o_studio_toolbar_center {
+            display: flex;
+            gap: 0.5rem;
+
+            .btn-group {
+                .btn {
+                    padding: 0.375rem 0.75rem;
+                    font-size: 0.875rem;
+                    border-color: $o-gray-300;
+
+                    &.active {
+                        background-color: $o-brand-primary;
+                        border-color: $o-brand-primary;
+                        color: white;
+                    }
+                }
+            }
+        }
+
+        .o_studio_toolbar_right {
+            display: flex;
+            gap: 0.5rem;
+
+            .btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.875rem;
+            }
+        }
+    }
+
+    // Main area
+    .o_studio_view_editor_main {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+
+    // Preview pane
+    .o_studio_preview_pane {
+        flex: 1;
+        padding: 2rem;
+        overflow: auto;
+        background-color: $o-gray-100;
+
+        .o_studio_preview_container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            min-height: 600px;
+            position: relative;
+            overflow: hidden;
+
+            &.o_studio_design_mode {
+                .o_studio_element {
+                    position: relative;
+                    min-height: 30px;
+
+                    &::before {
+                        content: "";
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        border: 1px dashed transparent;
+                        pointer-events: none;
+                        transition: all 0.2s;
+                    }
+
+                    &:hover::before {
+                        border-color: $o-brand-primary;
+                        background-color: rgba($o-brand-primary, 0.05);
+                    }
+
+                    &.o_studio_selected::before {
+                        border: 2px solid $o-brand-primary;
+                        background-color: rgba($o-brand-primary, 0.1);
+                    }
+
+                    .o_studio_element_label {
+                        position: absolute;
+                        top: -20px;
+                        left: 0;
+                        background-color: $o-brand-primary;
+                        color: white;
+                        padding: 0.125rem 0.5rem;
+                        font-size: 0.75rem;
+                        border-radius: 3px;
+                        opacity: 0;
+                        transition: opacity 0.2s;
+                        pointer-events: none;
+                        z-index: 10;
+                    }
+
+                    &:hover .o_studio_element_label,
+                    &.o_studio_selected .o_studio_element_label {
+                        opacity: 1;
+                    }
+                }
+
+                // Drop indicators
+                .o_studio_drop_indicator {
+                    position: absolute;
+                    background-color: $o-brand-primary;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                    pointer-events: none;
+                    z-index: 100;
+
+                    &.horizontal {
+                        height: 3px;
+                        left: 0;
+                        right: 0;
+                    }
+
+                    &.vertical {
+                        width: 3px;
+                        top: 0;
+                        bottom: 0;
+                    }
+
+                    &.active {
+                        opacity: 1;
+                    }
+                }
+            }
+
+            // Form view editor
+            &.o_form_view_editor {
+                .o_form_sheet_bg {
+                    padding: 2rem;
+                    min-height: 100%;
+                }
+
+                .o_form_sheet {
+                    margin: 0 auto;
+                    background-color: white;
+                    position: relative;
+                }
+
+                .o_form_statusbar {
+                    background-color: $o-gray-100;
+                    padding: 0.5rem 1rem;
+                    margin: -2rem -2rem 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+
+                    .o_statusbar_status {
+                        display: flex;
+                        gap: 0.5rem;
+
+                        button {
+                            padding: 0.25rem 1rem;
+                            border: 1px solid $o-gray-300;
+                            background-color: white;
+                            border-radius: 4px;
+                            font-size: 0.875rem;
+
+                            &.o_arrow_button {
+                                position: relative;
+                                padding-right: 2rem;
+
+                                &::after {
+                                    content: "";
+                                    position: absolute;
+                                    right: -1px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    border-left: 20px solid white;
+                                    border-top: 15px solid transparent;
+                                    border-bottom: 15px solid transparent;
+                                    z-index: 1;
+                                }
+
+                                &::before {
+                                    content: "";
+                                    position: absolute;
+                                    right: -2px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    border-left: 20px solid $o-gray-300;
+                                    border-top: 15px solid transparent;
+                                    border-bottom: 15px solid transparent;
+                                }
+                            }
+
+                            &.o_status_active {
+                                background-color: $o-brand-primary;
+                                color: white;
+                                border-color: $o-brand-primary;
+
+                                &.o_arrow_button::after {
+                                    border-left-color: $o-brand-primary;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Special handling for groups
+                .o_group {
+                    .o_group_col_6 {
+                        @include media-breakpoint-up(md) {
+                            width: 50%;
+                        }
+                    }
+
+                    .o_inner_group {
+                        display: table;
+                        width: 100%;
+
+                        .o_form_label {
+                            display: table-cell;
+                            width: 150px;
+                            padding: 0.375rem 0.75rem;
+                            text-align: right;
+                            vertical-align: top;
+                            font-weight: 500;
+                            color: $o-gray-700;
+                        }
+
+                        .o_field_widget {
+                            display: table-cell;
+                            padding: 0.375rem 0.75rem;
+                        }
+                    }
+                }
+
+                // Notebook styling
+                .o_notebook {
+                    margin: 1rem 0;
+
+                    .nav-tabs {
+                        border-bottom: 2px solid $o-gray-200;
+
+                        .nav-link {
+                            border: none;
+                            border-bottom: 2px solid transparent;
+                            color: $o-gray-600;
+                            padding: 0.5rem 1rem;
+                            font-weight: 500;
+
+                            &:hover {
+                                border-color: transparent;
+                                color: $o-gray-800;
+                            }
+
+                            &.active {
+                                border-color: $o-brand-primary;
+                                color: $o-brand-primary;
+                                background-color: transparent;
+                            }
+                        }
+                    }
+
+                    .tab-content {
+                        padding: 1rem 0;
+                    }
+                }
+            }
+
+            // List view editor
+            &.o_list_view_editor {
+                .o_list_renderer {
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+
+                        thead {
+                            th {
+                                padding: 0.75rem;
+                                background-color: $o-gray-100;
+                                border-bottom: 2px solid $o-gray-200;
+                                font-weight: 500;
+                                text-align: left;
+                                position: relative;
+
+                                &.o_list_record_selector {
+                                    width: 40px;
+                                    text-align: center;
+                                }
+
+                                .o_resize_handle {
+                                    position: absolute;
+                                    right: 0;
+                                    top: 0;
+                                    bottom: 0;
+                                    width: 5px;
+                                    cursor: col-resize;
+
+                                    &:hover {
+                                        background-color: $o-brand-primary;
+                                    }
+                                }
+                            }
+                        }
+
+                        tbody {
+                            tr {
+                                &:hover {
+                                    background-color: $o-gray-100;
+                                }
+
+                                td {
+                                    padding: 0.75rem;
+                                    border-bottom: 1px solid $o-gray-200;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Kanban view editor
+            &.o_kanban_view_editor {
+                .o_kanban_renderer {
+                    padding: 1rem;
+                    display: flex;
+                    gap: 1rem;
+                    overflow-x: auto;
+
+                    .o_kanban_group {
+                        flex: 0 0 300px;
+                        background-color: $o-gray-100;
+                        border-radius: 8px;
+                        padding: 1rem;
+
+                        .o_kanban_header {
+                            font-weight: 500;
+                            margin-bottom: 1rem;
+                            padding-bottom: 0.5rem;
+                            border-bottom: 2px solid $o-gray-200;
+                        }
+
+                        .o_kanban_record {
+                            background-color: white;
+                            border-radius: 4px;
+                            padding: 1rem;
+                            margin-bottom: 0.5rem;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                            cursor: pointer;
+                            transition: all 0.2s;
+
+                            &:hover {
+                                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                                transform: translateY(-1px);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Properties panel
+    .o_studio_properties_pane {
+        width: 320px;
+        background-color: white;
+        border-left: 1px solid $o-gray-300;
+        overflow-y: auto;
+        padding: 1rem;
+
+        h4 {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: $o-gray-800;
+        }
+
+        .o_studio_property_section {
+            margin-bottom: 1.5rem;
+
+            .o_studio_property_title {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: $o-gray-700;
+                margin-bottom: 0.75rem;
+                text-transform: uppercase;
+            }
+
+            .o_studio_property_field {
+                margin-bottom: 1rem;
+
+                label {
+                    display: block;
+                    font-size: 0.875rem;
+                    color: $o-gray-600;
+                    margin-bottom: 0.25rem;
+                }
+
+                input,
+                select,
+                textarea {
+                    width: 100%;
+                    padding: 0.375rem 0.75rem;
+                    border: 1px solid $o-gray-300;
+                    border-radius: 4px;
+                    font-size: 0.875rem;
+
+                    &:focus {
+                        border-color: $o-brand-primary;
+                        outline: none;
+                        box-shadow: 0 0 0 0.2rem rgba($o-brand-primary, 0.25);
+                    }
+                }
+
+                textarea {
+                    min-height: 80px;
+                    resize: vertical;
+                }
+
+                .o_studio_checkbox_wrapper {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+
+                    input[type="checkbox"] {
+                        width: auto;
+                        margin: 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Mobile adjustments
+@include media-breakpoint-down(md) {
+    .o_studio_view_editor {
+        .o_studio_properties_pane {
+            position: absolute;
+            right: -320px;
+            top: 0;
+            bottom: 0;
+            transition: right 0.3s;
+            z-index: 100;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+
+            &.open {
+                right: 0;
+            }
+        }
+
+        .o_studio_preview_pane {
+            padding: 1rem;
+        }
+    }
+}
+
+// XML editor specific styles
+.o_studio_xml_editor {
+    .xml-editor-toolbar {
+        background-color: $o-gray-100;
+        border-bottom: 1px solid $o-gray-300;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .btn-group {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .validation-status {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+    }
+
+    .search-replace-bar {
+        background-color: $o-gray-100;
+        border-bottom: 1px solid $o-gray-300;
+        padding: 0.5rem;
+        position: relative;
+
+        .search-row,
+        .replace-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+
+            input {
+                flex: 1;
+            }
+        }
+
+        .close-search {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            padding: 0.25rem;
+            cursor: pointer;
+
+            &:hover {
+                color: $o-danger;
+            }
+        }
+    }
+
+    .xml-editor-container {
+        display: flex;
+        height: 500px;
+        position: relative;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 13px;
+        line-height: 1.5;
+
+        .line-numbers {
+            background-color: $o-gray-100;
+            color: $o-gray-600;
+            padding: 0.5rem;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid $o-gray-300;
+            overflow: hidden;
+
+            .line-number {
+                &.error {
+                    color: $o-danger;
+                    font-weight: bold;
+                }
+            }
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+
+            .xml-editor-textarea,
+            .syntax-highlighted {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                padding: 0.5rem;
+                margin: 0;
+                border: none;
+                outline: none;
+                resize: none;
+                font-family: inherit;
+                font-size: inherit;
+                line-height: inherit;
+                white-space: pre;
+                overflow: auto;
+            }
+
+            .xml-editor-textarea {
+                color: transparent;
+                background: transparent;
+                caret-color: black;
+                z-index: 2;
+            }
+
+            .syntax-highlighted {
+                pointer-events: none;
+                z-index: 1;
+                color: $o-gray-800;
+
+                .xml-comment {
+                    color: $o-gray-500;
+                    font-style: italic;
+                }
+
+                .xml-tag {
+                    color: #2e6da4;
+                    font-weight: bold;
+                }
+
+                .xml-attr {
+                    color: #7a3e9d;
+                }
+
+                .xml-equals {
+                    color: $o-gray-800;
+                }
+
+                .xml-value {
+                    color: #448c27;
+                }
+
+                .xml-cdata {
+                    color: #666;
+                    background-color: #f5f5f5;
+                }
+
+                .xml-pi {
+                    color: #999;
+                    font-style: italic;
+                }
+            }
+        }
+    }
+
+    //.error-messages {
+    //    background-color: $o-danger-light;
+    //    border-top: 1px solid $o-danger;
+    //    padding: 0.5rem;
+    //    max-height: 100px;
+    //    overflow-y: auto;
+    //
+    //    .error-message {
+    //        color: $o-danger;
+    //        font-size: 0.875rem;
+    //        margin-bottom: 0.25rem;
+    //
+    //        i {
+    //            margin-right: 0.5rem;
+    //        }
+    //    }
+    //}
+}

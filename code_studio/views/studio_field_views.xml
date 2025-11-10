@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Studio Field Form View -->
+    <record id="studio_field_view_form" model="ir.ui.view">
+        <field name="name">studio.field.form</field>
+        <field name="model">studio.field</field>
+        <field name="arch" type="xml">
+            <form string="Studio Field">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="field_description" />
+                            <field name="name" />
+                            <field name="ttype" />
+                            <field name="studio_model_id" />
+                            <field name="model_id" invisible="1" />
+                            <field name="field_id" invisible="1" />
+                        </group>
+                        <group>
+                            <field name="required" />
+                            <field name="readonly" />
+                            <field name="store" />
+                            <field name="index" />
+                            <field name="copy" />
+                            <field name="tracking" invisible="ttype in ['one2many', 'many2many']" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Properties" name="properties">
+                            <group>
+                                <field name="help" />
+                                <field name="default_value" />
+                                <field name="sequence" />
+                            </group>
+                        </page>
+                        <page string="Selection Values" name="selection" invisible="ttype != 'selection'">
+                            <field name="selection_ids">
+                                <list string="Selection Values" create="1" edit="1">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="value" />
+                                    <field name="name" />
+                                </list>
+                            </field>
+                        </page>
+                        <page
+                            string="Relation"
+                            name="relation"
+                            invisible="ttype not in ['many2one', 'one2many', 'many2many']"
+                        >
+                            <group>
+                                <field name="relation" required="ttype in ['many2one', 'one2many', 'many2many']" />
+                                <field
+                                    name="relation_field"
+                                    invisible="ttype != 'one2many'"
+                                    required="ttype == 'one2many'"
+                                />
+                            </group>
+                        </page>
+                        <page string="Computation" name="computation">
+                            <group>
+                                <field name="depends" />
+                                <field name="compute" widget="ace" options="{'mode': 'python'}" />
+                                <field name="inverse" widget="ace" options="{'mode': 'python'}" />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Studio Model List View -->
+    <record id="studio_model_view_list" model="ir.ui.view">
+        <field name="name">studio.model.list</field>
+        <field name="model">studio.model</field>
+        <field name="arch" type="xml">
+            <list string="Studio Models" create="1" edit="1">
+                <field name="name" />
+                <field name="description" />
+                <field
+                    name="state"
+                    widget="badge"
+                    decoration-success="state == 'active'"
+                    decoration-info="state == 'draft'"
+                />
+                <field name="create_date" />
+                <field name="create_uid" />
+                <button
+                    name="action_activate"
+                    type="object"
+                    string="Activate"
+                    class="btn-primary"
+                    invisible="state == 'active'"
+                />
+                <button
+                    name="action_open_model"
+                    type="object"
+                    string="Open"
+                    class="btn-secondary"
+                    invisible="state == 'draft'"
+                />
+            </list>
+        </field>
+    </record>
+
+    <!-- Studio Model Form View -->
+    <record id="studio_model_view_form" model="ir.ui.view">
+        <field name="name">studio.model.form</field>
+        <field name="model">studio.model</field>
+        <field name="arch" type="xml">
+            <form string="Studio Model">
+                <header>
+                    <button
+                        name="action_activate"
+                        type="object"
+                        string="Activate Model"
+                        class="btn-primary"
+                        invisible="state == 'active'"
+                    />
+                    <button
+                        name="action_open_model"
+                        type="object"
+                        string="Open Model"
+                        class="btn-secondary"
+                        invisible="state == 'draft'"
+                    />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active" />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="description" />
+                        </h1>
+                        <h3>
+                            <field name="name" placeholder="x_model_name" />
+                        </h3>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="model_id" invisible="1" />
+                            <field name="is_mail_thread" />
+                            <field name="is_mail_activity" />
+                        </group>
+                        <group>
+                            <field name="create_date" />
+                            <field name="create_uid" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Fields" name="fields">
+                            <field name="field_ids" context="{'default_studio_model_id': id}">
+                                <list string="Fields" create="1" edit="1">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="name" />
+                                    <field name="field_description" />
+                                    <field name="ttype" />
+                                    <field name="required" />
+                                    <field name="readonly" />
+                                    <field name="tracking" />
+                                    <field name="field_id" invisible="1" />
+                                    <button
+                                        name="action_create_field"
+                                        type="object"
+                                        string="Create"
+                                        class="btn-sm btn-primary"
+                                        invisible="field_id"
+                                    />
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Views" name="views">
+                            <field name="view_ids" context="{'default_studio_model_id': id}">
+                                <list string="Views" create="1" edit="1">
+                                    <field name="name" />
+                                    <field name="type" />
+                                    <field name="priority" />
+                                    <field name="active" />
+                                    <field name="view_id" invisible="1" />
+                                    <button
+                                        name="action_create_view"
+                                        type="object"
+                                        string="Create"
+                                        class="btn-sm btn-primary"
+                                        invisible="view_id"
+                                    />
+                                    <button
+                                        name="action_edit_view"
+                                        type="object"
+                                        string="Edit"
+                                        class="btn-sm btn-secondary"
+                                        invisible="not view_id"
+                                    />
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Menus" name="menus">
+                            <field name="menu_ids" context="{'default_studio_model_id': id}">
+                                <list string="Menus" create="1" edit="1">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="name" />
+                                    <field name="parent_id" />
+                                    <field name="active" />
+                                    <field name="menu_id" invisible="1" />
+                                    <button
+                                        name="action_create_menu"
+                                        type="object"
+                                        string="Create"
+                                        class="btn-sm btn-primary"
+                                        invisible="menu_id"
+                                    />
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <!--                <div class="oe_chatter">-->
+                <!--                    <field name="message_follower_ids" />-->
+                <!--                    <field name="activity_ids" />-->
+                <!--                    <field name="message_ids" />-->
+                <!--                </div>-->
+            </form>
+        </field>
+    </record>
+
+    <!-- Studio Model Search View -->
+    <record id="studio_model_view_search" model="ir.ui.view">
+        <field name="name">studio.model.search</field>
+        <field name="model">studio.model</field>
+        <field name="arch" type="xml">
+            <search string="Studio Models">
+                <field name="name" />
+                <field name="description" />
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]" />
+                <filter name="active" string="Active" domain="[('state', '=', 'active')]" />
+                <separator />
+                <filter name="my_models" string="My Models" domain="[('create_uid', '=', uid)]" />
+                <group expand="0" string="Group By">
+                    <filter name="state" string="State" domain="[]" context="{'group_by': 'state'}" />
+                    <filter name="create_date" string="Create Date" domain="[]" context="{'group_by': 'create_date'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Studio Model Action -->
+    <record id="studio_model_action" model="ir.actions.act_window">
+        <field name="name">Studio Models</field>
+        <field name="res_model">studio.model</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first model</p>
+            <p>Studio allows you to create custom models and applications without coding.</p>
+        </field>
+    </record>
+
+    <menuitem
+        id="studio_model_menu"
+        name="Models"
+        parent="studio_models_menu"
+        action="studio_model_action"
+        sequence="10"
+    />
+</odoo>

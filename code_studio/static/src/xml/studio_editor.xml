@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates id="studio_editor_templates" xml:space="preserve">
+    <t t-name="code_studio.StudioEditor" owl="1">
+        <div class="o_studio_editor">
+            <header class="o_studio_header">
+                <div class="o_studio_header_left">
+                    <button class="btn btn-primary" t-on-click="saveChanges" t-att-disabled="state.isLoading">
+                        <i class="fa fa-save" />
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" t-on-click="toggleMode">
+                        <i t-attf-class="fa fa-{{ state.mode === 'edit' ? 'eye' : 'edit' }}" />
+                        <t t-esc="state.mode === 'edit' ? 'Preview' : 'Edit'" />
+                    </button>
+                </div>
+                <div class="o_studio_header_center">
+                    <h3 t-if="state.currentModel" t-esc="state.currentModel.description" />
+                </div>
+                <div class="o_studio_header_right">
+                    <button class="btn btn-secondary" t-on-click="exitStudio">
+                        <i class="fa fa-times" />
+                        Exit Studio
+                    </button>
+                </div>
+            </header>
+
+            <div class="o_studio_content">
+                <StudioSidebar
+                    t-if="state.mode === 'edit'"
+                    currentModel="state.currentModel"
+                    onDragStart.bind="onDragStart"
+                    onFieldCreated.bind="onFieldCreated"
+                />
+
+                <div class="o_studio_view_container">
+                    <StudioViewEditor
+                        currentView="state.currentView"
+                        onElementSelected.bind="onElementSelected"
+                        onArchitectureChanged.bind="onArchitectureChanged"
+                    />
+                </div>
+
+                <div class="o_studio_properties" t-if="state.selectedElement">
+                    <!-- Properties panel would go here -->
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

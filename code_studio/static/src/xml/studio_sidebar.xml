@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates id="studio_sidebar_templates" xml:space="preserve">
+    <t t-name="code_studio.StudioSidebar" owl="1">
+        <div class="o_studio_sidebar">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a
+                        t-attf-class="nav-link {{ state.activeTab === 'add' ? 'active' : '' }}"
+                        t-on-click="() => selectTab('add')"
+                    >
+                        Add
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a
+                        t-attf-class="nav-link {{ state.activeTab === 'properties' ? 'active' : '' }}"
+                        t-on-click="() => selectTab('properties')"
+                    >
+                        Properties
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a
+                        t-attf-class="nav-link {{ state.activeTab === 'view' ? 'active' : '' }}"
+                        t-on-click="() => selectTab('view')"
+                    >
+                        View
+                    </a>
+                </li>
+            </ul>
+
+            <div class="o_studio_sidebar_content">
+                <div t-if="state.activeTab === 'add'" class="o_studio_add_tab">
+                    <div class="o_studio_search">
+                        <input
+                            type="text"
+                            class="form-control"
+                            placeholder="Search widgets..."
+                            t-model="state.searchTerm"
+                        />
+                    </div>
+
+                    <div class="o_studio_widgets">
+                        <div class="o_studio_widget_category">
+                            <h5>Common Widgets</h5>
+                            <div class="o_studio_widget_list">
+                                <div
+                                    t-foreach="filteredWidgets"
+                                    t-as="widget"
+                                    t-key="widget.type"
+                                    class="o_studio_widget"
+                                    draggable="true"
+                                    t-on-dragstart="(ev) => onDragStart(ev, widget)"
+                                >
+                                    <i t-attf-class="fa {{ widget.icon }}" />
+                                    <span t-esc="widget.label" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_studio_widget_category">
+                            <h5>Fields</h5>
+                            <button class="btn btn-primary btn-sm w-100" t-on-click="createNewField">
+                                <i class="fa fa-plus" />
+                                Create New Field
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div t-if="state.activeTab === 'properties'" class="o_studio_properties_tab">
+                    <!-- Properties content -->
+                </div>
+
+                <div t-if="state.activeTab === 'view'" class="o_studio_view_tab">
+                    <!-- View options -->
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

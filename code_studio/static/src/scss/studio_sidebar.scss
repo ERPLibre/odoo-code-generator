@@ -1,0 +1,336 @@
+// Odoo Studio Sidebar Styles
+
+.o_studio_sidebar {
+    width: 300px;
+    background-color: white;
+    border-left: 1px solid $o-gray-300;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    transition: width 0.3s;
+
+    &.o_studio_sidebar_collapsed {
+        width: 50px;
+
+        .o_studio_sidebar_header,
+        .o_studio_sidebar_content,
+        .o_studio_sidebar_section_title,
+        .o_studio_field_item span,
+        .o_studio_component_item span {
+            display: none;
+        }
+
+        .o_studio_sidebar_toggle {
+            transform: rotate(180deg);
+        }
+    }
+
+    // Toggle button
+    .o_studio_sidebar_toggle {
+        position: absolute;
+        left: -15px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 30px;
+        background-color: white;
+        border: 1px solid $o-gray-300;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: transform 0.3s;
+
+        &:hover {
+            background-color: $o-gray-100;
+        }
+    }
+
+    // Header
+    .o_studio_sidebar_header {
+        padding: 1rem;
+        border-bottom: 1px solid $o-gray-200;
+        background-color: $o-gray-100;
+
+        h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: $o-gray-800;
+        }
+    }
+
+    // Content
+    .o_studio_sidebar_content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.5rem;
+    }
+
+    // Tabs
+    .o_studio_sidebar_tabs {
+        display: flex;
+        border-bottom: 1px solid $o-gray-200;
+        margin-bottom: 1rem;
+
+        .o_studio_sidebar_tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: $o-gray-600;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+
+            &:hover {
+                background-color: $o-gray-100;
+            }
+
+            &.active {
+                color: $o-brand-primary;
+                border-bottom-color: $o-brand-primary;
+            }
+
+            i {
+                display: block;
+                font-size: 1.2rem;
+                margin-bottom: 0.25rem;
+            }
+        }
+    }
+
+    // Sections
+    .o_studio_sidebar_section {
+        margin-bottom: 1.5rem;
+
+        .o_studio_sidebar_section_title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: $o-gray-700;
+            text-transform: uppercase;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            .o_studio_section_toggle {
+                cursor: pointer;
+                transition: transform 0.2s;
+
+                &.collapsed {
+                    transform: rotate(-90deg);
+                }
+            }
+        }
+
+        &.collapsed {
+            .o_studio_sidebar_section_content {
+                display: none;
+            }
+        }
+    }
+
+    // Field items
+    .o_studio_field_item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        margin-bottom: 0.25rem;
+        border-radius: 4px;
+        cursor: move;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+
+        &:hover {
+            background-color: $o-gray-100;
+            border-color: $o-gray-300;
+        }
+
+        &.o_studio_dragging {
+            opacity: 0.5;
+        }
+
+        i {
+            font-size: 1rem;
+            margin-right: 0.75rem;
+            color: $o-gray-600;
+            width: 20px;
+            text-align: center;
+        }
+
+        span {
+            flex: 1;
+            font-size: 0.875rem;
+            color: $o-gray-800;
+        }
+
+        .o_studio_field_type {
+            font-size: 0.75rem;
+            color: $o-gray-500;
+            margin-left: 0.5rem;
+        }
+    }
+
+    // Component items
+    .o_studio_component_item {
+        @extend .o_studio_field_item;
+
+        &.o_studio_component_group {
+            i {
+                color: $o-info;
+            }
+        }
+
+        &.o_studio_component_notebook {
+            i {
+                color: $o-warning;
+            }
+        }
+
+        &.o_studio_component_button {
+            i {
+                color: $o-success;
+            }
+        }
+
+        &.o_studio_component_separator {
+            i {
+                color: $o-gray-500;
+            }
+        }
+    }
+
+    // Properties panel
+    .o_studio_properties_panel {
+        .o_studio_property_group {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: $o-gray-100;
+            border-radius: 4px;
+
+            .o_studio_property_title {
+                font-weight: 500;
+                color: $o-gray-700;
+                margin-bottom: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            .o_studio_property {
+                margin-bottom: 0.5rem;
+
+                label {
+                    display: block;
+                    font-size: 0.8rem;
+                    color: $o-gray-600;
+                    margin-bottom: 0.25rem;
+                }
+
+                input,
+                select,
+                textarea {
+                    width: 100%;
+                    font-size: 0.875rem;
+                    border: 1px solid $o-gray-300;
+                    border-radius: 4px;
+                    padding: 0.25rem 0.5rem;
+
+                    &:focus {
+                        border-color: $o-brand-primary;
+                        outline: none;
+                    }
+                }
+
+                .o_studio_checkbox {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+
+                    input[type="checkbox"] {
+                        width: auto;
+                    }
+                }
+            }
+        }
+    }
+
+    // Search box
+    .o_studio_sidebar_search {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid $o-gray-300;
+            border-radius: 4px;
+            font-size: 0.875rem;
+
+            &:focus {
+                border-color: $o-brand-primary;
+                outline: none;
+            }
+
+            &::placeholder {
+                color: $o-gray-500;
+            }
+        }
+    }
+
+    // Empty state
+    .o_studio_sidebar_empty {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: $o-gray-500;
+
+        i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.5;
+        }
+
+        p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+    }
+
+    // Action buttons
+    .o_studio_sidebar_actions {
+        padding: 1rem;
+        border-top: 1px solid $o-gray-200;
+        display: flex;
+        gap: 0.5rem;
+
+        .btn {
+            flex: 1;
+            font-size: 0.875rem;
+        }
+    }
+}
+
+// Drag ghost
+.o_studio_drag_ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    opacity: 0.8;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border: 1px solid $o-brand-primary;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i {
+        color: $o-brand-primary;
+    }
+}

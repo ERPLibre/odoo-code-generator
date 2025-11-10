@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Studio Action List View -->
+    <record id="studio_action_view_list" model="ir.ui.view">
+        <field name="name">studio.action.list</field>
+        <field name="model">studio.action</field>
+        <field name="arch" type="xml">
+            <list string="Studio Actions" create="1" edit="1">
+                <field name="name" />
+                <field name="studio_model_id" />
+                <field name="type" />
+                <field name="action_id" invisible="1" />
+                <button
+                    name="action_create_action"
+                    type="object"
+                    string="Create"
+                    class="btn-sm btn-primary"
+                    invisible="action_id"
+                />
+            </list>
+        </field>
+    </record>
+
+    <!-- Studio Action Form View -->
+    <record id="studio_action_view_form" model="ir.ui.view">
+        <field name="name">studio.action.form</field>
+        <field name="model">studio.action</field>
+        <field name="arch" type="xml">
+            <form string="Studio Action">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" />
+                            <field name="studio_model_id" />
+                            <field name="type" />
+                            <field name="action_id" invisible="1" />
+                        </group>
+                        <group>
+                            <field name="groups_id" widget="many2many_tags" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Window Action" name="window_action" invisible="type != 'ir.actions.act_window'">
+                            <group>
+                                <group>
+                                    <field name="view_mode" />
+                                    <field name="target" />
+                                    <field name="limit" />
+                                </group>
+                                <group>
+                                    <field name="domain" widget="domain" options="{'model': 'studio_model_id.name'}" />
+                                    <field name="context" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Server Action" name="server_action" invisible="type != 'ir.actions.server'">
+                            <group>
+                                <field name="state" />
+                                <field
+                                    name="code"
+                                    widget="ace"
+                                    options="{'mode': 'python'}"
+                                    invisible="state != 'code'"
+                                />
+                            </group>
+                        </page>
+                        <page string="Button Configuration" name="button_config">
+                            <group>
+                                <group>
+                                    <field name="button_name" />
+                                    <field name="button_type" />
+                                </group>
+                                <group>
+                                    <field name="button_icon" />
+                                    <field name="button_classes" />
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Studio Action Action -->
+    <record id="studio_action_action" model="ir.actions.act_window">
+        <field name="name">Studio Actions</field>
+        <field name="res_model">studio.action</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="studio_action_menu"
+        name="Actions"
+        parent="studio_configuration_menu"
+        action="studio_action_action"
+        sequence="10"
+    />
+</odoo>

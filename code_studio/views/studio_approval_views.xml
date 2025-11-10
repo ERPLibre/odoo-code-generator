@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Studio Approval List View -->
+    <record id="studio_approval_view_list" model="ir.ui.view">
+        <field name="name">studio.approval.list</field>
+        <field name="model">studio.approval</field>
+        <field name="arch" type="xml">
+            <list string="Approval Workflows" create="1" edit="1" sample="1">
+                <field name="name" string="Workflow Name" />
+                <field name="studio_model_id" string="Model" />
+                <field
+                    name="approval_type"
+                    string="Type"
+                    widget="badge"
+                    decoration-info="approval_type == 'simple'"
+                    decoration-warning="approval_type == 'multiple'"
+                    decoration-success="approval_type == 'hierarchical'"
+                />
+                <field name="approval_minimum" string="Min. Approvals" />
+                <field name="active" string="Active" widget="boolean_toggle" />
+                <field name="create_date" string="Created" widget="date" optional="hide" />
+                <field name="create_uid" string="Created By" widget="many2one_avatar_user" optional="hide" />
+                <button
+                    name="action_setup_approval"
+                    type="object"
+                    string="Setup"
+                    class="btn-sm btn-primary"
+                    icon="fa-cog"
+                    confirm="This will create approval fields and views. Continue?"
+                />
+            </list>
+        </field>
+    </record>
+
+    <!-- Studio Approval Form View -->
+    <record id="studio_approval_view_form" model="ir.ui.view">
+        <field name="name">studio.approval.form</field>
+        <field name="model">studio.approval</field>
+        <field name="arch" type="xml">
+            <form string="Approval Workflow">
+                <header>
+                    <button
+                        name="action_setup_approval"
+                        type="object"
+                        string="Setup Approval Workflow"
+                        class="oe_highlight"
+                        confirm="This will modify the model to add approval features. This action cannot be undone. Continue?"
+                    />
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active" />
+                    <div class="oe_button_box" name="button_box">
+                        <!--                        <button class="oe_stat_button" type="object"-->
+                        <!--                            name="action_view_approvals" icon="fa-check-square-o">-->
+                        <!--                            <div class="o_stat_info">-->
+                        <!--                                <span class="o_stat_text">View Approvals</span>-->
+                        <!--                            </div>-->
+                        <!--                        </button>-->
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Approval Workflow" />
+                        <h1>
+                            <field name="name" placeholder="e.g., Purchase Order Approval" class="text-break" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Configuration">
+                            <field name="studio_model_id" options="{'no_create': True, 'no_open': True}" />
+                            <field name="model_id" invisible="1" />
+                            <field name="approval_type" widget="radio" options="{'horizontal': True}" />
+                            <field name="active" widget="boolean_toggle" />
+                        </group>
+                        <group string="Approval Settings">
+                            <field
+                                name="approval_minimum"
+                                invisible="approval_type == 'simple'"
+                                help="Minimum number of approvals required to validate the document"
+                            />
+                            <field
+                                name="state_field_id"
+                                domain="[('model_id', '=', model_id), ('ttype', '=', 'selection')]"
+                                options="{'no_create': True}"
+                                help="Field that will store the approval state"
+                            />
+                            <field
+                                name="approved_state"
+                                placeholder="approved"
+                                help="Value of the state field when document is approved"
+                            />
+                            <field
+                                name="refused_state"
+                                placeholder="refused"
+                                help="Value of the state field when document is refused"
+                            />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Approvers" name="approvers">
+                            <group string="Default Approvers">
+                                <field
+                                    name="approval_authorized_ids"
+                                    widget="many2many_tags_avatar"
+                                    placeholder="Select users who can approve..."
+                                    help="Users who are authorized to approve documents"
+                                />
+                                <field
+                                    name="approval_manager_ids"
+                                    widget="many2many_tags_avatar"
+                                    placeholder="Select approval managers..."
+                                    help="Users who can manage the approval process and override decisions"
+                                />
+                            </group>
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle" />
+                                You can define specific approval rules in the Rules tab for more complex scenarios.
+                            </div>
+                        </page>
+                        <page string="Rules" name="rules">
+                            <field name="rule_ids" context="{'default_approval_id': id}">
+                                <list string="Approval Rules" create="1" edit="1">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="name" />
+                                    <field name="domain" widget="char" placeholder="[('amount_total', '>', 1000)]" />
+                                    <field name="minimum_approvals" />
+                                    <field name="user_ids" widget="many2many_tags_avatar" optional="hide" />
+                                    <field name="group_ids" widget="many2many_tags" optional="hide" />
+                                    <field name="active" widget="boolean_toggle" />
+                                </list>
+                                <form string="Approval Rule">
+                                    <sheet>
+                                        <div class="oe_title">
+                                            <label for="name" string="Rule Name" />
+                                            <h1>
+                                                <field
+                                                    name="name"
+                                                    placeholder="e.g., High Value Approval"
+                                                    class="text-break"
+                                                />
+                                            </h1>
+                                        </div>
+                                        <group>
+                                            <group string="Configuration">
+                                                <field name="sequence" />
+                                                <field name="active" />
+                                                <field name="minimum_approvals" />
+                                            </group>
+                                        </group>
+                                        <group string="Conditions">
+                                            <label for="domain" string="Apply When" />
+                                            <div>
+                                                <field
+                                                    name="domain"
+                                                    widget="domain"
+                                                    options="{'model': 'approval_id.studio_model_id.name', 'in_dialog': True}"
+                                                    placeholder="Define when this rule applies..."
+                                                />
+                                                <div class="text-muted">
+                                                    <i class="fa fa-lightbulb-o" />
+                                                    Example: [('amount_total', '>', 1000)]
+                                                </div>
+                                            </div>
+                                        </group>
+                                        <group string="Approvers" col="1">
+                                            <p class="text-muted">
+                                                Define who can approve when this rule applies. If both users and groups
+                                                are set,
+                                                members of either can approve.
+                                            </p>
+                                            <group>
+                                                <field
+                                                    name="user_ids"
+                                                    widget="many2many_tags_avatar"
+                                                    placeholder="Select specific users..."
+                                                />
+                                                <field
+                                                    name="group_ids"
+                                                    widget="many2many_tags"
+                                                    placeholder="Select user groups..."
+                                                />
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Email Templates" name="emails">
+                            <group>
+                                <!--                                <field name="approval_request_template_id"-->
+                                <!--                                    domain="[('model_id', '=', model_id)]"-->
+                                <!--                                    context="{'default_model_id': model_id}"-->
+                                <!--                                    help="Email template sent when approval is requested"/>-->
+                                <!--                                <field name="approval_done_template_id"-->
+                                <!--                                    domain="[('model_id', '=', model_id)]"-->
+                                <!--                                    context="{'default_model_id': model_id}"-->
+                                <!--                                    help="Email template sent when document is approved"/>-->
+                                <!--                                <field name="approval_refused_template_id"-->
+                                <!--                                    domain="[('model_id', '=', model_id)]"-->
+                                <!--                                    context="{'default_model_id': model_id}"-->
+                                <!--                                    help="Email template sent when document is refused"/>-->
+                            </group>
+                        </page>
+                        <page string="Advanced" name="advanced">
+                            <group>
+                                <group string="Approval Fields">
+                                    <!--                                    <field name="approval_user_field_id"-->
+                                    <!--                                        domain="[('model_id', '=', model_id), ('ttype', 'in', ['many2many', 'many2one'])]"-->
+                                    <!--                                        help="Field that stores the approver(s)"/>-->
+                                    <!--                                    <field name="approval_date_field_id"-->
+                                    <!--                                        domain="[('model_id', '=', model_id), ('ttype', 'in', ['datetime', 'date'])]"-->
+                                    <!--                                        help="Field that stores the approval date"/>-->
+                                    <!--                                    <field name="approval_notes_field_id"-->
+                                    <!--                                        domain="[('model_id', '=', model_id), ('ttype', 'in', ['text', 'html'])]"-->
+                                    <!--                                        help="Field that stores approval notes/comments"/>-->
+                                </group>
+                                <group string="Options">
+                                    <!--                                    <field name="allow_self_approval"-->
+                                    <!--                                        help="Allow users to approve their own documents"/>-->
+                                    <!--                                    <field name="reset_on_change"-->
+                                    <!--                                        help="Reset approval when document is modified"/>-->
+                                    <!--                                    <field name="notify_on_request"-->
+                                    <!--                                        help="Send notification when approval is requested"/>-->
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <!--                <div class="oe_chatter">-->
+                <!--                    <field name="message_follower_ids" />-->
+                <!--                    <field name="message_ids" options="{'post_refresh': 'always'}" />-->
+                <!--                </div>-->
+            </form>
+        </field>
+    </record>
+
+    <!-- Studio Approval Kanban View -->
+    <record id="studio_approval_view_kanban" model="ir.ui.view">
+        <field name="name">studio.approval.kanban</field>
+        <field name="model">studio.approval</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" sample="1">
+                <field name="name" />
+                <field name="studio_model_id" />
+                <field name="approval_type" />
+                <field name="active" />
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top mb16">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name" />
+                                    </strong>
+                                </div>
+                                <field name="active" widget="boolean_toggle" nolabel="1" />
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div class="text-muted mb8">
+                                    <i class="fa fa-database" />
+                                    <field name="studio_model_id" />
+                                </div>
+                                <field name="approval_type" widget="badge" />
+                                <div t-if="record.approval_minimum.raw_value > 1" class="mt8">
+                                    <i class="fa fa-users" />
+                                    Min.
+                                    <field name="approval_minimum" />
+                                    approvals
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    <button name="action_setup_approval" type="object" class="btn btn-sm btn-primary">
+                                        <i class="fa fa-cog" />
+                                        Setup
+                                    </button>
+                                </div>
+                                <!--                                <div class="oe_kanban_bottom_right">-->
+                                <!--                                    <field name="activity_ids" widget="kanban_activity"/>-->
+                                <!--                                </div>-->
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Studio Approval Search View -->
+    <record id="studio_approval_view_search" model="ir.ui.view">
+        <field name="name">studio.approval.search</field>
+        <field name="model">studio.approval</field>
+        <field name="arch" type="xml">
+            <search string="Search Approval Workflows">
+                <field name="name" string="Name" />
+                <field name="studio_model_id" string="Model" />
+                <separator />
+                <filter string="Active" name="active" domain="[('active', '=', True)]" />
+                <filter string="Inactive" name="inactive" domain="[('active', '=', False)]" />
+                <separator />
+                <filter string="Simple" name="simple" domain="[('approval_type', '=', 'simple')]" />
+                <filter string="Multiple" name="multiple" domain="[('approval_type', '=', 'multiple')]" />
+                <filter string="Hierarchical" name="hierarchical" domain="[('approval_type', '=', 'hierarchical')]" />
+                <group expand="0" string="Group By">
+                    <filter string="Model" name="group_model" context="{'group_by': 'studio_model_id'}" />
+                    <filter string="Type" name="group_type" context="{'group_by': 'approval_type'}" />
+                    <filter string="Active" name="group_active" context="{'group_by': 'active'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+</odoo>
