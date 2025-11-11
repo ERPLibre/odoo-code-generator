@@ -358,7 +358,7 @@ class ExtractorModuleFile:
             lineno = getattr(item, "lineno")
             if lineno:
                 i_lineno = item.lineno
-                if type(item) is ast.Str:
+                if type(item) is ast.Constant:
                     if "\n" in item.s:
                         # -1 to ignore last \n
                         i_lineno = item.lineno - item.s.count("\n")

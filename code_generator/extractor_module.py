@@ -194,7 +194,7 @@ class ExtractorModule:
                         and node.targets[0].id in ("_name", "_inherit")
                     ):
                         if (
-                            type(node.value) is ast.Str
+                            type(node.value) is ast.Constant
                             and node.value.s == self.model
                             or type(node.value) is ast.List
                             and self.model in [a.s for a in node.value.elts]
