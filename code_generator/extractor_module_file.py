@@ -4,8 +4,6 @@
 import ast
 import logging
 
-import astor
-
 _logger = logging.getLogger(__name__)
 
 
@@ -74,7 +72,7 @@ class ExtractorModuleFile:
         self.search_method()
 
     def extract_lambda(self, node):
-        result = astor.to_source(node).strip().replace("\n", "")
+        result = ast.unparse(node)
         if result[0] == "(" and result[-1] == ")":
             result = result[1:-1]
         return result
@@ -405,12 +403,9 @@ class ExtractorModuleFile:
             elif type(lst_attr_item) in (
                 ast.Compare,
                 ast.Call,
-                # ast.Str,
-                # ast.Num,
                 ast.Attribute,
                 ast.JoinedStr,
                 ast.BinOp,
-                # ast.NameConstant,
                 ast.Constant,
                 ast.Name,
                 ast.arguments,
@@ -580,7 +575,7 @@ class ExtractorModuleFile:
                 if use_astor:
                     # This technique is not working perfectly, it removes comments
                     codes = "".join(
-                        [astor.to_source(a) for a in node.body]
+                        [ast.unparse(a) for a in node.body]
                     ).strip()
                     if codes.endswith("'"):
                         codes += "\n"

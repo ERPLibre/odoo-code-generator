@@ -6,7 +6,6 @@ import inspect
 import logging
 import types
 
-import astor
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import UserError, ValidationError
 
@@ -502,7 +501,7 @@ class IrModelFields(models.Model):
                 _new_source = None
 
             def visit_Lambda(self, node):
-                self._new_source = astor.to_source(node).strip()
+                self._new_source = ast.unparse(node)
                 if self._new_source[0] == "(" and self._new_source[-1] == ")":
                     self._new_source = self._new_source[1:-1]
 
