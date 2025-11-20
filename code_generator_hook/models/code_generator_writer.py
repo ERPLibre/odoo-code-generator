@@ -1490,7 +1490,7 @@ class CodeGeneratorWriter(models.Model):
     ):
         # TODO wrong place for this code, add it in inherit_model_ids when evaluate code
         field_id_track = model_id.field_id.filtered(
-            lambda x: x.track_visibility
+            lambda f: (f.tracking or 0) > 0
         )
 
         # Prepare model inherit data
@@ -1731,7 +1731,7 @@ class CodeGeneratorWriter(models.Model):
                 dct_field_value["help"] = field_id.help
 
             if ast_attr:
-                lst_attr = ["track_visibility", "code_generator_compute"]
+                lst_attr = ["tracking", "code_generator_compute"]
                 if not module.disable_fix_code_generator_sequence:
                     lst_attr += [
                         "code_generator_sequence",

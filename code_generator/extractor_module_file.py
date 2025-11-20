@@ -83,9 +83,7 @@ class ExtractorModuleFile:
         if ast_obj_type is ast.Lambda:
             result = self.extract_lambda(ast_obj)
         elif ast_obj_type is ast.Constant:
-            # result = ast_obj.s
-            # result = ast_obj.value
-            result = ast_obj.n
+            result = ast_obj.value
         elif ast_obj_type is ast.UnaryOp:
             if type(ast_obj.op) is ast.USub:
                 # value is negative
@@ -331,7 +329,7 @@ class ExtractorModuleFile:
     def _get_nb_line_multiple_string(
         self, item, lst_line, i_lineno, extra_size=2
     ):
-        str_size = len(item.s)
+        str_size = len(item.value)
         line_size = len(lst_line[i_lineno - 1].strip())
         if line_size != str_size + extra_size:
             # Try detect multiline string with pending technique like
@@ -357,9 +355,9 @@ class ExtractorModuleFile:
             if lineno:
                 i_lineno = item.lineno
                 if type(item) is ast.Constant:
-                    if "\n" in item.s:
+                    if "\n" in item.value:
                         # -1 to ignore last \n
-                        i_lineno = item.lineno - item.s.count("\n")
+                        i_lineno = item.lineno - item.value.count("\n")
                     elif lst_line[i_lineno - 1][-3:] == '"""':
                         i_lineno = self._get_nb_line_multiple_string(
                             item, lst_line, i_lineno, extra_size=6

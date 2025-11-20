@@ -195,9 +195,10 @@ class ExtractorModule:
                     ):
                         if (
                             type(node.value) is ast.Constant
-                            and node.value.s == self.model
+                            and node.value.value == self.model
                             or type(node.value) is ast.List
-                            and self.model in [a.s for a in node.value.elts]
+                            and self.model
+                            in [a.value for a in node.value.elts]
                         ):
                             find_children = children
                             break

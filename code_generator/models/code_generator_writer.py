@@ -372,7 +372,9 @@ class CodeGeneratorWriter(models.Model):
                             logo.height / logo.width * minimal_size_width
                         )
                         new_w = minimal_size_width
-                        logo = logo.resize((new_w, new_h), Image.ANTIALIAS)
+                        logo = logo.resize(
+                            (new_w, new_h), Image.Resampling.LANCZOS
+                        )
                     ratio = 0.3
                     w = int(logo.width * ratio)
                     if icon.width != icon.height:
@@ -380,7 +382,7 @@ class CodeGeneratorWriter(models.Model):
                     else:
                         h = w
                     size = w, h
-                    icon.thumbnail(size, Image.ANTIALIAS)
+                    icon.thumbnail(size, Image.Resampling.LANCZOS)
                     x = logo.width - w
                     logo.paste(icon, (x, 0))
                     img_byte_arr = io.BytesIO()
