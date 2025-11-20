@@ -727,6 +727,7 @@ class CodeGeneratorModule(models.Model):
         if filter_field_attribute:
             value_field_id[key_name] = filter_field_attribute
 
+    @api.model_create_multi
     def create(self, vals):
         for val in vals:
             if "icon" in val.keys():

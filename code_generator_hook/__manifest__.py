@@ -10,6 +10,7 @@
     "category": "Extra Tools",
     "depends": ["code_generator"],
     "installable": True,
+    "auto_install": True,
     "data": [
         "views/code_generator.xml",
     ],
