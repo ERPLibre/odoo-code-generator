@@ -17,3 +17,21 @@ def post_init_hook(env):
     system_user.groups_id = [
         (4, env.ref("code_generator.code_generator_manager").id, False)
     ]
+
+    # DANGEREUX : supprime une contrainte du core Odoo
+    env.cr.execute(
+        """
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1
+            FROM information_schema.table_constraints
+            WHERE constraint_name = 'ir_model_fields_name_manual_field'
+              AND table_name = 'ir_model_fields'
+          ) THEN
+            ALTER TABLE ir_model_fields
+            DROP CONSTRAINT ir_model_fields_name_manual_field;
+          END IF;
+        END$$;
+        """
+    )
