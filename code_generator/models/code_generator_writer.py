@@ -1987,18 +1987,18 @@ _logger = logging.getLogger(__name__)"""
                     E.field({"name": "context"}, act_window.context)
                 )
 
-            src_model = (
-                act_window.binding_model_id.model
-                if act_window.binding_model_id
-                else False
-            )
-            if src_model:
-                lst_field.append(
-                    E.field(
-                        {"name": "src_model"},
-                        act_window.src_model or act_window.m2o_src_model.model,
-                    )
-                )
+            # src_model = (
+            #     act_window.binding_model_id.model
+            #     if act_window.binding_model_id
+            #     else False
+            # )
+            # if src_model:
+            #     lst_field.append(
+            #         E.field(
+            #             {"name": "src_model"},
+            #             act_window.src_model or act_window.m2o_src_model.model,
+            #         )
+            #     )
 
             if act_window.target != "current":
                 lst_field.append(
