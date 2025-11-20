@@ -84,7 +84,7 @@ class CodeGeneratorWriter(models.Model):
                 ),
                 delim=("(", ")"),
             ):
-                with cw.block(delim=("{", "}")):
+                with cw.block(delim=("[{", "}]")):
                     cw.emit(f'"section_type": "{view_item_id.section_type}",')
                     cw.emit(f'"item_type": "{view_item_id.item_type}",')
 
@@ -346,7 +346,7 @@ class CodeGeneratorWriter(models.Model):
                         ),
                         delim=("(", ")"),
                     ):
-                        with cw.block(delim=("{", "}")):
+                        with cw.block(delim=("[{", "}]")):
                             cw.emit(f'"name": "{act_server.name}",')
                             cw.emit(f'"model_id": {var_model_id}.id,')
                             cw.emit(f'"binding_model_id": {var_model_id}.id,')
@@ -371,7 +371,7 @@ class CodeGeneratorWriter(models.Model):
                             before=f'env["ir.model.data"].create',
                             delim=("(", ")"),
                         ):
-                            with cw.block(delim=("{", "}")):
+                            with cw.block(delim=("[{", "}]")):
                                 cw.emit(f'"name": "{var_act_server_id.name}",')
                                 cw.emit(f'"model": "ir.actions.server",')
                                 cw.emit('"module": MODULE_NAME,')
@@ -437,7 +437,7 @@ class CodeGeneratorWriter(models.Model):
                         ),
                         delim=("(", ")"),
                     ):
-                        with cw.block(delim=("{", "}")):
+                        with cw.block(delim=("[{", "}]")):
                             cw.emit(
                                 '"code_generator_id": code_generator_id.id,'
                             )
@@ -486,7 +486,7 @@ class CodeGeneratorWriter(models.Model):
                         before='env["code.generator.menu"].create',
                         delim=("(", ")"),
                     ):
-                        with cw.block(delim=("{", "}")):
+                        with cw.block(delim=("[{", "}]")):
                             cw.emit(
                                 '"code_generator_id": code_generator_id.id,'
                             )
@@ -585,20 +585,17 @@ class CodeGeneratorWriter(models.Model):
             post_init_hook_feature_code_generator,
             uninstall_hook_feature_code_generator,
             method_name,
-            has_second_arg,
         ):
             if not hook_show:
                 return
             cg_data = code_generator_data.get_code_generator_data(self.env)
             cw.emit()
             cw.emit()
-            if has_second_arg:
-                cw.emit(f"def {method_name}(cr, e):")
-            else:
-                cw.emit(f"def {method_name}(cr):")
+            cw.emit(f"def {method_name}(env):")
             with cw.indent():
                 for hook_line in hook_code.split("\n"):
-                    cw.emit(hook_line)
+                    if hook_line.strip():
+                        cw.emit(hook_line)
                 with cw.indent():
                     if method_name == "pre_init_hook":
                         self.write_extra_pre_init_hook(module, cw)
@@ -617,7 +614,6 @@ class CodeGeneratorWriter(models.Model):
                         )
                         cw.emit("event_config.execute()")
                     if post_init_hook_feature_code_generator:
-                        cw.emit()
                         cw.emit("# The path of the actual file")
                         path_cg_module = (
                             module.template_module_path_generated_extension
@@ -1444,7 +1440,6 @@ class CodeGeneratorWriter(models.Model):
             False,
             False,
             "pre_init_hook",
-            False,
         )
         _add_hook(
             module,
@@ -1455,7 +1450,6 @@ class CodeGeneratorWriter(models.Model):
             module.post_init_hook_feature_code_generator,
             False,
             "post_init_hook",
-            True,
         )
         _add_hook(
             module,
@@ -1466,7 +1460,6 @@ class CodeGeneratorWriter(models.Model):
             False,
             module.uninstall_hook_feature_code_generator,
             "uninstall_hook",
-            True,
         )
         self.write_extra_extra_function_hook(module, cw)
 
@@ -2095,7 +2088,7 @@ class CodeGeneratorWriter(models.Model):
                 before=f'env["ir.model.data"].create',
                 delim=("(", ")"),
             ):
-                with cw.block(delim=("{", "}")):
+                with cw.block(delim=("[{", "}]")):
                     cw.emit(f'"name": "{access_xml_id}",')
                     cw.emit(f'"model": "ir.model.access",')
                     cw.emit('"module": MODULE_NAME,')

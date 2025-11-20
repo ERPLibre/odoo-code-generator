@@ -171,9 +171,9 @@ class ExtractorView:
                                     f" '{menu_id.action.res_model}'"
                                 )
                         ir_actions_windows_id = ir_actions_windows[0]
-                        dct_act_value["view_type"] = (
-                            ir_actions_windows_id.view_type
-                        )
+                        # dct_act_value["view_type"] = (
+                        #     ir_actions_windows_id.view_type
+                        # )
                         dct_act_value["view_mode"] = (
                             ir_actions_windows_id.view_mode
                         )

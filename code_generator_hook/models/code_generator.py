@@ -22,8 +22,7 @@ class CodeGeneratorModule(models.Model):
 
     pre_init_hook_code = fields.Text(
         string="Code of pre_init_hook",
-        default="""with api.Environment.manage():
-    env = api.Environment(cr, SUPERUSER_ID, {})""",
+        default="",
     )
 
     # post_init_hook
@@ -41,8 +40,7 @@ class CodeGeneratorModule(models.Model):
 
     post_init_hook_code = fields.Text(
         string="Code of post_init_hook",
-        default="""with api.Environment.manage():
-    env = api.Environment(cr, SUPERUSER_ID, {})""",
+        default="",
     )
 
     # uninstall_hook
@@ -55,8 +53,7 @@ class CodeGeneratorModule(models.Model):
 
     uninstall_hook_code = fields.Text(
         string="Code of uninstall_hook",
-        default="""with api.Environment.manage():
-    env = api.Environment(cr, SUPERUSER_ID, {})""",
+        default="",
     )
 
     uninstall_hook_feature_code_generator = fields.Boolean(

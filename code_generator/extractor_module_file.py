@@ -106,13 +106,13 @@ class ExtractorModuleFile:
                     parent_node = parent_node.value
                 lst_call_lambda.insert(0, parent_node.id)
                 result = ".".join(lst_call_lambda)
-            else:
-                # default=uuid.uuid4().hex
-                _logger.warning(
-                    f"Cannot support keyword of variable {var_name} type"
-                    f" {ast_obj_type} in filename {self.py_filename}, because"
-                    " parent_node is type ast.Call."
-                )
+            # else:
+            #     # default=uuid.uuid4().hex
+            #     _logger.warning(
+            #         f"Cannot support keyword of variable {var_name} type"
+            #         f" {ast_obj_type} in filename {self.py_filename}, because"
+            #         " parent_node is type ast.Call."
+            #     )
         elif ast_obj_type is ast.List:
             result = [
                 self._fill_search_field(a, var_name) for a in ast_obj.elts
