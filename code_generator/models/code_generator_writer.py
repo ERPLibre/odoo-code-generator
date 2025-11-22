@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 import tempfile
+import types
 import uuid
 from collections import defaultdict
 
@@ -2892,6 +2893,9 @@ _logger = logging.getLogger(__name__)"""
                 ):
                     dct_field_attribute["string"] = f2export.field_description
 
+            if f2export.ttype == "monetary":
+                dct_field_attribute["currency_field"] = f2export.currency_field
+
             if (
                 f2export.ttype == "char" or f2export.ttype == "reference"
             ) and f2export.size != 0:
@@ -2985,10 +2989,14 @@ _logger = logging.getLogger(__name__)"""
 
             compute = f2export.compute and f2export.depends
 
-            if code_generator_compute:
+            if code_generator_compute and not isinstance(
+                code_generator_compute, types.FunctionType
+            ):
                 dct_field_attribute["compute"] = code_generator_compute
             elif compute:
                 dct_field_attribute["compute"] = f"_compute_{f2export.name}"
+            elif f2export.compute:
+                dct_field_attribute["compute"] = f2export.compute
 
             if (
                 f2export.ttype == "one2many" or f2export.related or compute
