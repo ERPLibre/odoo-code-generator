@@ -626,6 +626,22 @@ class CodeGeneratorModule(models.Model):
 
         return model_id
 
+    def add_method_model(self, model_id, compute_company_currency_id=False):
+        for rec in self:
+            if compute_company_currency_id:
+                lst_value = [
+                    {
+                        "code": """self.company_currency_id = self.env.company.currency_id""",
+                        "name": "_compute_company_currency_id",
+                        "param": "self",
+                        "decorator": '@api.depends_context("company")',
+                        "sequence": 0,
+                        "m2o_module": rec.id,
+                        "m2o_model": model_id.id,
+                    },
+                ]
+                self.env["code.generator.model.code"].create(lst_value)
+
     def _check_relation_many2many(self, model_model, field_value):
         relation_name = field_value.get("relation")
         comodel_name = ""
