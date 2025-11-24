@@ -716,7 +716,19 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 continue
             # TODO validate code_generator_list_view_sequence is supported
             # if a.code_generator_list_view_sequence >= 0
-            dct_value = {"name": field_id.name}
+            if field_id.ttype == "monetary":
+                dct_value = {
+                    "name": field_id.name,
+                    "widget": "monetary",
+                    "sum": f"Total {field_id.field_description}",
+                    "avg": f"{field_id.field_description} moyen",
+                }
+            elif field_id.ttype == "many2one" and field_id.relation in [
+                "res.currency"
+            ]:
+                dct_value = {"name": field_id.name, "invisible": "1"}
+            else:
+                dct_value = {"name": field_id.name}
             if field_id.force_widget:
                 dct_value["widget"] = field_id.force_widget
             dct_value = dict(sorted(dct_value.items(), key=lambda kv: kv[0]))
@@ -1069,18 +1081,28 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         # lst_field = [E.field({"name": a.name}) for a in model_created_fields]
         lst_field = []
         lst_field_template = []
+        lst_field_currency_id = [
+            a
+            for a in lst_field_sorted
+            if a.ttype == "many2one" and a.relation == "res.currency"
+        ]
+        field_currency_id = (
+            lst_field_currency_id[0] if lst_field_currency_id else None
+        )
         for field_id in lst_field_sorted:
             if field_id.name in lst_field_to_remove:
                 continue
             # TODO validate code_generator_kanban_view_sequence is supported
             # if a.code_generator_kanban_view_sequence >= 0
-            dct_value = {"name": field_id.name}
-            if field_id.force_widget:
-                dct_value["widget"] = field_id.force_widget
-            dct_value = dict(sorted(dct_value.items(), key=lambda kv: kv[0]))
-            lst_field.append(E.field(dct_value))
+            if (
+                field_id.ttype == "many2one"
+                and field_id.relation == "res.currency"
+            ):
+                field_view = E.field({"name": field_id.name, "invisible": "1"})
+                lst_field.append(field_view)
 
-            if field_id.ttype == "boolean":
+            elif field_id.ttype == "boolean":
+                lst_field.append(E.field({"name": field_id.name}))
                 # TODO detect type success/danger or another type of boolean
                 dct_templates_value = E.li(
                     {
@@ -1114,9 +1136,23 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 )
                 lst_field_template.append(dct_templates_value)
             else:
+                lst_field.append(E.field({"name": field_id.name}))
+                dct_value = {"name": field_id.name}
+                if field_id.ttype == "monetary":
+                    if field_currency_id:
+                        dct_value["option"] = (
+                            f"{{'currency_field': '{field_currency_id.name}'}}"
+                        )
+                    dct_value["widget"] = "monetary"
+                if field_id.force_widget:
+                    dct_value["widget"] = field_id.force_widget
+                dct_value = dict(
+                    sorted(dct_value.items(), key=lambda kv: kv[0])
+                )
+
                 dct_templates_value = E.li(
                     {"class": "mb4"},
-                    E.strong(E.field({"name": field_id.name})),
+                    E.strong(E.field(dct_value)),
                 )
                 lst_field_template.append(dct_templates_value)
 
@@ -1252,10 +1288,10 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 lambda field: not field.ignore_on_code_generator_writer
             ).sorted(lambda field: field.code_generator_search_view_sequence)
 
-        # lst_field = [E.field({"name": a.name}) for a in model_created_fields]
         lst_field = []
         lst_field_filter = []
-        lst_item_search = []
+        lst_field_searchpanel_field = []
+        lst_field_group_field = []
         for field_id in lst_field_sorted:
             if field_id.name in lst_field_to_remove:
                 # Add inactive
@@ -1268,8 +1304,67 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                 )
                 lst_field_filter.append(dct_templates_value)
                 continue
+            if field_id.ttype in [
+                "char",
+                "text",
+                "many2one",
+                "many2many",
+                "one2many",
+                "html",
+                "selection",
+            ]:
+                if field_id.relation not in ["res.currency"]:
+                    field_xml = E.field(
+                        {
+                            "name": field_id.name,
+                            "string": field_id.field_description,
+                        }
+                    )
+                    lst_field.append(field_xml)
+
             # TODO validate code_generator_search_view_sequence is supported
             # if a.code_generator_search_view_sequence >= 0
+            # TODO support many2one/one2many/many2many sur res.partner or res.user
+            # <filter name="filter_my_projects"
+            #                         string="Mes projets"
+            #                         domain="[('project_manager_id', '=', uid)]"/>
+            #
+            #                 <filter name="filter_my_team"
+            #                         string="Projets de mon équipe"
+            #                         context="{'search_default_member_ids': [uid]}"/>
+
+            # Detect stage
+            # <filter name="filter_draft"
+            #                         string="Brouillons"
+            #                         domain="[('state', '=', 'draft')]"/>
+            #
+            #                 <filter name="filter_in_progress"
+            #                         string="En cours"
+            #                         domain="[('state', '=', 'in_progress')]"/>
+            #
+            #                 <filter name="filter_done"
+            #                         string="Terminés"
+            #                         domain="[('state', '=', 'done')]"/>
+
+            # Support selection
+            # <filter name="filter_high_priority"
+            #                         string="Haute priorité"
+            #                         domain="[('priority', '=', '3')]"/>
+
+            # Support date
+            # <filter name="filter_this_month"
+            #                         string="Ce mois-ci"
+            #                         domain="[
+            #                             ('start_date', '&gt;=', (context_today() - datetime.timedelta(days=context_today().day-1)).strftime('%%Y-%%m-%%d')),
+            #                             ('start_date', '&lt;', (context_today() + datetime.timedelta(days=32-context_today().day)).strftime('%%Y-%%m-%%d'))
+            #                         ]"
+            #                         help="Projets démarrés ce mois-ci."/>
+
+            # Filter late
+            # <filter name="filter_late"
+            #                         string="En retard"
+            #                         help="Projets avec date de fin dépassée et non terminés."
+            #                         domain="[('end_date', '&lt;', context_today()), ('state', 'not in', ('done', 'cancel'))]"/>
 
             if field_id.ttype == "boolean":
                 dct_templates_value = E.filter(
@@ -1280,17 +1375,87 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                     }
                 )
                 lst_field_filter.append(dct_templates_value)
-            else:
-                dct_templates_value = E.filter(
+
+            field_id_name_no_id = (
+                field_id.name[:-3]
+                if field_id.name.endswith("_id")
+                else field_id.name
+            )
+
+            if field_id.ttype in ["date", "datetime"]:
+                filter_value = E.filter(
                     {
-                        "domain": f"[('{field_id.name}','!=',False)]",
-                        "name": field_id.name,
-                        "string": field_id.field_description,
+                        "name": f"group_by_date_{field_id_name_no_id}",
+                        "string": f"{field_id.field_description}",
+                        "context": f"{{'group_by': '{field_id.name}'}}",
                     }
                 )
-                lst_field_filter.append(dct_templates_value)
+                lst_field_filter.append(filter_value)
 
-        lst_item_search = lst_field + lst_field_filter
+            if field_id.ttype == "many2one":
+                if field_id.relation not in ["res.currency"]:
+                    search_panel_xml = E.field(
+                        {
+                            "name": field_id.name,
+                            "string": field_id.field_description,
+                            "icon": "fa-th-list",
+                        }
+                    )
+                    lst_field_searchpanel_field.append(search_panel_xml)
+
+                    group_field_xml = E.filter(
+                        {
+                            "string": field_id.field_description,
+                            "name": f"groupby_{field_id_name_no_id}",
+                            "context": f"{{'group_by':'{field_id.name}'}}",
+                        }
+                    )
+                    lst_field_group_field.append(group_field_xml)
+
+            if field_id.ttype in ["many2many", "one2many"]:
+                search_panel_xml = E.field(
+                    {
+                        "name": field_id.name,
+                        "string": field_id.field_description,
+                        "icon": "fa-th-list",
+                        "domain": "[]",
+                        "enable_counters": "1",
+                        "select": "multi",
+                    }
+                )
+                lst_field_searchpanel_field.append(search_panel_xml)
+
+            # dct_templates_value = E.filter(
+            #     {
+            #         "domain": f"[('{field_id.name}','!=',False)]",
+            #         "name": field_id.name,
+            #         "string": field_id.field_description,
+            #     }
+            # )
+            # lst_field_filter.append(dct_templates_value)
+
+        if lst_field_group_field:
+            lst_field_group = [
+                E.group(
+                    {"expand": "1", "string": "Group by"},
+                    *lst_field_group_field,
+                )
+            ]
+        else:
+            lst_field_group = []
+
+        if lst_field_searchpanel_field:
+            lst_field_searchpanel = [
+                E.searchpanel({}, *lst_field_searchpanel_field)
+            ]
+        else:
+            lst_field_searchpanel = []
+
+        lst_item_search = []
+        lst_item_search += lst_field
+        lst_item_search += lst_field_filter
+        lst_item_search += lst_field_group
+        lst_item_search += lst_field_searchpanel
         arch_xml = E.search(
             {
                 "string": model_name_display_str,
