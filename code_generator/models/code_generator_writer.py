@@ -3011,6 +3011,9 @@ _logger = logging.getLogger(__name__)"""
 
             # TODO support search
 
+            if f2export.precompute:
+                dct_field_attribute["precompute"] = True
+
             # TODO support store
             if f2export.store and code_generator_compute:
                 dct_field_attribute["store"] = True

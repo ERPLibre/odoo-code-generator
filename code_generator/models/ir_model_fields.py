@@ -352,6 +352,8 @@ class IrModelFields(models.Model):
         ),
     )
 
+    precompute = fields.Boolean()
+
     @api.depends("model_id")
     def _compute_is_code_generator(self):
         for rec in self:
