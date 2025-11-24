@@ -773,7 +773,6 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         model_name = model_created.model
         model_name_str = model_name.replace(".", "_")
         lst_item_sheet = []
-        key = "geo_"
 
         lst_field_to_transform_button_box = ("active",)
 
@@ -867,23 +866,42 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             )
             lst_item_sheet.append(item)
 
-        for field_id in field_sorted_ids:
-            if field_id.name in lst_field_to_transform_button_box:
-                continue
-            lst_value = []
-            value = {"name": field_id.name}
-            lst_value.append(value)
+        # First is title
+        lst_field_continue = [
+            a
+            for a in field_sorted_ids
+            if a.name not in lst_field_to_transform_button_box
+        ]
+        if len(lst_field_continue) > 0:
+            field_sorted_first_id = lst_field_continue[0]
+        else:
+            field_sorted_first_id = None
+        if len(lst_field_continue) > 1:
+            lst_field_sorted_group_id = lst_field_continue[1:]
+        else:
+            lst_field_sorted_group_id = []
 
-            if field_id.force_widget:
-                if field_id.force_widget != "link_button":
-                    # TODO add a configuration to force edible mode, if not editable, choose widget = link button
-                    # special case, link button is readonly in form,
-                    value["widget"] = field_id.force_widget
-            elif key in field_id.ttype:
-                value["widget"] = "geo_edit_map"
-                # value["attrs"] = "{'invisible': [('type', '!=', '"f"{model[len(key):]}')]""}"
-            # lst_field.append(value)
-            lst_item_sheet.append(E.group({}, E.field(value)))
+        if field_sorted_first_id:
+            value = self._create_form_field_views(field_sorted_first_id)
+            # TODO add second title
+            lst_item_sheet.append(
+                E.div(
+                    {"class": "oe_title"},
+                    E.label(
+                        {
+                            "for": field_sorted_first_id.name,
+                            "class": "oe_edit_only",
+                        }
+                    ),
+                    E.h1({}, E.field(value)),
+                )
+            )
+
+        lst_value_group = []
+        for field_id in lst_field_sorted_group_id:
+            value = self._create_form_field_views(field_id)
+            lst_value_group.append(E.field(value))
+        lst_item_sheet.append(E.group({}, *lst_value_group))
 
         lst_item_form = [E.sheet({}, *lst_item_sheet)]
 
@@ -962,6 +980,19 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
             )
 
         return view_value
+
+    def _create_form_field_views(self, field_id, key_geo="geo_"):
+        value = {"name": field_id.name}
+
+        if field_id.force_widget:
+            if field_id.force_widget != "link_button":
+                # TODO add a configuration to force edible mode, if not editable, choose widget = link button
+                # special case, link button is readonly in form,
+                value["widget"] = field_id.force_widget
+        elif key_geo in field_id.ttype:
+            value["widget"] = "geo_edit_map"
+            # value["attrs"] = "{'invisible': [('type', '!=', '"f"{model[len(key):]}')]""}"
+        return value
 
     def _generate_kanban_views_models(
         self, model_created, model_created_fields, module, dct_value_to_create
