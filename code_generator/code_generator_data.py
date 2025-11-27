@@ -505,19 +505,21 @@ class CodeGeneratorData:
         flake8_bin = os.path.join(workspace_path, ".venv", "bin", "flake8")
         config_path = os.path.join(workspace_path, ".flake8")
         cpu_count = os.cpu_count()
-        try:
-            out = subprocess.check_output(
-                [
-                    flake8_bin,
-                    "-j",
-                    str(cpu_count),
-                    f"--config={config_path}",
-                    self.module_path,
-                ]
-            )
-            result = out
-        except subprocess.CalledProcessError as e:
-            result = e.output.decode()
+        cmd = [
+            flake8_bin,
+            "-j",
+            str(cpu_count),
+            f"--config={config_path}",
+            self.module_path,
+        ]
+
+        out = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        result = (out.stdout or "") + (out.stderr or "")
 
         if result:
             _logger.warning(result)
@@ -527,21 +529,23 @@ class CodeGeneratorData:
             os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
         )
         cpu_count = os.cpu_count()
-        try:
-            out = subprocess.check_output(
-                [
-                    f"{workspace_path}/.venv/bin/pylint",
-                    "-j",
-                    str(cpu_count),
-                    "--load-plugins=pylint_odoo",
-                    "-e",
-                    "odoolint",
-                    self.module_path,
-                ]
-            )
-            result = out
-        except subprocess.CalledProcessError as e:
-            result = e.output.decode()
+        cmd = [
+            f"{workspace_path}/.venv/bin/pylint",
+            "-j",
+            str(cpu_count),
+            "--load-plugins=pylint_odoo",
+            "-e",
+            "odoolint",
+            self.module_path,
+        ]
+
+        out = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        result = (out.stdout or "") + (out.stderr or "")
 
         if result:
             _logger.warning(result)
