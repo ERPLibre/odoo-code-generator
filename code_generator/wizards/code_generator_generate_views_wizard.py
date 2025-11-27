@@ -918,25 +918,26 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         lst_item_form = [E.sheet({}, *lst_item_sheet)]
 
         if model_created.enable_activity:
-            xml_activity = E.div(
-                {"class": "oe_chatter"},
-                E.field(
-                    {
-                        # "groups": "base.group_user",
-                        # "help": "",
-                        "name": "message_follower_ids",
-                        "widget": "mail_followers",
-                    }
-                ),
-                E.field({"name": "activity_ids", "widget": "mail_activity"}),
-                E.field(
-                    {
-                        "name": "message_ids",
-                        "options": "{'post_refresh': 'recipients'}",
-                        "widget": "mail_thread",
-                    }
-                ),
-            )
+            # xml_activity = E.div(
+            #     {"class": "oe_chatter"},
+            #     E.field(
+            #         {
+            #             # "groups": "base.group_user",
+            #             # "help": "",
+            #             "name": "message_follower_ids",
+            #             "widget": "mail_followers",
+            #         }
+            #     ),
+            #     E.field({"name": "activity_ids", "widget": "mail_activity"}),
+            #     E.field(
+            #         {
+            #             "name": "message_ids",
+            #             "options": "{'post_refresh': 'recipients'}",
+            #             "widget": "mail_thread",
+            #         }
+            #     ),
+            # )
+            xml_activity = E.chatter()
             lst_item_form.append(xml_activity)
 
         arch_xml = E.form(
@@ -2682,25 +2683,26 @@ pass''',
             and view_type == "form"
         ):
             # TODO duplicate
-            xml_activity = E.div(
-                {"class": "oe_chatter"},
-                E.field(
-                    {
-                        # "groups": "base.group_user",
-                        # "help": "",
-                        "name": "message_follower_ids",
-                        "widget": "mail_followers",
-                    }
-                ),
-                E.field({"name": "activity_ids", "widget": "mail_activity"}),
-                E.field(
-                    {
-                        "name": "message_ids",
-                        "options": "{'post_refresh': 'recipients'}",
-                        "widget": "mail_thread",
-                    }
-                ),
-            )
+            # xml_activity = E.div(
+            #     {"class": "oe_chatter"},
+            #     E.field(
+            #         {
+            #             # "groups": "base.group_user",
+            #             # "help": "",
+            #             "name": "message_follower_ids",
+            #             "widget": "mail_followers",
+            #         }
+            #     ),
+            #     E.field({"name": "activity_ids", "widget": "mail_activity"}),
+            #     E.field(
+            #         {
+            #             "name": "message_ids",
+            #             "options": "{'post_refresh': 'recipients'}",
+            #             "widget": "mail_thread",
+            #         }
+            #     ),
+            # )
+            xml_activity = E.chatter()
             lst_item_form.append(xml_activity)
 
         dct_attr_view = {}

@@ -432,6 +432,8 @@ class CodeGeneratorModule(models.Model):
         dct_field=None,
         dct_model=None,
         lst_depend_model=None,
+        enable_activity=False,
+        enable_tracking=False,
     ):
         # When this is called, all field is in whitelist
         if dct_field:
@@ -459,6 +461,7 @@ class CodeGeneratorModule(models.Model):
                             ("name", "=", field_name),
                         ]
                     )
+                    # TODO add enable_activity and enable_tracking
                     if not field_id:
                         value_ir_model_fields = {
                             "name": field_name,
@@ -520,6 +523,8 @@ class CodeGeneratorModule(models.Model):
                 "model": model_model,
                 "m2o_module": self.id,
             }
+            if enable_activity:
+                value["enable_activity"] = True
             if dct_model:
                 for key in dct_model.keys():
                     self._update_dict(
@@ -556,6 +561,8 @@ class CodeGeneratorModule(models.Model):
                         value_field_id = {
                             "name": field_name,
                         }
+                        if enable_tracking:
+                            value_field_id["tracking"] = True  # or 10
                         for key in field_info.keys():
                             self._update_dict(
                                 key,

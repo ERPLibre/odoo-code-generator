@@ -255,7 +255,7 @@ class IrModel(models.Model):
     def get_rec_name(self):
         return self.rec_name if self.rec_name else self._rec_name
 
-    def add_model_inherit(self, model_name):
+    def add_model_inherit(self, model_name, add_missing_inherit_field=False):
         """
 
         :param model_name: list or string
@@ -308,48 +308,49 @@ class IrModel(models.Model):
             )
             ir_model.inherit_model_ids = depend_ids.ids
 
-            # Add missing field
-            actual_field_list = set(ir_model.field_id.mapped("name"))
-            lst_dct_field = []
-            for ir_model_id in inherit_model:
-                diff_list = list(
-                    set(ir_model_id.field_id.mapped("name")).difference(
-                        actual_field_list
+            if add_missing_inherit_field:
+                # Add missing field
+                actual_field_list = set(ir_model.field_id.mapped("name"))
+                lst_dct_field = []
+                for ir_model_id in inherit_model:
+                    diff_list = list(
+                        set(ir_model_id.field_id.mapped("name")).difference(
+                            actual_field_list
+                        )
                     )
-                )
-                lst_new_field = [
-                    a for a in ir_model_id.field_id if a.name in diff_list
-                ]
-                for new_field_id in lst_new_field:
-                    # TODO support ttype selection, who extract this information?
-                    if new_field_id.ttype == "selection":
-                        continue
-                    value_field_backup_format = {
-                        "name": new_field_id.name,
-                        "model": ir_model.model,
-                        "field_description": new_field_id.field_description,
-                        "ttype": new_field_id.ttype,
-                        "model_id": ir_model.id,
-                        "ignore_on_code_generator_writer": True,
-                    }
-                    tpl_relation = ("many2one", "many2many", "one2many")
-                    tpl_relation_field = ("many2many", "one2many")
-                    if new_field_id.ttype in tpl_relation:
-                        value_field_backup_format["relation"] = (
-                            new_field_id.relation
-                        )
+                    lst_new_field = [
+                        a for a in ir_model_id.field_id if a.name in diff_list
+                    ]
+                    for new_field_id in lst_new_field:
+                        # TODO support ttype selection, who extract this information?
+                        if new_field_id.ttype == "selection":
+                            continue
+                        value_field_backup_format = {
+                            "name": new_field_id.name,
+                            "model": ir_model.model,
+                            "field_description": new_field_id.field_description,
+                            "ttype": new_field_id.ttype,
+                            "model_id": ir_model.id,
+                            "ignore_on_code_generator_writer": True,
+                        }
+                        tpl_relation = ("many2one", "many2many", "one2many")
+                        tpl_relation_field = ("many2many", "one2many")
+                        if new_field_id.ttype in tpl_relation:
+                            value_field_backup_format["relation"] = (
+                                new_field_id.relation
+                            )
 
-                    if (
-                        new_field_id.ttype in tpl_relation_field
-                        and new_field_id.relation_field
-                    ):
-                        value_field_backup_format["relation_field"] = (
-                            new_field_id.relation_field
-                        )
+                        if (
+                            new_field_id.ttype in tpl_relation_field
+                            and new_field_id.relation_field
+                        ):
+                            value_field_backup_format["relation_field"] = (
+                                new_field_id.relation_field
+                            )
 
-                    lst_dct_field.append(value_field_backup_format)
-            if lst_dct_field:
-                self.env["ir.model.fields"].create(lst_dct_field)
+                        lst_dct_field.append(value_field_backup_format)
+                if lst_dct_field:
+                    self.env["ir.model.fields"].create(lst_dct_field)
 
     def has_same_model_in_inherit_model(self):
         for inherit_model_id in self.inherit_model_ids:

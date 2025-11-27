@@ -2933,6 +2933,9 @@ _logger = logging.getLogger(__name__)"""
 
             tv = getattr(f2export, "tracking", 0)
             if tv:
+                if tv == 1:
+                    tv = True
+                # TODO ignore when store=False
                 dct_field_attribute["tracking"] = tv
 
             # Get default value
