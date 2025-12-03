@@ -692,7 +692,7 @@ class CodeGeneratorData:
         # Optimize import python
         if use_clean_import_isort:
             cmd = (
-                f"cd {workspace_path};./.venv/bin/isort --profile black -l 79"
+                f"cd {workspace_path};./.venv.erplibre/bin/isort --profile black -l 79"
                 f" {self.module_path}"
             )
             result = self.subprocess_cmd(cmd)
@@ -706,7 +706,7 @@ class CodeGeneratorData:
         # TODO check diff before and after format to auto improvement of generation
         if use_format_black:
             cmd = (
-                f"cd {workspace_path};./.venv/bin/black -l"
+                f"cd {workspace_path};./.venv.erplibre/bin/black -l"
                 f" {max_col} --preview -t py37"
                 f" {self.module_path}"
             )
