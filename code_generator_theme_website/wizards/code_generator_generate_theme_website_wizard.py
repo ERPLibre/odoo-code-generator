@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import _, api, fields, models
@@ -169,7 +172,7 @@ class CodeGeneratorGenerateThemeWebsiteWizard(models.TransientModel):
             "target": "self",
             "m2o_code_generator": self.code_generator_id.id,
         }
-        ir_actions_act_url = self.env["ir.actions.act_url"].create(value)
+        ir_actions_act_url = self.env["ir.actions.act_url"].create([value])
 
         value = {
             "action_id": ir_actions_act_url.id,

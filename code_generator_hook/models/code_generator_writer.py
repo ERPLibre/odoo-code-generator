@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import logging
 
 import isort
 from code_writer import CodeWriter
 from odoo import api, fields, models
+from odoo.addons.code_generator import code_generator_data
 from odoo.models import MAGIC_COLUMNS
 
 MAGIC_FIELDS_MODELS = MAGIC_COLUMNS + [
@@ -46,7 +50,8 @@ class CodeGeneratorWriter(models.Model):
             if module.uninstall_hook_show:
                 lst_import.append("uninstall_hook")
             # Specify root component
-            self.code_generator_data.add_module_init_path(
+            cg_data = code_generator_data.get_code_generator_data(self.env)
+            cg_data.add_module_init_path(
                 "", f'from .hooks import {", ".join(lst_import)}'
             )
 
@@ -79,7 +84,7 @@ class CodeGeneratorWriter(models.Model):
                 ),
                 delim=("(", ")"),
             ):
-                with cw.block(delim=("{", "}")):
+                with cw.block(delim=("[{", "}]")):
                     cw.emit(f'"section_type": "{view_item_id.section_type}",')
                     cw.emit(f'"item_type": "{view_item_id.item_type}",')
 
@@ -252,7 +257,7 @@ class CodeGeneratorWriter(models.Model):
 
             self._write_sync_view_component(view_item_ids, cw, view_id)
 
-        cw.emit('view_code_generator = env["code.generator.view"].create(')
+        cw.emit('view_code_generator = env["code.generator.view"].create([')
         with cw.block(delim=("{", "}")):
             cw.emit('"code_generator_id": code_generator_id.id,')
             cw.emit(f'"view_type": "{view_type}",')
@@ -310,7 +315,7 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit(f'"id_name": "{view_id.id_name}",')
             if view_id.inherit_view_name:
                 cw.emit(f'"inherit_view_name": "{view_id.inherit_view_name}",')
-        cw.emit(")")
+        cw.emit("])")
         cw.emit("lst_view_id.append(view_code_generator.id)")
 
     def _write_sync_template_action(self, cw, module, act_server_ids):
@@ -341,7 +346,7 @@ class CodeGeneratorWriter(models.Model):
                         ),
                         delim=("(", ")"),
                     ):
-                        with cw.block(delim=("{", "}")):
+                        with cw.block(delim=("[{", "}]")):
                             cw.emit(f'"name": "{act_server.name}",')
                             cw.emit(f'"model_id": {var_model_id}.id,')
                             cw.emit(f'"binding_model_id": {var_model_id}.id,')
@@ -366,7 +371,7 @@ class CodeGeneratorWriter(models.Model):
                             before=f'env["ir.model.data"].create',
                             delim=("(", ")"),
                         ):
-                            with cw.block(delim=("{", "}")):
+                            with cw.block(delim=("[{", "}]")):
                                 cw.emit(f'"name": "{var_act_server_id.name}",')
                                 cw.emit(f'"model": "ir.actions.server",')
                                 cw.emit('"module": MODULE_NAME,')
@@ -432,7 +437,7 @@ class CodeGeneratorWriter(models.Model):
                         ),
                         delim=("(", ")"),
                     ):
-                        with cw.block(delim=("{", "}")):
+                        with cw.block(delim=("[{", "}]")):
                             cw.emit(
                                 '"code_generator_id": code_generator_id.id,'
                             )
@@ -471,17 +476,17 @@ class CodeGeneratorWriter(models.Model):
                         # TODO need to associate menu to his view, or find a way to not associate like this
                         continue
                     # env["code.generator.menu"].create(
-                    #     {
+                    #     [{
                     #         "code_generator_id": code_generator_id.id,
                     #         "parent_id_name": "base.next_id_9",
                     #         "id_name": "backup_conf_menu",
-                    #     }
+                    #     }]
                     # )
                     with cw.block(
                         before='env["code.generator.menu"].create',
                         delim=("(", ")"),
                     ):
-                        with cw.block(delim=("{", "}")):
+                        with cw.block(delim=("[{", "}]")):
                             cw.emit(
                                 '"code_generator_id": code_generator_id.id,'
                             )
@@ -540,6 +545,8 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         cw = CodeWriter()
 
         for line in MODEL_SUPERUSER_HEAD:
@@ -578,19 +585,17 @@ class CodeGeneratorWriter(models.Model):
             post_init_hook_feature_code_generator,
             uninstall_hook_feature_code_generator,
             method_name,
-            has_second_arg,
         ):
             if not hook_show:
                 return
+            cg_data = code_generator_data.get_code_generator_data(self.env)
             cw.emit()
             cw.emit()
-            if has_second_arg:
-                cw.emit(f"def {method_name}(cr, e):")
-            else:
-                cw.emit(f"def {method_name}(cr):")
+            cw.emit(f"def {method_name}(env):")
             with cw.indent():
                 for hook_line in hook_code.split("\n"):
-                    cw.emit(hook_line)
+                    if hook_line.strip():
+                        cw.emit(hook_line)
                 with cw.indent():
                     if method_name == "pre_init_hook":
                         self.write_extra_pre_init_hook(module, cw)
@@ -605,11 +610,10 @@ class CodeGeneratorWriter(models.Model):
 
                         cw.emit(
                             "event_config ="
-                            " env['res.config.settings'].sudo().create(values)"
+                            " env['res.config.settings'].sudo().create([values])"
                         )
                         cw.emit("event_config.execute()")
                     if post_init_hook_feature_code_generator:
-                        cw.emit()
                         cw.emit("# The path of the actual file")
                         path_cg_module = (
                             module.template_module_path_generated_extension
@@ -861,7 +865,7 @@ class CodeGeneratorWriter(models.Model):
                         cw.emit()
                         cw.emit(
                             "code_generator_id ="
-                            ' env["code.generator.module"].create(value)'
+                            ' env["code.generator.module"].create([value])'
                         )
                         cw.emit()
                         lst_module_depend = []
@@ -927,7 +931,7 @@ class CodeGeneratorWriter(models.Model):
                                     )
                                 cw.emit("}")
                                 cw.emit(
-                                    "env['code.generator.module.external.dependency'].create(value)"
+                                    "env['code.generator.module.external.dependency'].create([value])"
                                 )
                                 cw.emit()
 
@@ -967,8 +971,10 @@ class CodeGeneratorWriter(models.Model):
                             dct_model_one2many = {}
                             for i, model_id in enumerate(lst_model_id):
                                 if module.enable_sync_template:
-                                    view_file_sync = module.view_file_sync.get(
-                                        model_id.model
+                                    view_file_sync = (
+                                        cg_data.view_file_sync.get(
+                                            model_id.model
+                                        )
                                     )
                                     if view_file_sync:
                                         lst_view_item_code_generator.append(
@@ -1021,7 +1027,7 @@ class CodeGeneratorWriter(models.Model):
                                             f" '{module.template_generate_website_snippet_type}',"
                                         )
                                     cw.emit(
-                                        'env["code.generator.snippet"].create(value_snippet)'
+                                        'env["code.generator.snippet"].create([value_snippet])'
                                     )
 
                                 cw.emit()
@@ -1213,7 +1219,7 @@ class CodeGeneratorWriter(models.Model):
                                                     )
                                         cw.emit("}")
                                         cw.emit(
-                                            f'env["{model_id.model}"].create(value)'
+                                            f'env["{model_id.model}"].create([value])'
                                         )
                                         model_data_id = self.env[
                                             "ir.model.data"
@@ -1258,7 +1264,7 @@ class CodeGeneratorWriter(models.Model):
                                                     f" {model_data_id.noupdate},"
                                                 )
                                             cw.emit(
-                                                'env["ir.model.data"].create(value)'
+                                                'env["ir.model.data"].create([value])'
                                             )
                                         cw.emit()
 
@@ -1413,7 +1419,7 @@ class CodeGeneratorWriter(models.Model):
                                 '"code_generator_ids": code_generator_id.ids'
                             )
                         cw.emit("}")
-                        cw.emit('env["code.generator.writer"].create(value)')
+                        cw.emit('env["code.generator.writer"].create([value])')
                     if uninstall_hook_feature_code_generator:
                         cw.emit(
                             "code_generator_id ="
@@ -1434,7 +1440,6 @@ class CodeGeneratorWriter(models.Model):
             False,
             False,
             "pre_init_hook",
-            False,
         )
         _add_hook(
             module,
@@ -1445,7 +1450,6 @@ class CodeGeneratorWriter(models.Model):
             module.post_init_hook_feature_code_generator,
             False,
             "post_init_hook",
-            True,
         )
         _add_hook(
             module,
@@ -1456,13 +1460,12 @@ class CodeGeneratorWriter(models.Model):
             False,
             module.uninstall_hook_feature_code_generator,
             "uninstall_hook",
-            True,
         )
         self.write_extra_extra_function_hook(module, cw)
 
         hook_file_path = "hooks.py"
 
-        self.code_generator_data.write_file_str(hook_file_path, cw.render())
+        cg_data.write_file_str(hook_file_path, cw.render())
 
     def code_write_hook_header_inherit(self, cw, module):
         pass
@@ -1480,7 +1483,7 @@ class CodeGeneratorWriter(models.Model):
     ):
         # TODO wrong place for this code, add it in inherit_model_ids when evaluate code
         field_id_track = model_id.field_id.filtered(
-            lambda x: x.track_visibility
+            lambda f: (f.tracking or 0) > 0
         )
 
         # Prepare model inherit data
@@ -1621,6 +1624,7 @@ class CodeGeneratorWriter(models.Model):
             cw.emit(f'"{key}": {value},')
 
     def _get_field_data(self, module, model_id):
+        cg_data = code_generator_data.get_code_generator_data(self.env)
         dct_field_data = {}
         dct_field_data_one2many = {}
 
@@ -1628,8 +1632,8 @@ class CodeGeneratorWriter(models.Model):
             return dct_field_data, dct_field_data_one2many
 
         dct_field_ast = {}
-        module_file_sync = module.module_file_sync.get(model_id.model)
-        view_file_sync = module.view_file_sync.get(model_id.model)
+        module_file_sync = cg_data.module_file_sync.get(model_id.model)
+        view_file_sync = cg_data.view_file_sync.get(model_id.model)
         lst_ignored_field = (
             module.ignore_fields.split(";") if module.ignore_fields else []
         )
@@ -1720,12 +1724,12 @@ class CodeGeneratorWriter(models.Model):
                 dct_field_value["help"] = field_id.help
 
             if ast_attr:
-                lst_attr = ["track_visibility", "code_generator_compute"]
+                lst_attr = ["tracking", "code_generator_compute"]
                 if not module.disable_fix_code_generator_sequence:
                     lst_attr += [
                         "code_generator_sequence",
                         "code_generator_form_simple_view_sequence",
-                        "code_generator_tree_view_sequence",
+                        "code_generator_list_view_sequence",
                     ]
                 for attr in lst_attr:
                     item = ast_attr.get(attr)
@@ -1841,7 +1845,7 @@ class CodeGeneratorWriter(models.Model):
         cw.emit("# Action generate view")
         cw.emit(
             "wizard_view ="
-            " env['code.generator.generate.views.wizard'].create({"
+            " env['code.generator.generate.views.wizard'].create([{"
         )
         with cw.indent():
             cw.emit("'code_generator_id': code_generator_id.id,")
@@ -1857,7 +1861,7 @@ class CodeGeneratorWriter(models.Model):
             if module.enable_cg_portal_enable_create:
                 cw.emit("'portal_enable_create': True,")
 
-        cw.emit("})")
+        cw.emit("}])")
         cw.emit("")
         cw.emit("wizard_view.button_generate_views()")
         cw.emit()
@@ -1959,7 +1963,7 @@ class CodeGeneratorWriter(models.Model):
                         var_model_name = f"model_{model_name}"
                         cw.emit(f'"m2o_model": {var_model_name}.id,')
                     cw.emit(
-                        'env["code.generator.model.code.import"].create(value)'
+                        'env["code.generator.model.code.import"].create([value])'
                     )
                     cw.emit()
 
@@ -2056,7 +2060,7 @@ class CodeGeneratorWriter(models.Model):
             cw.emit(
                 f'group_id = env.ref("{group_name}").with_context(lang=lang)'
             )
-            cw.emit('access_id = env["ir.model.access"].create({')
+            cw.emit('access_id = env["ir.model.access"].create([{')
             cw.emit(f'"name": "{access_id.name}",')
             cw.emit(f'"model_id": {variable_model_model}.id,')
             cw.emit('"group_id": group_id.id,')
@@ -2064,7 +2068,7 @@ class CodeGeneratorWriter(models.Model):
             cw.emit(f'"perm_create": {access_id.perm_create},')
             cw.emit(f'"perm_write": {access_id.perm_write},')
             cw.emit(f'"perm_unlink": {access_id.perm_unlink},')
-            cw.emit("})")
+            cw.emit("}])")
             cw.emit()
             access_xml_id = (
                 self.env["ir.model.data"]
@@ -2084,7 +2088,7 @@ class CodeGeneratorWriter(models.Model):
                 before=f'env["ir.model.data"].create',
                 delim=("(", ")"),
             ):
-                with cw.block(delim=("{", "}")):
+                with cw.block(delim=("[{", "}]")):
                     cw.emit(f'"name": "{access_xml_id}",')
                     cw.emit(f'"model": "ir.model.access",')
                     cw.emit('"module": MODULE_NAME,')

@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import base64
 import logging
 import os
@@ -255,7 +258,6 @@ class CodeGeneratorModule(models.Model):
 
     website = fields.Char(readonly=False)
 
-    @api.model
     def _default_path_sync_code(self):
         # sibling directory odoo-code-generator-template
         sibling = os.path.normpath(
@@ -290,6 +292,8 @@ class CodeGeneratorModule(models.Model):
                 module_id.template_module_id = self.env[
                     "ir.module.module"
                 ].search([("name", "=", module_id.template_module_name)])
+            else:
+                module_id.template_module_id = False
 
     def add_module_dependency_template(self, module_name):
         self.add_module_dependency(
@@ -334,7 +338,7 @@ class CodeGeneratorModule(models.Model):
                         "depend_id": dependency.id,
                         "name": dependency.display_name,
                     }
-                    self.env[model_dependency].create(value)
+                    self.env[model_dependency].create([value])
 
     @api.depends("o2m_models")
     def _get_models_info(self):
@@ -421,7 +425,6 @@ class CodeGeneratorModule(models.Model):
                 with tools.file_open(path, "rb") as image_file:
                     module.icon_image = base64.b64encode(image_file.read())
 
-    @api.model
     def add_update_model(
         self,
         model_model,
@@ -429,6 +432,8 @@ class CodeGeneratorModule(models.Model):
         dct_field=None,
         dct_model=None,
         lst_depend_model=None,
+        enable_activity=False,
+        enable_tracking=False,
     ):
         # When this is called, all field is in whitelist
         if dct_field:
@@ -456,6 +461,7 @@ class CodeGeneratorModule(models.Model):
                             ("name", "=", field_name),
                         ]
                     )
+                    # TODO add enable_activity and enable_tracking
                     if not field_id:
                         value_ir_model_fields = {
                             "name": field_name,
@@ -469,7 +475,7 @@ class CodeGeneratorModule(models.Model):
                                 value_ir_model_fields,
                             )
                         self.env["ir.model.fields"].create(
-                            value_ir_model_fields
+                            [value_ir_model_fields]
                         )
                     else:
                         # Support model of code generator or model already existing (like inherit)
@@ -504,7 +510,7 @@ class CodeGeneratorModule(models.Model):
                         )
 
                         self.env["code.generator.ir.model.fields"].create(
-                            value_ir_model_fields
+                            [value_ir_model_fields]
                         )
 
             if dct_model:
@@ -517,6 +523,8 @@ class CodeGeneratorModule(models.Model):
                 "model": model_model,
                 "m2o_module": self.id,
             }
+            if enable_activity:
+                value["enable_activity"] = True
             if dct_model:
                 for key in dct_model.keys():
                     self._update_dict(
@@ -553,6 +561,8 @@ class CodeGeneratorModule(models.Model):
                         value_field_id = {
                             "name": field_name,
                         }
+                        if enable_tracking:
+                            value_field_id["tracking"] = True  # or 10
                         for key in field_info.keys():
                             self._update_dict(
                                 key,
@@ -615,13 +625,29 @@ class CodeGeneratorModule(models.Model):
                             )
                         )
 
-            model_id = self.env["ir.model"].create(value)
+            model_id = self.env["ir.model"].create([value])
 
         # Model inherit
         if lst_depend_model:
             model_id.add_model_inherit(lst_depend_model)
 
         return model_id
+
+    def add_method_model(self, model_id, compute_company_currency_id=False):
+        for rec in self:
+            if compute_company_currency_id:
+                lst_value = [
+                    {
+                        "code": """self.company_currency_id = self.env.company.currency_id""",
+                        "name": "_compute_company_currency_id",
+                        "param": "self",
+                        "decorator": '@api.depends_context("company")',
+                        "sequence": 0,
+                        "m2o_module": rec.id,
+                        "m2o_model": model_id.id,
+                    },
+                ]
+                self.env["code.generator.model.code"].create(lst_value)
 
     def _check_relation_many2many(self, model_model, field_value):
         relation_name = field_value.get("relation")
@@ -645,7 +671,6 @@ class CodeGeneratorModule(models.Model):
                     f" ({len(relation)}) '{relation}'"
                 )
 
-    @api.model
     def add_update_model_one2many(self, model_model, dct_field):
         # When this is called, all field is in whitelist
         for field_name, field_info in dct_field.items():
@@ -679,7 +704,7 @@ class CodeGeneratorModule(models.Model):
                             value_field_one2many,
                         )
 
-                    self.env["ir.model.fields"].create(value_field_one2many)
+                    self.env["ir.model.fields"].create([value_field_one2many])
                 else:
                     # Support model of code generator or model already existing (like inherit)
                     if (
@@ -710,7 +735,7 @@ class CodeGeneratorModule(models.Model):
                                 value_ir_model_fields,
                             )
                         self.env["code.generator.ir.model.fields"].create(
-                            value_ir_model_fields
+                            [value_ir_model_fields]
                         )
                     # _logger.error("What to do to update a one2many?")
         else:
@@ -720,20 +745,20 @@ class CodeGeneratorModule(models.Model):
                 " CodeGeneratorModule."
             )
 
-    @api.model
     def _update_dict(self, key_name, field_info, value_field_id):
         filter_field_attribute = field_info.get(key_name)
         if filter_field_attribute:
             value_field_id[key_name] = filter_field_attribute
 
-    @api.model
+    @api.model_create_multi
     def create(self, vals):
-        if "icon" in vals.keys():
-            icon_path = vals["icon"]
+        for val in vals:
+            if "icon" in val.keys():
+                icon_path = val["icon"]
 
-            if icon_path and os.path.isfile(icon_path):
-                with tools.file_open(icon_path, "rb") as image_file:
-                    vals["icon_image"] = base64.b64encode(image_file.read())
+                if icon_path and os.path.isfile(icon_path):
+                    with tools.file_open(icon_path, "rb") as image_file:
+                        val["icon_image"] = base64.b64encode(image_file.read())
         return super(models.Model, self).create(vals)
 
     def unlink(self):

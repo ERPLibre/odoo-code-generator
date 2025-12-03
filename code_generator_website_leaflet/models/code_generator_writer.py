@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import os
 
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models, modules, tools
+from odoo.addons.code_generator import code_generator_data
 
 BREAK_LINE = ["\n"]
 BREAK_LINE_OFF = "\n"
@@ -30,6 +34,8 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         lst_header = [
             "from odoo import http",
             "from operator import attrgetter",
@@ -40,7 +46,7 @@ class CodeGeneratorWriter(models.Model):
             "from collections import defaultdict",
         ]
 
-        file_path = f"{self.code_generator_data.controllers_path}/main.py"
+        file_path = f"{cg_data.controllers_path}/main.py"
 
         python_controller_writer.add_controller(
             file_path,
@@ -232,18 +238,18 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         module_path = os.path.normpath(
             os.path.join(os.path.dirname(__file__), "..")
         )
         # file_path = os.path.join("static", "src", "js", "website.leaflet.animation.js")
         # source_file = os.path.join(module_path, file_path)
 
-        # self.code_generator_data.copy_file(source_file, file_path)
+        # cg_data.copy_file(source_file, file_path)
         destination_directory = os.path.join("static", "src")
         source_directory = os.path.join(module_path, "static", "src")
-        self.code_generator_data.copy_directory(
-            source_directory, destination_directory
-        )
+        cg_data.copy_directory(source_directory, destination_directory)
 
         destination_file = os.path.join(
             destination_directory, "scss", "leaflet.scss"
@@ -252,7 +258,7 @@ class CodeGeneratorWriter(models.Model):
 
         search_and_replace = [("/website_leaflet", f"/{module.name}")]
 
-        self.code_generator_data.copy_file(
+        cg_data.copy_file(
             source_file,
             destination_file,
             data_file=False,
@@ -265,6 +271,8 @@ class CodeGeneratorWriter(models.Model):
         :param module:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         content = (
             """function force_refresh_map(map) {
@@ -439,12 +447,14 @@ class CodeGeneratorWriter(models.Model):
         file_path = os.path.join(
             "static", "src", "js", "website.leaflet.animation.js"
         )
-        self.code_generator_data.write_file_str(file_path, content)
+        cg_data.write_file_str(file_path, content)
 
     def set_xml_views_file(self, module):
         super(CodeGeneratorWriter, self).set_xml_views_file(module)
         if not module.enable_generate_website_leaflet:
             return
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         #
         # template scss
@@ -565,12 +575,8 @@ class CodeGeneratorWriter(models.Model):
         lst_template_xml.append(template_xml)
 
         module_file = E.odoo({}, *lst_template_xml)
-        data_file_path = os.path.join(
-            self.code_generator_data.views_path, "snippets.xml"
-        )
+        data_file_path = os.path.join(cg_data.views_path, "snippets.xml")
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_file, pretty_print=True
         )
-        self.code_generator_data.write_file_binary(
-            data_file_path, result, data_file=True
-        )
+        cg_data.write_file_binary(data_file_path, result, data_file=True)

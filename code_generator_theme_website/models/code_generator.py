@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 from odoo import api, fields, models, modules, tools
 
 
@@ -47,4 +50,13 @@ class CodeGeneratorModule(models.Model):
     )
     theme_website_text_color = fields.Char(
         string="Text Color", default="#000", help="Choose your text color"
+    )
+
+    enable_generate_theme_website = fields.Boolean(
+        string="Enable theme website feature",
+        default=False,
+        help=(
+            "This variable need to be True to generate theme_website if"
+            " enable_generate_all is False"
+        ),
     )

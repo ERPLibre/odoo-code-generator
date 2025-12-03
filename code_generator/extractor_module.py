@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import ast
 import glob
 import logging
@@ -83,7 +86,7 @@ class ExtractorModule:
                                 }
                                 self.module.env[
                                     "code.generator.module.external.dependency"
-                                ].create(v)
+                                ].create([v])
                         else:
                             _logger.warning(
                                 "Unknown value type external_dependencies"
@@ -191,10 +194,11 @@ class ExtractorModule:
                         and node.targets[0].id in ("_name", "_inherit")
                     ):
                         if (
-                            type(node.value) is ast.Str
-                            and node.value.s == self.model
+                            type(node.value) is ast.Constant
+                            and node.value.value == self.model
                             or type(node.value) is ast.List
-                            and self.model in [a.s for a in node.value.elts]
+                            and self.model
+                            in [a.value for a in node.value.elts]
                         ):
                             find_children = children
                             break

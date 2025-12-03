@@ -30,7 +30,7 @@
         </field>
     </record>
 
-    <record model="ir.ui.view" id="code_generator_db_tree">
+    <record model="ir.ui.view" id="code_generator_db_list">
         <field name="name">code.generator.db.list</field>
         <field name="model">code.generator.db</field>
         <field name="arch" type="xml">
@@ -70,7 +70,7 @@
         sequence="1"
     />
 
-    <record model="ir.ui.view" id="code_generator_db_table_tree">
+    <record model="ir.ui.view" id="code_generator_db_table_list">
         <field name="name">code.generator.db.table.list</field>
         <field name="model">code.generator.db.table</field>
         <field name="arch" type="xml">
@@ -130,7 +130,7 @@
         sequence="2"
     />
 
-    <record model="ir.ui.view" id="code_generator_db_column_tree">
+    <record model="ir.ui.view" id="code_generator_db_column_list">
         <field name="name">code.generator.db.column.list</field>
         <field name="model">code.generator.db.column</field>
         <field name="arch" type="xml">

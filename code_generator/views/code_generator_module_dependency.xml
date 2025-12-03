@@ -100,13 +100,13 @@
                 <filter domain="[('depend_id','!=',False)]" name="depend_id" string="Dependency" />
                 <filter domain="[('module_id','!=',False)]" name="module_id" string="Module" />
                 <filter domain="[('name','!=',False)]" name="name" string="Name" />
-<!--                <filter domain="[('state','!=',False)]" name="state" string="Status" />-->
+                <!--                <filter domain="[('state','!=',False)]" name="state" string="Status" />-->
             </search>
         </field>
     </record>
 
-    <record id="code_generator_module_dependency_view_tree" model="ir.ui.view">
-        <field name="name">code_generator_module_dependency_tree</field>
+    <record id="code_generator_module_dependency_view_list" model="ir.ui.view">
+        <field name="name">code_generator_module_dependency_list</field>
         <field name="model">code.generator.module.dependency</field>
         <field name="arch" type="xml">
             <list>

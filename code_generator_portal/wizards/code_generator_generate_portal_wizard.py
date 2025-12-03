@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import logging
 import uuid
 from collections import OrderedDict
@@ -1567,7 +1570,7 @@ for {var_name} in self:
         if inherit_id:
             value["inherit_id"] = inherit_id
 
-        view_value = self.env["ir.ui.view"].create(value)
+        view_value = self.env["ir.ui.view"].create([value])
         return view_value
 
     def _generate_model_access(self, model_created):
@@ -1590,7 +1593,7 @@ for {var_name} in self:
                 "perm_unlink": True,
             }
 
-            access_value = self.env["ir.model.access"].create(v)
+            access_value = self.env["ir.model.access"].create([v])
 
         super(CodeGeneratorGeneratePortalWizard, self)._generate_model_access(
             model_created

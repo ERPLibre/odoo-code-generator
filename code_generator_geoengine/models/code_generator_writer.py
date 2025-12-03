@@ -1,9 +1,13 @@
+# !/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import os
 
 from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models, modules, tools
+from odoo.addons.code_generator import code_generator_data
 
 BREAK_LINE = ["\n"]
 BREAK_LINE_OFF = "\n"
@@ -18,6 +22,8 @@ class CodeGeneratorWriter(models.Model):
         if not module.enable_generate_geoengine:
             return
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         # Hack for no permission restriction
         module = module.sudo()
 
@@ -28,9 +34,7 @@ class CodeGeneratorWriter(models.Model):
 
         if module.o2m_geoengine_vector_layer:
             for vector in module.o2m_geoengine_vector_layer:
-                str_view_id = self.code_generator_data.dct_view_id.get(
-                    vector.view_id.name
-                )
+                str_view_id = cg_data.dct_view_id.get(vector.view_id.name)
                 str_geo_field_id = f"field_{vector.geo_field_id.model.replace('.', '_')}__{vector.geo_field_id.name}"
                 lst_field = [
                     E.field({"name": "geo_field_id", "ref": str_geo_field_id}),
@@ -75,12 +79,8 @@ class CodeGeneratorWriter(models.Model):
                 lst_template_xml.append(xml)
 
         module_file = E.odoo({}, *lst_template_xml)
-        data_file_path = os.path.join(
-            self.code_generator_data.views_path, "geoengine.xml"
-        )
+        data_file_path = os.path.join(cg_data.views_path, "geoengine.xml")
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_file, pretty_print=True
         )
-        self.code_generator_data.write_file_binary(
-            data_file_path, result, data_file=True
-        )
+        cg_data.write_file_binary(data_file_path, result, data_file=True)

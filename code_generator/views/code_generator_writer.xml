@@ -107,8 +107,8 @@
         </field>
     </record>
 
-    <record id="code_generator_writer_view_tree" model="ir.ui.view">
-        <field name="name">code_generator_writer_tree</field>
+    <record id="code_generator_writer_view_list" model="ir.ui.view">
+        <field name="name">code_generator_writer_list</field>
         <field name="model">code.generator.writer</field>
         <field name="arch" type="xml">
             <list>

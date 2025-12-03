@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import io
 import shutil
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -54,7 +57,7 @@ class CodeGeneratorController(http.Controller):
 
         value = {"code_generator_ids": id_code_generator_ids}
         code_generator_writer = request.env["code.generator.writer"].create(
-            value
+            [value]
         )
 
         bytesio = io.BytesIO()

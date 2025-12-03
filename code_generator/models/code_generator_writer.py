@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 import tempfile
+import types
 import uuid
 from collections import defaultdict
 
@@ -19,7 +20,7 @@ from odoo.models import MAGIC_COLUMNS
 from odoo.tools.misc import mute_logger
 from PIL import Image
 
-from ..code_generator_data import CodeGeneratorData
+from .. import code_generator_data
 from ..extractor_controller import ExtractorController
 from ..extractor_module import ExtractorModule
 from ..extractor_view import ExtractorView
@@ -300,22 +301,23 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
         static_description_icon_path = os.path.join(
-            self.code_generator_data.static_description_path, "icon.png"
+            cg_data.static_description_path, "icon.png"
         )
         static_description_icon_code_generator_path = os.path.join(
-            self.code_generator_data.static_description_path,
+            cg_data.static_description_path,
             "code_generator_icon.png",
         )
         # TODO hack to force icon or True
         if module.icon_child_image or module.icon_real_image:
             if module.icon_real_image:
-                self.code_generator_data.write_file_binary(
+                cg_data.write_file_binary(
                     static_description_icon_path,
                     base64.b64decode(module.icon_real_image),
                 )
             if module.icon_child_image:
-                self.code_generator_data.write_file_binary(
+                cg_data.write_file_binary(
                     static_description_icon_code_generator_path,
                     base64.b64decode(module.icon_child_image),
                 )
@@ -323,7 +325,7 @@ class CodeGeneratorWriter(models.Model):
             # elif module.icon_image:
 
             # TODO use this when fix loading picture, now temporary disabled and force use icon from menu
-            # self.code_generator_data.write_file_binary(static_description_icon_path,
+            # cg_data.write_file_binary(static_description_icon_path,
             # base64.b64decode(module.icon_image))
             # TODO temp solution with icon from menu
             icon_path = ""
@@ -344,9 +346,8 @@ class CodeGeneratorWriter(models.Model):
                 )
                 with open(icon_path, "rb") as file:
                     content = file.read()
-            if (
-                module.template_module_id
-                and module.template_module_id.icon_image
+            if hasattr(module, "template_module_id") and hasattr(
+                module.template_module_id, "icon_image"
             ):
                 if not icon_path:
                     _logger.error("Icon path is empty.")
@@ -357,46 +358,56 @@ class CodeGeneratorWriter(models.Model):
                 # It's a template generator
                 minimal_size_width = 350
                 # Add logo in small corner
-                logo = Image.open(
-                    io.BytesIO(
-                        base64.b64decode(module.template_module_id.icon_image)
+                if module.template_module_id.icon_image:
+                    logo = Image.open(
+                        io.BytesIO(
+                            base64.b64decode(
+                                module.template_module_id.icon_image
+                            )
+                        )
                     )
-                )
-                icon = Image.open(icon_path)
-                # Change original size for better quality
-                if logo.width < minimal_size_width:
-                    new_h = int(logo.height / logo.width * minimal_size_width)
-                    new_w = minimal_size_width
-                    logo = logo.resize((new_w, new_h), Image.ANTIALIAS)
-                ratio = 0.3
-                w = int(logo.width * ratio)
-                if icon.width != icon.height:
-                    h = int(logo.height / logo.width * w)
-                else:
-                    h = w
-                size = w, h
-                icon.thumbnail(size, Image.ANTIALIAS)
-                x = logo.width - w
-                logo.paste(icon, (x, 0))
-                img_byte_arr = io.BytesIO()
-                logo.save(img_byte_arr, format="PNG")
-                img_byte_arr = img_byte_arr.getvalue()
+                    icon = Image.open(icon_path)
+                    # Change original size for better quality
+                    if logo.width < minimal_size_width:
+                        new_h = int(
+                            logo.height / logo.width * minimal_size_width
+                        )
+                        new_w = minimal_size_width
+                        logo = logo.resize(
+                            (new_w, new_h), Image.Resampling.LANCZOS
+                        )
+                    ratio = 0.3
+                    w = int(logo.width * ratio)
+                    if icon.width != icon.height:
+                        h = int(logo.height / logo.width * w)
+                    else:
+                        h = w
+                    size = w, h
+                    icon.thumbnail(size, Image.Resampling.LANCZOS)
+                    x = logo.width - w
+                    logo.paste(icon, (x, 0))
+                    img_byte_arr = io.BytesIO()
+                    logo.save(img_byte_arr, format="PNG")
+                    img_byte_arr = img_byte_arr.getvalue()
 
-                # image = base64.b64decode(module.template_module_id.icon_image)
-                self.code_generator_data.write_file_binary(
-                    static_description_icon_path, img_byte_arr
-                )
-                module.icon_real_image = base64.b64encode(img_byte_arr)
-                code_generator_image = base64.b64decode(
-                    module.template_module_id.icon_image
-                )
-                module.icon_child_image = module.template_module_id.icon_image
-                self.code_generator_data.write_file_binary(
-                    static_description_icon_code_generator_path,
-                    code_generator_image,
-                )
+                    # image = base64.b64decode(module.template_module_id.icon_image)
+                    cg_data.write_file_binary(
+                        static_description_icon_path, img_byte_arr
+                    )
+                    module.icon_real_image = base64.b64encode(img_byte_arr)
+                if module.template_module_id.icon_image:
+                    code_generator_image = base64.b64decode(
+                        module.template_module_id.icon_image
+                    )
+                    module.icon_child_image = (
+                        module.template_module_id.icon_image
+                    )
+                    cg_data.write_file_binary(
+                        static_description_icon_code_generator_path,
+                        code_generator_image,
+                    )
             else:
-                self.code_generator_data.write_file_binary(
+                cg_data.write_file_binary(
                     static_description_icon_path, content
                 )
                 module.icon_real_image = base64.b64encode(content)
@@ -431,12 +442,13 @@ class CodeGeneratorWriter(models.Model):
             return
 
         i18n_path = os.path.join(module_path, "i18n")
-        data = CodeGeneratorData(module_id, module_path)
+        # TODO can be move to util
+        data = code_generator_data.CodeGeneratorData(module_id, module_path)
         data.check_mkdir_and_create(i18n_path, is_file=False)
 
         # Create pot
         export = self.env["base.language.export"].create(
-            {"format": "po", "modules": [(6, 0, [module_id.id])]}
+            [{"format": "po", "modules": [(6, 0, [module_id.id])]}]
         )
 
         export.act_getfile()
@@ -464,10 +476,10 @@ class CodeGeneratorWriter(models.Model):
             ):
                 with mute_logger("odoo.addons.base.models.ir_translation"):
                     self.env["base.language.install"].create(
-                        {"lang": lang_local, "overwrite": True}
+                        [{"lang": lang_local, "overwrite": True}]
                     ).lang_install()
                 self.env["base.update.translations"].create(
-                    {"lang": lang_local}
+                    [{"lang": lang_local}]
                 ).act_update()
 
             # Load existing translations
@@ -477,11 +489,13 @@ class CodeGeneratorWriter(models.Model):
             # ])
 
             export = self.env["base.language.export"].create(
-                {
-                    "lang": lang_local,
-                    "format": "po",
-                    "modules": [(6, 0, [module_id.id])],
-                }
+                [
+                    {
+                        "lang": lang_local,
+                        "format": "po",
+                        "modules": [(6, 0, [module_id.id])],
+                    }
+                ]
             )
             export.act_getfile()
             po_file = export.data
@@ -523,7 +537,9 @@ class CodeGeneratorWriter(models.Model):
         target_i18n_path = os.path.join(template_copied_dir, "i18n")
         lst_file = glob.glob(i18n_po_path) + glob.glob(i18n_pot_path)
         if lst_file:
-            CodeGeneratorData.os_make_dirs(target_i18n_path)
+            code_generator_data.CodeGeneratorData.os_make_dirs(
+                target_i18n_path
+            )
             for file_name in lst_file:
                 shutil.copy(file_name, target_i18n_path)
 
@@ -550,7 +566,7 @@ class CodeGeneratorWriter(models.Model):
                     template_copied_dir, file_extra
                 )
                 if os.path.isfile(mail_data_xml_path):
-                    CodeGeneratorData.check_mkdir_and_create(
+                    code_generator_data.CodeGeneratorData.check_mkdir_and_create(
                         target_mail_data_xml_path
                     )
                     shutil.copy(mail_data_xml_path, target_mail_data_xml_path)
@@ -562,6 +578,7 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
         lang = "en_US"
 
         cw = CodeWriter()
@@ -683,7 +700,7 @@ class CodeGeneratorWriter(models.Model):
 
             lst_data = self._get_l_map(
                 lambda dfile: f"'{dfile}'",
-                self.code_generator_data.lst_manifest_data_files,
+                cg_data.lst_manifest_data_files,
             )
             if lst_data:
                 cw.emit_list(
@@ -695,9 +712,7 @@ class CodeGeneratorWriter(models.Model):
             self.set_manifest_file_extra(cw, module)
 
         manifest_file_path = "__manifest__.py"
-        self.code_generator_data.write_file_str(
-            manifest_file_path, cw.render()
-        )
+        cg_data.write_file_str(manifest_file_path, cw.render())
 
     def set_manifest_file_extra(self, cw, module):
         pass
@@ -792,13 +807,15 @@ class CodeGeneratorWriter(models.Model):
                 )
 
             self.env["ir.model.data"].create(
-                {
-                    "name": new_result,
-                    "model": record._name,
-                    "module": module_name,
-                    "res_id": record.id,
-                    "noupdate": True,  # If it's False, target record (res_id) will be removed while module update
-                }
+                [
+                    {
+                        "name": new_result,
+                        "model": record._name,
+                        "module": module_name,
+                        "res_id": record.id,
+                        "noupdate": True,  # If it's False, target record (res_id) will be removed while module update
+                    }
+                ]
             )
             result = new_result
         else:
@@ -946,6 +963,8 @@ class CodeGeneratorWriter(models.Model):
         :param model_model:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         expression_export_data = model.expression_export_data
         if not expression_export_data:
@@ -1134,7 +1153,7 @@ class CodeGeneratorWriter(models.Model):
                                 url_path_file_module,
                             ]
                             # decode_record = base64.b64decode(record_value)
-                            # self.code_generator_data.write_file_binary(
+                            # cg_data.write_file_binary(
                             #     url_path_file_module,
                             #     decode_record,
                             # )
@@ -1478,6 +1497,7 @@ _logger = logging.getLogger(__name__)"""
         return new_url_path
 
     def _write_xml_data_file(self, dct_result):
+        cg_data = code_generator_data.get_code_generator_data(self.env)
         dct_search_and_replace_in_file_global = defaultdict(list)
         for model_model, tpl_result in dct_result.items():
             (
@@ -1513,7 +1533,7 @@ _logger = logging.getLogger(__name__)"""
                 # it's empty
                 continue
             data_file_path = os.path.join(
-                self.code_generator_data.data_path, f"{model_model}.xml"
+                cg_data.data_path, f"{model_model}.xml"
             )
 
             for new_data_to_write in lst_new_data_to_write:
@@ -1521,7 +1541,7 @@ _logger = logging.getLogger(__name__)"""
                     continue
                 record_value, url_path_file_module = new_data_to_write
                 decode_record = base64.b64decode(record_value)
-                self.code_generator_data.write_file_binary(
+                cg_data.write_file_binary(
                     url_path_file_module,
                     decode_record,
                 )
@@ -1547,19 +1567,15 @@ _logger = logging.getLogger(__name__)"""
                         str_search.encode(), str_replace.encode()
                     )
 
-            self.code_generator_data.write_file_binary(
+            cg_data.write_file_binary(
                 data_file_path, new_result, data_file=True
             )
 
             abs_path_file = os.path.join("data", f"{model_model}.xml")
 
-            self.code_generator_data.dct_data_metadata_file[abs_path_file] = (
-                lst_id
-            )
+            cg_data.dct_data_metadata_file[abs_path_file] = lst_id
             if lst_depend:
-                self.code_generator_data.dct_data_depend[abs_path_file] = (
-                    lst_depend
-                )
+                cg_data.dct_data_depend[abs_path_file] = lst_depend
 
     def _set_module_menus(self, module):
         """
@@ -1567,6 +1583,8 @@ _logger = logging.getLogger(__name__)"""
         :param module:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         application_icon = None
         menus = module.with_context({"ir.ui.menu.full_list": True}).o2m_menus
@@ -1702,18 +1720,14 @@ _logger = logging.getLogger(__name__)"""
 
         lst_menu_xml.append(ET.Comment("end line"))
         module_menus_file = E.odoo({}, *lst_menu_xml)
-        menu_file_path = os.path.join(
-            self.code_generator_data.views_path, "menu.xml"
-        )
+        menu_file_path = os.path.join(cg_data.views_path, "menu.xml")
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_menus_file, pretty_print=True
         )
 
         new_result = result.decode().replace("  <!--end line-->\n", "\n")[:-1]
 
-        self.code_generator_data.write_file_str(
-            menu_file_path, new_result, data_file=True
-        )
+        cg_data.write_file_str(menu_file_path, new_result, data_file=True)
 
         return application_icon
 
@@ -1748,6 +1762,8 @@ _logger = logging.getLogger(__name__)"""
         :param model_model:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         # view_ids = model.view_ids
         # TODO model.view_ids not working when add inherit view from wizard... what is different? Force values
@@ -1807,7 +1823,7 @@ _logger = logging.getLogger(__name__)"""
                     str_id += str(count_id)
                 lst_id.append(str_id)
 
-                self.code_generator_data.add_view_id(view.name, str_id)
+                cg_data.add_view_id(view.name, str_id)
 
                 lst_field = []
 
@@ -1906,16 +1922,6 @@ _logger = logging.getLogger(__name__)"""
         #
         for act_window in act_window_ids:
             # Use descriptive method when contain this attributes, not supported in simplify view
-            # TODO why support non complex view, its suppose to be the default view
-            use_complex_view = bool(
-                act_window.groups_id
-                or act_window.help
-                or act_window.multi
-                or not act_window.auto_search
-                or act_window.filter
-                or act_window.search_view_id
-                or act_window.usage
-            )
 
             record_id = self._get_id_view_model_data(
                 act_window, model="ir.actions.act_window", is_internal=True
@@ -1931,219 +1937,117 @@ _logger = logging.getLogger(__name__)"""
                 .exists()
             )
 
-            has_menu = bool(
-                module.with_context({"ir.ui.menu.full_list": True}).o2m_menus
-            )
-            view_type = (
-                cg_act_window_id.view_type
-                if cg_act_window_id and cg_act_window_id.view_type
-                else act_window.view_type
-            )
+            # has_menu = bool(
+            #     module.with_context({"ir.ui.menu.full_list": True}).o2m_menus
+            # )
             view_mode = (
                 cg_act_window_id.view_mode
                 if cg_act_window_id and cg_act_window_id.view_mode
                 else act_window.view_mode
             )
-            # TODO if not complex, search if associate with a menu. If the menu is not generated, don't generate is act_window
-            if use_complex_view:
-                lst_field = []
+            lst_field = []
 
-                if act_window.name:
-                    lst_field.append(
-                        E.field({"name": "name"}, act_window.name)
+            if act_window.name:
+                lst_field.append(E.field({"name": "name"}, act_window.name))
+
+            if act_window.res_model or act_window.m2o_res_model:
+                lst_field.append(
+                    E.field(
+                        {"name": "res_model"},
+                        act_window.res_model or act_window.m2o_res_model.model,
                     )
-
-                if act_window.res_model or act_window.m2o_res_model:
-                    lst_field.append(
-                        E.field(
-                            {"name": "res_model"},
-                            act_window.res_model
-                            or act_window.m2o_res_model.model,
-                        )
-                    )
-
-                if act_window.binding_model_id:
-                    binding_model = self._get_model_data_name(
-                        act_window.binding_model_id, module_name=module.name
-                    )
-                    lst_field.append(
-                        E.field(
-                            {"name": "binding_model_id", "ref": binding_model}
-                        )
-                    )
-
-                if act_window.view_id:
-                    lst_field.append(
-                        E.field(
-                            {
-                                "name": "view_id",
-                                "ref": self._get_view_data_name(
-                                    act_window.view_id
-                                ),
-                            }
-                        )
-                    )
-
-                if act_window.domain != "[]" and act_window.domain:
-                    lst_field.append(
-                        E.field({"name": "domain"}, act_window.domain)
-                    )
-
-                if act_window.context != "{}":
-                    lst_field.append(
-                        E.field({"name": "context"}, act_window.context)
-                    )
-
-                if act_window.src_model or act_window.m2o_src_model:
-                    lst_field.append(
-                        E.field(
-                            {"name": "src_model"},
-                            act_window.src_model
-                            or act_window.m2o_src_model.model,
-                        )
-                    )
-
-                if act_window.target != "current":
-                    lst_field.append(
-                        E.field({"name": "target"}, act_window.target)
-                    )
-
-                if view_mode != "tree,form" and view_mode != "form,tree":
-                    lst_field.append(E.field({"name": "view_mode"}, view_mode))
-
-                if view_type != "form":
-                    lst_field.append(E.field({"name": "view_type"}, view_type))
-
-                if act_window.usage:
-                    lst_field.append(
-                        E.field({"name": "usage", "eval": "True"})
-                    )
-
-                if act_window.limit != 80 and act_window.limit != 0:
-                    lst_field.append(
-                        E.field({"name": "limit"}, str(act_window.limit))
-                    )
-
-                if act_window.search_view_id:
-                    lst_field.append(
-                        E.field(
-                            {
-                                "name": "search_view_id",
-                                "ref": self._get_view_data_name(
-                                    act_window.search_view_id
-                                ),
-                            }
-                        )
-                    )
-
-                if act_window.filter:
-                    lst_field.append(
-                        E.field({"name": "filter", "eval": "True"})
-                    )
-
-                if not act_window.auto_search:
-                    lst_field.append(
-                        E.field({"name": "auto_search", "eval": "False"})
-                    )
-
-                if act_window.multi:
-                    lst_field.append(
-                        E.field({"name": "multi", "eval": "True"})
-                    )
-
-                if act_window.help:
-                    lst_field.append(
-                        E.field(
-                            {"name": "name", "type": "html"}, act_window.help
-                        )
-                    )
-
-                if act_window.groups_id:
-                    lst_field.append(
-                        self._get_m2m_groups_etree(act_window.groups_id)
-                    )
-
-                info = E.record(
-                    {"id": record_id, "model": "ir.actions.act_window"},
-                    *lst_field,
                 )
-                lst_item_xml.append(ET.Comment("end line"))
-                lst_item_xml.append(info)
-            elif has_menu:
-                dct_act_window = {"id": record_id}
 
-                if act_window.name:
-                    dct_act_window["name"] = act_window.name
+            if act_window.binding_model_id:
+                binding_model = self._get_model_data_name(
+                    act_window.binding_model_id, module_name=module.name
+                )
+                lst_field.append(
+                    E.field({"name": "binding_model_id", "ref": binding_model})
+                )
 
-                if act_window.res_model or act_window.m2o_res_model:
-                    dct_act_window["res_model"] = (
-                        act_window.res_model or act_window.m2o_res_model.model
+            if act_window.view_id:
+                lst_field.append(
+                    E.field(
+                        {
+                            "name": "view_id",
+                            "ref": self._get_view_data_name(
+                                act_window.view_id
+                            ),
+                        }
                     )
+                )
 
-                if act_window.binding_model_id:
-                    # TODO replace ref
-                    pass
+            if act_window.domain != "[]" and act_window.domain:
+                lst_field.append(
+                    E.field({"name": "domain"}, act_window.domain)
+                )
 
-                if act_window.view_id:
-                    # TODO replace ref
-                    pass
+            if act_window.context != "{}":
+                lst_field.append(
+                    E.field({"name": "context"}, act_window.context)
+                )
 
-                if act_window.domain != "[]" and act_window.domain:
-                    dct_act_window["domain"] = (
-                        act_window.res_model or act_window.m2o_res_model.model
+            # src_model = (
+            #     act_window.binding_model_id.model
+            #     if act_window.binding_model_id
+            #     else False
+            # )
+            # if src_model:
+            #     lst_field.append(
+            #         E.field(
+            #             {"name": "src_model"},
+            #             act_window.src_model or act_window.m2o_src_model.model,
+            #         )
+            #     )
+
+            if act_window.target != "current":
+                lst_field.append(
+                    E.field({"name": "target"}, act_window.target)
+                )
+
+            if view_mode != "list,form" and view_mode != "form,list":
+                lst_field.append(E.field({"name": "view_mode"}, view_mode))
+
+            if act_window.usage:
+                lst_field.append(E.field({"name": "usage", "eval": "True"}))
+
+            if act_window.limit != 80 and act_window.limit != 0:
+                lst_field.append(
+                    E.field({"name": "limit"}, str(act_window.limit))
+                )
+
+            if act_window.search_view_id:
+                lst_field.append(
+                    E.field(
+                        {
+                            "name": "search_view_id",
+                            "ref": self._get_view_data_name(
+                                act_window.search_view_id
+                            ),
+                        }
                     )
+                )
 
-                if act_window.context != "{}":
-                    dct_act_window["context"] = act_window.context
+            if act_window.filter:
+                lst_field.append(E.field({"name": "filter", "eval": "True"}))
 
-                if act_window.src_model or act_window.m2o_src_model:
-                    dct_act_window["src_model"] = (
-                        act_window.src_model or act_window.m2o_src_model.model
-                    )
+            if act_window.help:
+                lst_field.append(
+                    E.field({"name": "name", "type": "html"}, act_window.help)
+                )
 
-                if act_window.target != "current":
-                    dct_act_window["target"] = act_window.target
+            if act_window.groups_id:
+                lst_field.append(
+                    self._get_m2m_groups_etree(act_window.groups_id)
+                )
 
-                if view_mode != "tree,form":
-                    dct_act_window["view_mode"] = view_mode
-
-                if view_type != "form":
-                    dct_act_window["view_type"] = view_type
-
-                if act_window.usage:
-                    # TODO replace ref
-                    pass
-
-                if act_window.limit != 80 and act_window.limit != 0:
-                    dct_act_window["limit"] = str(act_window.limit)
-
-                if act_window.search_view_id:
-                    # TODO replace ref
-                    pass
-
-                if act_window.filter:
-                    # TODO replace ref
-                    pass
-
-                if not act_window.auto_search:
-                    # TODO replace ref
-                    pass
-
-                if act_window.multi:
-                    # TODO replace ref
-                    pass
-
-                if act_window.help:
-                    # TODO how add type html and contents?
-                    pass
-
-                if act_window.groups_id:
-                    # TODO check _get_m2m_groups_etree
-                    pass
-
-                info = E.act_window(dct_act_window)
-                lst_item_xml.append(ET.Comment("end line"))
-                lst_item_xml.append(info)
+            info = E.record(
+                {"id": record_id, "model": "ir.actions.act_window"},
+                *lst_field,
+            )
+            lst_item_xml.append(ET.Comment("end line"))
+            lst_item_xml.append(info)
 
         #
         # Server Actions
@@ -2229,15 +2133,13 @@ _logger = logging.getLogger(__name__)"""
         str_content = str_content.replace("'&gt;'", "'>'")
         str_content = str_content.replace("'&lt;'", "'<'")
 
-        wizards_path = self.code_generator_data.wizards_path
-        views_path = self.code_generator_data.views_path
+        wizards_path = cg_data.wizards_path
+        views_path = cg_data.views_path
         xml_file_path = os.path.join(
             wizards_path if model.transient else views_path,
             f"{model_model}.xml",
         )
-        self.code_generator_data.write_file_str(
-            xml_file_path, str_content, data_file=True
-        )
+        cg_data.write_file_str(xml_file_path, str_content, data_file=True)
 
         if dct_replace_template:
             root_template = E.odoo({}, *lst_item_template)
@@ -2255,12 +2157,12 @@ _logger = logging.getLogger(__name__)"""
                 str_content_template
             )[:-1]
 
-            views_path = self.code_generator_data.views_path
+            views_path = cg_data.views_path
             xml_file_path = os.path.join(
                 views_path,
                 f"{module.name}_templates.xml",
             )
-            self.code_generator_data.write_file_str(
+            cg_data.write_file_str(
                 xml_file_path, str_content_template, data_file=True
             )
 
@@ -2272,6 +2174,8 @@ _logger = logging.getLogger(__name__)"""
         :param model_model:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         if not model.o2m_reports:
             return
@@ -2362,9 +2266,9 @@ _logger = logging.getLogger(__name__)"""
             l_model_report_file += XML_ODOO_CLOSING_TAG
 
         xmlreport_file_path = os.path.join(
-            self.code_generator_data.reports_path, f"{model_model}.xml"
+            cg_data.reports_path, f"{model_model}.xml"
         )
-        self.code_generator_data.write_file_lst_content(
+        cg_data.write_file_lst_content(
             xmlreport_file_path, l_model_report_file, data_file=True
         )
 
@@ -2419,6 +2323,8 @@ _logger = logging.getLogger(__name__)"""
         :param model_model:
         :return:
         """
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         key_special_endline = str(uuid.uuid1())
 
@@ -2544,15 +2450,15 @@ _logger = logging.getLogger(__name__)"""
             )
 
         if model.transient:
-            pypath = self.code_generator_data.wizards_path
+            pypath = cg_data.wizards_path
         elif model.o2m_reports and self.env[model.model]._abstract:
-            pypath = self.code_generator_data.reports_path
+            pypath = cg_data.reports_path
         else:
-            pypath = self.code_generator_data.models_path
+            pypath = cg_data.models_path
 
         model_file_path = os.path.join(pypath, f"{model_model}.py")
 
-        self.code_generator_data.write_file_str(model_file_path, cw.render())
+        cg_data.write_file_str(model_file_path, cw.render())
 
         return model_file_path
 
@@ -2564,6 +2470,8 @@ _logger = logging.getLogger(__name__)"""
         :param l_model_csv_access:
         :return:
         """
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         l_model_csv_access.insert(
             0,
             "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink",
@@ -2606,9 +2514,9 @@ _logger = logging.getLogger(__name__)"""
 
             module_name = module.name.lower().strip()
             security_file_path = os.path.join(
-                self.code_generator_data.security_path, f"{module_name}.xml"
+                cg_data.security_path, f"{module_name}.xml"
             )
-            self.code_generator_data.write_file_lst_content(
+            cg_data.write_file_lst_content(
                 security_file_path,
                 XML_HEAD + l_module_security + XML_ODOO_CLOSING_TAG,
                 data_file=True,
@@ -2617,9 +2525,9 @@ _logger = logging.getLogger(__name__)"""
 
         if len(l_model_csv_access) > 1:
             model_access_file_path = os.path.join(
-                self.code_generator_data.security_path, "ir.model.access.csv"
+                cg_data.security_path, "ir.model.access.csv"
             )
-            self.code_generator_data.write_file_lst_content(
+            cg_data.write_file_lst_content(
                 model_access_file_path,
                 l_model_csv_access,
                 data_file=True,
@@ -2985,6 +2893,9 @@ _logger = logging.getLogger(__name__)"""
                 ):
                     dct_field_attribute["string"] = f2export.field_description
 
+            if f2export.ttype == "monetary":
+                dct_field_attribute["currency_field"] = f2export.currency_field
+
             if (
                 f2export.ttype == "char" or f2export.ttype == "reference"
             ) and f2export.size != 0:
@@ -3020,23 +2931,12 @@ _logger = logging.getLogger(__name__)"""
                         f" '{f2export.model}'"
                     )
 
-            if f2export.track_visibility:
-                if f2export.track_visibility in ("onchange", "always"):
-                    dct_field_attribute["track_visibility"] = (
-                        f2export.track_visibility
-                    )
-                    # TODO is it the good place for this?
-                    # lst_depend_model = [
-                    #     "mail.thread",
-                    #     "mail.activity.mixin",
-                    # ]
-                    # f2export.model_id.add_model_inherit(lst_depend_model)
-                else:
-                    _logger.warning(
-                        "Cannot support track_visibility value"
-                        f" {f2export.track_visibility}, only support"
-                        " 'onchange' and 'always'."
-                    )
+            tv = getattr(f2export, "tracking", 0)
+            if tv:
+                if tv == 1:
+                    tv = True
+                # TODO ignore when store=False
+                dct_field_attribute["tracking"] = tv
 
             # Get default value
             default_lambda = f2export.get_default_lambda()
@@ -3092,10 +2992,14 @@ _logger = logging.getLogger(__name__)"""
 
             compute = f2export.compute and f2export.depends
 
-            if code_generator_compute:
+            if code_generator_compute and not isinstance(
+                code_generator_compute, types.FunctionType
+            ):
                 dct_field_attribute["compute"] = code_generator_compute
             elif compute:
                 dct_field_attribute["compute"] = f"_compute_{f2export.name}"
+            elif f2export.compute:
+                dct_field_attribute["compute"] = f2export.compute
 
             if (
                 f2export.ttype == "one2many" or f2export.related or compute
@@ -3109,6 +3013,9 @@ _logger = logging.getLogger(__name__)"""
             # TODO support inverse
 
             # TODO support search
+
+            if f2export.precompute:
+                dct_field_attribute["precompute"] = True
 
             # TODO support store
             if f2export.store and code_generator_compute:
@@ -3456,11 +3363,17 @@ _logger = logging.getLogger(__name__)"""
 
     def _get_compute_fct(self, field_id):
         model_name = field_id.model
-        lst_field = [
-            a
-            for a in self.env[model_name]._field_computed.keys()
-            if a.name == field_id.name
+        # field.compute
+        # field.store
+        # field.related
+        # field.inverse
+        # field.compute_sudo
+        computed_fields = [
+            field
+            for name, field in self.env[model_name]._fields.items()
+            if field.compute
         ]
+        lst_field = [a for a in computed_fields if a.name == field_id.name]
         if lst_field:
             field_relation = lst_field[0]
             return field_relation.compute
@@ -3494,7 +3407,6 @@ _logger = logging.getLogger(__name__)"""
         if inherit_default != actual_default:
             dct_field_attr_diff["default"] = inherit_default
 
-    @api.model_create_multi
     def create(self, vals_list):
         """
         Create log of code generator writer
@@ -3507,12 +3419,11 @@ _logger = logging.getLogger(__name__)"""
         return super(CodeGeneratorWriter, self).create(new_list)
 
     def get_lst_file_generate(self, module, python_controller_writer):
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         l_model_csv_access = []
         l_model_rules = []
         dct_model_model_xmldata = {}
-
-        module.view_file_sync = {}
-        module.module_file_sync = {}
 
         if module.template_model_name or module.template_inherit_model_name:
             lst_model = f"{module.template_model_name};{module.template_inherit_model_name}".strip(
@@ -3526,15 +3437,15 @@ _logger = logging.getLogger(__name__)"""
                 model = model.strip()
                 if model:
                     last_extractor_view = ExtractorView(module, model)
-                    module.view_file_sync[model] = last_extractor_view
+                    cg_data.view_file_sync[model] = last_extractor_view
                     if last_extractor_view.code_generator_id:
                         last_extractor_view_with_cg = last_extractor_view
-                    module.module_file_sync[model] = ExtractorModule(
-                        module, model, module.view_file_sync[model]
+                    cg_data.module_file_sync[model] = ExtractorModule(
+                        module, model, cg_data.view_file_sync[model]
                     )
                     # TODO no need to keep memory
                     ExtractorController(
-                        module, model, module.module_file_sync[model]
+                        module, model, cg_data.module_file_sync[model]
                     )
             if last_extractor_view_with_cg:
                 # TODO this seems an hack to extract menu, need another method
@@ -3601,18 +3512,18 @@ _logger = logging.getLogger(__name__)"""
 
         self.set_extra_get_lst_file_generate(module)
 
-        self.code_generator_data.reorder_manifest_data_files()
+        cg_data.reorder_manifest_data_files()
 
         self._set_manifest_file(module)
 
         self.set_module_init_file_extra(module)
 
-        self.code_generator_data.generate_python_init_file(module)
+        cg_data.generate_python_init_file(module)
 
-        self.code_generator_data.auto_format()
+        cg_data.auto_format()
         if module.enable_pylint_check:
-            # self.code_generator_data.flake8_check()
-            self.code_generator_data.pylint_check()
+            # cg_data.flake8_check()
+            cg_data.pylint_check()
 
     def set_xml_data_file(self, module):
         pass
@@ -3696,7 +3607,7 @@ _logger = logging.getLogger(__name__)"""
         if morethanone:
             # TODO validate it's working
             path += "/modules"
-            CodeGeneratorData.os_make_dirs(path)
+            code_generator_data.CodeGeneratorData.os_make_dirs(path)
 
         # TODO is it necessary? os.chdir into sync_code to be back to normal
         # os.chdir(path=path)
@@ -3712,23 +3623,20 @@ _logger = logging.getLogger(__name__)"""
         )
         vals["rootdir"] = rootdir
 
+        lst_path_file = []
+        # TODO this will crash if generate multiple modules
         for module in modules:
-            # TODO refactor this to share variable in another class,
-            #  like that, self.code_generator_data will be associate to a class of generation of module
-            self.code_generator_data = CodeGeneratorData(module, path)
-            python_controller_writer = PythonControllerWriter(
-                module, self.code_generator_data
+            cg_data = code_generator_data.get_code_generator_data(
+                self.env, module, path
             )
+            python_controller_writer = PythonControllerWriter(module, cg_data)
             self.get_lst_file_generate(module, python_controller_writer)
 
             if module.enable_sync_code:
-                self.code_generator_data.sync_code(
-                    module.path_sync_code, module.name
-                )
+                cg_data.sync_code(module.path_sync_code, module.name)
+            lst_path_file.extend(cg_data.lst_path_file)
 
-        vals["list_path_file"] = ";".join(
-            self.code_generator_data.lst_path_file
-        )
+        vals["list_path_file"] = ";".join(list(set(lst_path_file)))
 
         return vals
 

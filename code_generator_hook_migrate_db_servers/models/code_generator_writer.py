@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import logging
 
 from odoo import api, fields, models
@@ -254,28 +257,24 @@ class CodeGeneratorWriter(models.Model):
             with cw.indent():
                 cw.emit('_logger.info("Setup configuration")')
                 cw.emit()
-                cw.emit("with api.Environment.manage():")
-                cw.emit()
+                cw.emit("# General configuration")
+                cw.emit("values = {")
                 with cw.indent():
-                    cw.emit("env = api.Environment(self.cr, SUPERUSER_ID, {})")
-                    cw.emit("# General configuration")
-                    cw.emit("values = {")
-                    with cw.indent():
-                        cw.emit("# 'use_quotation_validity_days': True,")
-                        cw.emit("# 'quotation_validity_days': 30,")
-                        cw.emit("# 'portal_confirmation_sign': True,")
-                        cw.emit("# 'portal_invoice_confirmation_sign': True,")
-                        cw.emit("# 'group_sale_delivery_address': True,")
-                        cw.emit("# 'group_sale_order_template': True,")
-                        cw.emit("# 'default_sale_order_template_id': True,")
-                    cw.emit("}")
-                    cw.emit("if not dry_run:")
-                    with cw.indent():
-                        cw.emit(
-                            "event_config ="
-                            ' env["res.config.settings"].sudo().create(values)'
-                        )
-                        cw.emit("event_config.execute()")
+                    cw.emit("# 'use_quotation_validity_days': True,")
+                    cw.emit("# 'quotation_validity_days': 30,")
+                    cw.emit("# 'portal_confirmation_sign': True,")
+                    cw.emit("# 'portal_invoice_confirmation_sign': True,")
+                    cw.emit("# 'group_sale_delivery_address': True,")
+                    cw.emit("# 'group_sale_order_template': True,")
+                    cw.emit("# 'default_sale_order_template_id': True,")
+                cw.emit("}")
+                cw.emit("if not dry_run:")
+                with cw.indent():
+                    cw.emit(
+                        "event_config ="
+                        ' env["res.config.settings"].sudo().create([values])'
+                    )
+                    cw.emit("event_config.execute()")
                 cw.emit()
             for table_id in table_ids:
                 var_lst_tbl = f"lst_tbl_{table_id.model_name}"
@@ -322,7 +321,7 @@ class CodeGeneratorWriter(models.Model):
                         cw.emit()
                         cw.emit(
                             "obj_res_partner_id ="
-                            " env[model_name].create(value)"
+                            " env[model_name].create([value])"
                         )
                         cw.emit()
                         cw.emit(

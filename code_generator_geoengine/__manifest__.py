@@ -12,6 +12,7 @@
     "license": "AGPL-3",
     "installable": True,
     "data": [
+        "security/ir.model.access.csv",
         "wizards/code_generator_generate_views_wizard.xml",
     ],
     "post_init_hook": "post_init_hook",

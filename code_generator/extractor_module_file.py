@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import ast
 import logging
-
-import astor
 
 _logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class ExtractorModuleFile:
         self.search_method()
 
     def extract_lambda(self, node):
-        result = astor.to_source(node).strip().replace("\n", "")
+        result = ast.unparse(node)
         if result[0] == "(" and result[-1] == ")":
             result = result[1:-1]
         return result
@@ -79,14 +80,10 @@ class ExtractorModuleFile:
     def _fill_search_field(self, ast_obj, var_name=""):
         ast_obj_type = type(ast_obj)
         result = None
-        if ast_obj_type is ast.Str:
-            result = ast_obj.s
-        elif ast_obj_type is ast.Lambda:
+        if ast_obj_type is ast.Lambda:
             result = self.extract_lambda(ast_obj)
-        elif ast_obj_type is ast.NameConstant:
+        elif ast_obj_type is ast.Constant:
             result = ast_obj.value
-        elif ast_obj_type is ast.Num:
-            result = ast_obj.n
         elif ast_obj_type is ast.UnaryOp:
             if type(ast_obj.op) is ast.USub:
                 # value is negative
@@ -109,13 +106,13 @@ class ExtractorModuleFile:
                     parent_node = parent_node.value
                 lst_call_lambda.insert(0, parent_node.id)
                 result = ".".join(lst_call_lambda)
-            else:
-                # default=uuid.uuid4().hex
-                _logger.warning(
-                    f"Cannot support keyword of variable {var_name} type"
-                    f" {ast_obj_type} in filename {self.py_filename}, because"
-                    " parent_node is type ast.Call."
-                )
+            # else:
+            #     # default=uuid.uuid4().hex
+            #     _logger.warning(
+            #         f"Cannot support keyword of variable {var_name} type"
+            #         f" {ast_obj_type} in filename {self.py_filename}, because"
+            #         " parent_node is type ast.Call."
+            #     )
         elif ast_obj_type is ast.List:
             result = [
                 self._fill_search_field(a, var_name) for a in ast_obj.elts
@@ -332,7 +329,7 @@ class ExtractorModuleFile:
     def _get_nb_line_multiple_string(
         self, item, lst_line, i_lineno, extra_size=2
     ):
-        str_size = len(item.s)
+        str_size = len(item.value)
         line_size = len(lst_line[i_lineno - 1].strip())
         if line_size != str_size + extra_size:
             # Try detect multiline string with pending technique like
@@ -357,10 +354,10 @@ class ExtractorModuleFile:
             lineno = getattr(item, "lineno")
             if lineno:
                 i_lineno = item.lineno
-                if type(item) is ast.Str:
-                    if "\n" in item.s:
+                if type(item) is ast.Constant:
+                    if "\n" in item.value:
                         # -1 to ignore last \n
-                        i_lineno = item.lineno - item.s.count("\n")
+                        i_lineno = item.lineno - item.value.count("\n")
                     elif lst_line[i_lineno - 1][-3:] == '"""':
                         i_lineno = self._get_nb_line_multiple_string(
                             item, lst_line, i_lineno, extra_size=6
@@ -404,12 +401,10 @@ class ExtractorModuleFile:
             elif type(lst_attr_item) in (
                 ast.Compare,
                 ast.Call,
-                ast.Str,
-                ast.Num,
                 ast.Attribute,
                 ast.JoinedStr,
                 ast.BinOp,
-                ast.NameConstant,
+                ast.Constant,
                 ast.Name,
                 ast.arguments,
                 ast.Load,
@@ -499,7 +494,7 @@ class ExtractorModuleFile:
             ],
             limit=1,
         ):
-            self.module.env["code.generator.model.code.import"].create(d)
+            self.module.env["code.generator.model.code.import"].create([d])
 
     def search_model_inherit(self):
         has_transient_model = False
@@ -574,10 +569,11 @@ class ExtractorModuleFile:
                                 constraint_id.definition = definition
                                 constraint_id.message = message
             elif type(node) is ast.FunctionDef:
+                d = {}
                 if use_astor:
                     # This technique is not working perfectly, it removes comments
                     codes = "".join(
-                        [astor.to_source(a) for a in node.body]
+                        [ast.unparse(a) for a in node.body]
                     ).strip()
                     if codes.endswith("'"):
                         codes += "\n"
@@ -638,4 +634,4 @@ class ExtractorModuleFile:
                 )
                 d["code"] = codes.strip()
 
-                self.module.env["code.generator.model.code"].create(d)
+                self.module.env["code.generator.model.code"].create([d])

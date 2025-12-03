@@ -28,7 +28,7 @@
         </field>
     </record>
 
-    <record id="ir_access_view_tree_inherited" model="ir.ui.view">
+    <record id="ir_access_view_list_inherited" model="ir.ui.view">
         <field name="model">ir.model.access</field>
         <field name="inherit_id" ref="base.ir_access_view_tree" />
         <field name="arch" type="xml">

@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import logging
 import os
 
 from code_writer import CodeWriter
 from odoo import api, fields, models, modules, tools
+from odoo.addons.code_generator import code_generator_data
 from odoo.models import MAGIC_COLUMNS
 
 _logger = logging.getLogger(__name__)
@@ -132,6 +136,8 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         lst_header = [
             "from collections import OrderedDict",
             "from operator import itemgetter",
@@ -144,7 +150,7 @@ class CodeGeneratorWriter(models.Model):
             "from odoo.osv.expression import OR",
         ]
 
-        file_path = f"{self.code_generator_data.controllers_path}/portal.py"
+        file_path = f"{cg_data.controllers_path}/portal.py"
 
         python_controller_writer.add_controller(
             file_path,
@@ -158,6 +164,8 @@ class CodeGeneratorWriter(models.Model):
     ):
         if not has_field_type_date:
             return
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         # TODO this feature need to be in framework, and not copied on each module who need it
 
@@ -222,7 +230,7 @@ class CodeGeneratorWriter(models.Model):
             "js",
             f"portal.{module.name}.js",
         )
-        self.code_generator_data.write_file_str(file_path, content)
+        cg_data.write_file_str(file_path, content)
 
     def _cb_set_portal_controller_file(self, module, cw):
         o2m_models = (
@@ -581,6 +589,8 @@ class CodeGeneratorWriter(models.Model):
         :return:
         """
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         lst_header = [
             "import logging",
             "import werkzeug",
@@ -589,7 +599,7 @@ class CodeGeneratorWriter(models.Model):
             "import base64",
         ]
 
-        file_path = f"{self.code_generator_data.controllers_path}/main.py"
+        file_path = f"{cg_data.controllers_path}/main.py"
 
         python_controller_writer.add_controller(
             file_path,
@@ -906,7 +916,7 @@ class CodeGeneratorWriter(models.Model):
 
                 cw.emit(
                     f"new_{_fmt_underscores(model_id.model)} ="
-                    f" request.env['{model_id.model}'].sudo().create(vals)"
+                    f" request.env['{model_id.model}'].sudo().create([vals])"
                 )
                 has_mail = bool(
                     model_id.inherit_model_ids.filtered(

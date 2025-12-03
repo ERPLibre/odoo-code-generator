@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import logging
 
 from odoo import _, api, fields, models
@@ -68,7 +71,7 @@ class CodeGeneratorDbColumn(models.Model):
         selection=SELECTION_TYPE,
     )
 
-    field_type = fields.Char(
+    field_type = fields.Selection(
         selection=SELECTION_TYPE, compute="_compute_field_type"
     )
 

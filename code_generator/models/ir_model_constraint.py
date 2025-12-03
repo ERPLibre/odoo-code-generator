@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import logging
 import re
 
@@ -7,13 +10,13 @@ from psycopg2._psycopg import ProgrammingError
 
 _logger = logging.getLogger(__name__)
 
-CONSCREATEUNABLE = _("Unable to create the constraint.")
-CONSDELETECREATEUNABLE = _(
+CONSCREATEUNABLE = "Unable to create the constraint."
+CONSDELETECREATEUNABLE = (
     "Since you modify the sql constraint definition we must delete it and"
     " create a new one, and we were unable to do it."
 )
-CONSMODIFYUNABLE = _("Unable to modify the constraint.")
-CONSDELETEUNABLE = _("Unable to delete the constraint.")
+CONSMODIFYUNABLE = "Unable to modify the constraint."
+CONSDELETEUNABLE = "Unable to delete the constraint."
 
 
 def sql_constraint(el_self, constraints):
@@ -121,7 +124,6 @@ class IrModelConstraint(models.Model):
         .id,
     )
 
-    @api.model_create_multi
     def create(self, vals_list):
         imcs = super(IrModelConstraint, self).create(vals_list)
 

@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 from odoo import _, api, fields, models
 
 
@@ -111,7 +114,7 @@ When blacklist, all selected fields will be ignored.""",
                             "name": module_id.display_name,
                         }
                         self.env["code.generator.module.dependency"].create(
-                            value_dependencies
+                            [value_dependencies]
                         )
 
             if is_nomenclator:
@@ -131,5 +134,5 @@ When blacklist, all selected fields will be ignored.""",
                             == "whitelist",
                         }
                         self.env["code.generator.ir.model.fields"].create(
-                            value
+                            [value]
                         )

@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import os
 
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models
+from odoo.addons.code_generator import code_generator_data
 
 BREAK_LINE_OFF = "\n"
 XML_VERSION_HEADER = '<?xml version="1.0" encoding="utf-8"?>' + BREAK_LINE_OFF
@@ -31,12 +35,11 @@ class CodeGeneratorWriter(models.Model):
                         "code": '''"""TODO what to run"""
     return''',
                         "name": function_name,
-                        "decorator": "@api.model",
                         "param": "self",
                         "m2o_module": module.id,
                         "m2o_model": model.id,
                     }
-                    self.env["code.generator.model.code"].create(value)
+                    self.env["code.generator.model.code"].create([value])
         super(CodeGeneratorWriter, self)._set_model_py_file(
             module, model, model_model
         )
@@ -141,7 +144,7 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit(f'"model_id": {var_model_id}.id,')
                 cw.emit(f'"state": "{state}",')
                 cw.emit(f'"code": "{code}",')
-            cw.emit('cron_id = env["ir.cron"].create(value)')
+            cw.emit('cron_id = env["ir.cron"].create([value])')
         cw.emit()
 
         with cw.block(
@@ -178,7 +181,7 @@ class CodeGeneratorWriter(models.Model):
                     cw.emit(f'"module": MODULE_NAME,')
                     cw.emit(f'"res_id": cron_id.id,')
                     cw.emit(f'"noupdate": True,')
-                cw.emit('env["ir.model.data"].create(value)')
+                cw.emit('env["ir.model.data"].create([value])')
         cw.emit()
         code_ids = self.env["code.generator.model.code"].search(
             [
@@ -196,11 +199,10 @@ class CodeGeneratorWriter(models.Model):
                 cw.emit('"code": \'\'\'"""Run all scheduled backups."""')
                 cw.emit_raw("return self.search([]).action_backup()''',\n")
                 cw.emit(f'"name": "{code_name}",')
-                cw.emit('"decorator": "@api.model",')
                 cw.emit('"param": "self",')
                 cw.emit('"m2o_module": code_generator_id.id,')
                 cw.emit(f'"m2o_model": {var_model_id}.id,')
-            cw.emit('env["code.generator.model.code"].create(value)')
+            cw.emit('env["code.generator.model.code"].create([value])')
         cw.emit()
 
     def set_xml_data_file(self, module):
@@ -210,6 +212,8 @@ class CodeGeneratorWriter(models.Model):
         )
         if not ir_crons:
             return
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         #
         # Cron
@@ -291,15 +295,11 @@ class CodeGeneratorWriter(models.Model):
         # TODO need to separate noupdate cron_id to no noupdate, different group
         odoo_data = {} if not model_data_id.noupdate else {"noupdate": "1"}
         module_file = E.odoo(odoo_data, *lst_record_xml)
-        data_file_path = os.path.join(
-            self.code_generator_data.data_path, "ir_cron.xml"
-        )
+        data_file_path = os.path.join(cg_data.data_path, "ir_cron.xml")
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_file, pretty_print=True
         )
-        self.code_generator_data.write_file_binary(
-            data_file_path, result, data_file=True
-        )
+        cg_data.write_file_binary(data_file_path, result, data_file=True)
 
     @staticmethod
     def _process_nextcall(ir_cron_id):

@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+code_generator_theme_website.access_code_generator_generate_views_wizard,access_code_generator_generate_views_wizard,code_generator_theme_website.model_code_generator_generate_views_wizard,base.group_user,1,1,1,1

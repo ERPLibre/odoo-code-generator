@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import base64
 import logging
 import os
@@ -201,10 +204,9 @@ class CodeGeneratorDbTable(models.Model):
         if nomenclator:
             table_id.nomenclator = True
 
-    @api.model_create_multi
     def create(self, vals_list):
         for value in vals_list:
-            result = super(CodeGeneratorDbTable, self).create(value)
+            result = super(CodeGeneratorDbTable, self).create([value])
             lst_fields = self.get_table_fields(
                 result.name, result.m2o_db, mark_temporary_field=True
             )
@@ -226,9 +228,8 @@ class CodeGeneratorDbTable(models.Model):
                     column_value["relation_column"] = dct_field.get(
                         "relation_column"
                     )
-                self.env["code.generator.db.column"].create(column_value)
+                self.env["code.generator.db.column"].create([column_value])
 
-    @api.model
     def _conform_model_created_data(self, model_created_fields):
         """
         Function to conform the data for a created model
@@ -256,11 +257,13 @@ class CodeGeneratorDbTable(models.Model):
         )
         if not module:
             module = self.env["code.generator.module"].create(
-                dict(
-                    shortdesc="Module %s" % db_id.database,
-                    name=final_module_name,
-                    application=False,
-                )
+                [
+                    dict(
+                        shortdesc="Module %s" % db_id.database,
+                        name=final_module_name,
+                        application=False,
+                    )
+                ]
             )
         module.migrate_from_db_server = True
         module.post_init_hook_show = True
@@ -307,11 +310,13 @@ class CodeGeneratorDbTable(models.Model):
                 )
                 if not module:
                     module = self.env["code.generator.module"].create(
-                        dict(
-                            shortdesc="Module %s" % module_name_caps,
-                            name=final_module_name,
-                            application=True,
-                        )
+                        [
+                            dict(
+                                shortdesc="Module %s" % module_name_caps,
+                                name=final_module_name,
+                                application=True,
+                            )
+                        ]
                     )
             else:
                 module = code_generator_id
@@ -1178,16 +1183,6 @@ class CodeGeneratorDbTable(models.Model):
 
         except psycopg2.OperationalError:
             raise ValidationError(TABLEDATAPROBLEM)
-
-    @staticmethod
-    def replace_in(text, regex="\d"):
-        """
-        Util function to replace some content in a text
-        :param text:
-        :param regex:
-        :return:
-        """
-        return re.sub(regex, "", text)
 
     def search_new_field_name(self, module_id, model_name, old_field_name):
         update_ids = self.env[

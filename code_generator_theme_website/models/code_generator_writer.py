@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import os
 import shutil
 import tempfile
@@ -8,6 +11,7 @@ from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models
+from odoo.addons.code_generator import code_generator_data
 from odoo.models import MAGIC_COLUMNS
 
 BREAK_LINE = ["\n"]
@@ -24,6 +28,8 @@ class CodeGeneratorWriter(models.Model):
         super(CodeGeneratorWriter, self).set_xml_data_file(module)
         if not module.theme_website:
             return
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         dct_associate_data = {}
         #
@@ -64,19 +70,19 @@ class CodeGeneratorWriter(models.Model):
 
         module_file = E.odoo({}, *lst_record_xml)
         data_file_path = os.path.join(
-            self.code_generator_data.data_path, f"{module.name}_data.xml"
+            cg_data.data_path, f"{module.name}_data.xml"
         )
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_file, pretty_print=True
         )
-        self.code_generator_data.write_file_binary(
-            data_file_path, result, data_file=True
-        )
+        cg_data.write_file_binary(data_file_path, result, data_file=True)
 
     def set_xml_views_file(self, module):
         super(CodeGeneratorWriter, self).set_xml_views_file(module)
         if not module.theme_website:
             return
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         #
         # template scss
@@ -148,19 +154,19 @@ class CodeGeneratorWriter(models.Model):
 
         module_file = E.odoo({}, *lst_template_xml)
         data_file_path = os.path.join(
-            self.code_generator_data.views_path, f"{module.name}_templates.xml"
+            cg_data.views_path, f"{module.name}_templates.xml"
         )
         result = XML_VERSION_HEADER.encode("utf-8") + ET.tostring(
             module_file, pretty_print=True
         )
-        self.code_generator_data.write_file_binary(
-            data_file_path, result, data_file=True
-        )
+        cg_data.write_file_binary(data_file_path, result, data_file=True)
 
     def set_module_python_file(self, module):
         super(CodeGeneratorWriter, self).set_module_python_file(module)
         if not module.theme_website:
             return
+
+        cg_data = code_generator_data.get_code_generator_data(self.env)
 
         cw = CodeWriter()
         for line in MODEL_HEAD:
@@ -181,39 +187,33 @@ class CodeGeneratorWriter(models.Model):
                     "self.disable_view('website_theme_install.customize_modal')"
                 )
 
-        file_path = os.path.join(
-            self.code_generator_data.models_path, f"{module.name}.py"
-        )
+        file_path = os.path.join(cg_data.models_path, f"{module.name}.py")
 
-        self.code_generator_data.write_file_str(file_path, cw.render())
+        cg_data.write_file_str(file_path, cw.render())
 
     def set_module_css_file(self, module):
         super(CodeGeneratorWriter, self).set_module_css_file(module)
         if not module.theme_website:
             return
 
+        cg_data = code_generator_data.get_code_generator_data(self.env)
+
         # _variables.scss files
         cw = CodeWriter(default_width=80)
         # cw.emit(f"$primary: {module.theme_website_primary_color} !default;")
         # cw.emit(f"$secondary: {module.theme_website_secondary_color} !default;")
         # cw.emit(f"$body-color: {module.theme_website_body_color} !default;")
-        file_path = os.path.join(
-            self.code_generator_data.css_path, "_variables.scss"
-        )
-        self.code_generator_data.write_file_str(file_path, cw.render())
+        file_path = os.path.join(cg_data.css_path, "_variables.scss")
+        cg_data.write_file_str(file_path, cw.render())
 
         # custom.scss files
         cw = CodeWriter()
-        file_path = os.path.join(
-            self.code_generator_data.css_path, "custom.scss"
-        )
-        self.code_generator_data.write_file_str(file_path, cw.render())
+        file_path = os.path.join(cg_data.css_path, "custom.scss")
+        cg_data.write_file_str(file_path, cw.render())
 
         # primary_variables.scss files
         cw = CodeWriter()
-        file_path = os.path.join(
-            self.code_generator_data.css_path, "primary_variables.scss"
-        )
+        file_path = os.path.join(cg_data.css_path, "primary_variables.scss")
         cw.emit("$o-theme-layout: 'full';")
         cw.emit("//$o-theme-navbar-height: 300px;")
         cw.emit()
@@ -329,4 +329,4 @@ class CodeGeneratorWriter(models.Model):
         cw.emit("$o-theme-headings-font-number: 1 !default;")
         cw.emit("$o-theme-buttons-font-number: 1 !default;")
         cw.emit("$o-theme-navbar-font-number: 1 !default;")
-        self.code_generator_data.write_file_str(file_path, cw.render())
+        cg_data.write_file_str(file_path, cw.render())

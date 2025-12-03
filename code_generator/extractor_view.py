@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import glob
 import logging
 import os
@@ -6,6 +9,7 @@ from collections import defaultdict
 from xml.dom import Node, minidom
 
 import unidecode
+from xlrd.formula import listsep
 
 _logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ class ExtractorView:
                 "shortdesc": "None",
             }
             self.code_generator_id = self.env["code.generator.module"].create(
-                value
+                [value]
             )
             self._parse_view_ids()
 
@@ -167,16 +171,16 @@ class ExtractorView:
                                     f" '{menu_id.action.res_model}'"
                                 )
                         ir_actions_windows_id = ir_actions_windows[0]
-                        dct_act_value["view_type"] = (
-                            ir_actions_windows_id.view_type
-                        )
+                        # dct_act_value["view_type"] = (
+                        #     ir_actions_windows_id.view_type
+                        # )
                         dct_act_value["view_mode"] = (
                             ir_actions_windows_id.view_mode
                         )
                         dct_act_value["target"] = ir_actions_windows_id.target
                 # TODO why create act_window and not extract value
                 menu_action = self.env["code.generator.act_window"].create(
-                    dct_act_value
+                    [dct_act_value]
                 )
             # Create menu
             menu_data_id = self.env["ir.model.data"].search(
@@ -208,7 +212,7 @@ class ExtractorView:
             else:
                 dct_menu_value["ignore_act_window"] = True
 
-            self.env["code.generator.menu"].create(dct_menu_value)
+            self.env["code.generator.menu"].create([dct_menu_value])
             # If need to associated
             # menu_id.m2o_module = self._module.id
 
@@ -293,30 +297,30 @@ class ExtractorView:
                         }
                     sequence_form += 1
 
-            # Search tree
-            lst_tree_xml = mydoc.getElementsByTagName("tree")
-            if lst_tree_xml:
-                if len(lst_tree_xml) != 1:
+            # Search list
+            lst_list_xml = mydoc.getElementsByTagName("list")
+            if lst_list_xml:
+                if len(lst_list_xml) != 1:
                     _logger.warning(
-                        "Cannot support multiple tree in view name"
+                        "Cannot support multiple list in view name"
                         f" {view_id.name}"
                     )
                 else:
-                    tree_view = lst_tree_xml[0]
-                    dct_view_attr.update(dict(tree_view.attributes.items()))
-                sequence_tree = 10
-                lst_tree_field_xml = mydoc.getElementsByTagName("field")
-                for field_xml in lst_tree_field_xml:
+                    list_view = lst_list_xml[0]
+                    dct_view_attr.update(dict(list_view.attributes.items()))
+                sequence_list = 10
+                lst_list_field_xml = mydoc.getElementsByTagName("field")
+                for field_xml in lst_list_field_xml:
                     field_name = dict(field_xml.attributes.items()).get("name")
                     if field_name in self.dct_model[view_id.model]:
                         self.dct_model[view_id.model][field_name][
-                            "code_generator_tree_view_sequence"
-                        ] = sequence_tree
+                            "code_generator_list_view_sequence"
+                        ] = sequence_list
                     else:
                         self.dct_model[view_id.model][field_name] = {
-                            "code_generator_tree_view_sequence": sequence_tree
+                            "code_generator_list_view_sequence": sequence_list
                         }
-                    sequence_tree += 1
+                    sequence_list += 1
 
             # Search timeline
             lst_timeline_xml = mydoc.getElementsByTagName("timeline")
@@ -613,7 +617,7 @@ class ExtractorView:
                                 }
                                 view_item_id = self.env[
                                     "code.generator.view.item"
-                                ].create(dct_attributes)
+                                ].create([dct_attributes])
                                 lst_view_item_id.append(view_item_id.id)
                                 lst_ignore_node.append(div_xml)
                                 no_sequence += 1
@@ -809,7 +813,9 @@ class ExtractorView:
                     f"Missing model data id view_name {view_id.name}"
                 )
 
-            view_code_generator = self.env["code.generator.view"].create(value)
+            view_code_generator = self.env["code.generator.view"].create(
+                [value]
+            )
 
     def _extract_child_xml(
         self,
@@ -1054,7 +1060,7 @@ class ExtractorView:
                         f" : {button_type_value}"
                     )
         view_item_id = self.env["code.generator.view.item"].create(
-            dct_attributes
+            [dct_attributes]
         )
         lst_view_item_id.append(view_item_id.id)
         sequence += 1

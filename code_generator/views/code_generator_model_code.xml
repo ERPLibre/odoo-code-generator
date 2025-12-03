@@ -179,8 +179,8 @@
         </field>
     </record>
 
-    <record id="code_generator_model_code_view_tree" model="ir.ui.view">
-        <field name="name">code_generator_model_code_tree</field>
+    <record id="code_generator_model_code_view_list" model="ir.ui.view">
+        <field name="name">code_generator_model_code_list</field>
         <field name="model">code.generator.model.code</field>
         <field name="arch" type="xml">
             <list>

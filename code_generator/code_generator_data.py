@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# © 2021-2025 TechnoLibre (http://www.technolibre.ca)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import asyncio
 import copy
 import logging
@@ -46,6 +49,9 @@ class CodeGeneratorData:
         # Copy not_supported_files first and permit code to overwrite it
         self.copy_not_supported_files(module)
 
+        self._view_file_sync = {}
+        self._module_file_sync = {}
+
     def copy_not_supported_files(self, module):
         # TODO this is an hack to get code_generator module to search not_supported_files
         # TODO refactor this and move not_supported_files in models, this is wrong conception
@@ -93,6 +99,14 @@ class CodeGeneratorData:
     @property
     def module_path(self):
         return self._module_path
+
+    @property
+    def view_file_sync(self):
+        return self._view_file_sync
+
+    @property
+    def module_file_sync(self):
+        return self._module_file_sync
 
     @property
     def data_path(self):
@@ -491,19 +505,21 @@ class CodeGeneratorData:
         flake8_bin = os.path.join(workspace_path, ".venv", "bin", "flake8")
         config_path = os.path.join(workspace_path, ".flake8")
         cpu_count = os.cpu_count()
-        try:
-            out = subprocess.check_output(
-                [
-                    flake8_bin,
-                    "-j",
-                    str(cpu_count),
-                    f"--config={config_path}",
-                    self.module_path,
-                ]
-            )
-            result = out
-        except subprocess.CalledProcessError as e:
-            result = e.output.decode()
+        cmd = [
+            flake8_bin,
+            "-j",
+            str(cpu_count),
+            f"--config={config_path}",
+            self.module_path,
+        ]
+
+        out = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        result = (out.stdout or "") + (out.stderr or "")
 
         if result:
             _logger.warning(result)
@@ -513,42 +529,44 @@ class CodeGeneratorData:
             os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
         )
         cpu_count = os.cpu_count()
-        try:
-            out = subprocess.check_output(
-                [
-                    f"{workspace_path}/.venv/bin/pylint",
-                    "-j",
-                    str(cpu_count),
-                    "--load-plugins=pylint_odoo",
-                    "-e",
-                    "odoolint",
-                    self.module_path,
-                ]
-            )
-            result = out
-        except subprocess.CalledProcessError as e:
-            result = e.output.decode()
+        cmd = [
+            f"{workspace_path}/.venv/bin/pylint",
+            "-j",
+            str(cpu_count),
+            "--load-plugins=pylint_odoo",
+            "-e",
+            "odoolint",
+            self.module_path,
+        ]
+
+        out = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        result = (out.stdout or "") + (out.stderr or "")
 
         if result:
             _logger.warning(result)
 
     def auto_format(self):
         workspace_path = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..")
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
         )
 
         use_only_erplibre_format = True
 
         if use_only_erplibre_format:
-            cmd = f"cd {workspace_path};cp .editorconfig {self.module_path}/"
-            self.subprocess_cmd(cmd)
+            # cmd = f"cd {workspace_path};cp .editorconfig {self.module_path}/"
+            # self.subprocess_cmd(cmd)
             cmd = (
                 f"cd {workspace_path};./script/maintenance/format.sh"
                 f" {self.module_path}"
             )
             self.subprocess_cmd(cmd)
-            cmd = f"cd {workspace_path};rm {self.module_path}/.editorconfig "
-            self.subprocess_cmd(cmd)
+            # cmd = f"cd {workspace_path};rm {self.module_path}/.editorconfig "
+            # self.subprocess_cmd(cmd)
 
             _logger.info("End of auto_format")
             return
@@ -674,7 +692,7 @@ class CodeGeneratorData:
         # Optimize import python
         if use_clean_import_isort:
             cmd = (
-                f"cd {workspace_path};./.venv/bin/isort --profile black -l 79"
+                f"cd {workspace_path};./.venv.erplibre/bin/isort --profile black -l 79"
                 f" {self.module_path}"
             )
             result = self.subprocess_cmd(cmd)
@@ -688,7 +706,7 @@ class CodeGeneratorData:
         # TODO check diff before and after format to auto improvement of generation
         if use_format_black:
             cmd = (
-                f"cd {workspace_path};./.venv/bin/black -l"
+                f"cd {workspace_path};./.venv.erplibre/bin/black -l"
                 f" {max_col} --preview -t py37"
                 f" {self.module_path}"
             )
@@ -712,3 +730,9 @@ class CodeGeneratorData:
                 _logger.warning(result)
 
         _logger.info("End of auto_format")
+
+
+def get_code_generator_data(env, module=None, path=None) -> CodeGeneratorData:
+    if not hasattr(env.cr, "_code_generator_data"):
+        env.cr._code_generator_data = CodeGeneratorData(module, path)
+    return env.cr._code_generator_data

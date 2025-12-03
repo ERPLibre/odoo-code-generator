@@ -69,8 +69,8 @@
         </field>
     </record>
 
-    <record id="ir_model_server_constrain_view_tree" model="ir.ui.view">
-        <field name="name">ir_model_server_constrain_tree</field>
+    <record id="ir_model_server_constrain_view_list" model="ir.ui.view">
+        <field name="name">ir_model_server_constrain_list</field>
         <field name="model">ir.model.server_constrain</field>
         <field name="arch" type="xml">
             <list>
