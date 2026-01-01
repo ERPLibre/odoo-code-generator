@@ -78,16 +78,17 @@ class ExtractorModuleFile:
         return result
 
     def _fill_search_field(self, ast_obj, var_name=""):
+        # TODO code is duplicated from ERPLibre search_class_model.py
         ast_obj_type = type(ast_obj)
         result = None
-        if ast_obj_type is ast.Lambda:
-            result = self.extract_lambda(ast_obj)
-        elif ast_obj_type is ast.Constant:
+        if ast_obj_type is ast.Constant:
             result = ast_obj.value
+        elif ast_obj_type is ast.Lambda:
+            result = self.extract_lambda(ast_obj)
         elif ast_obj_type is ast.UnaryOp:
             if type(ast_obj.op) is ast.USub:
                 # value is negative
-                result = ast_obj.operand.n * -1
+                result = ast_obj.operand.value * -1
             else:
                 _logger.warning(
                     f"Cannot support keyword of variable {var_name} type"
@@ -100,7 +101,7 @@ class ExtractorModuleFile:
             # Support -> fields.Date.context_today
             parent_node = ast_obj
             lst_call_lambda = []
-            if hasattr(parent_node, "id"):
+            if hasattr(parent_node, "id") or hasattr(parent_node, "attr"):
                 while hasattr(parent_node, "value"):
                     lst_call_lambda.insert(0, parent_node.attr)
                     parent_node = parent_node.value
