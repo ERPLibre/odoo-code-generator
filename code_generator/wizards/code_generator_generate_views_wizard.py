@@ -445,13 +445,14 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
                         )
                     )
                 )
-                self._generate_search_views_models(
+                status = self._generate_search_views_models(
                     model_id,
                     model_created_fields_search,
                     model_id.m2o_module,
                     dct_value_to_create,
                 )
-                lst_view_generated.append("search")
+                if status:
+                    lst_view_generated.append("search")
 
             if model_id in o2m_models_view_pivot:
                 is_whitelist = any(
@@ -1220,6 +1221,9 @@ class CodeGeneratorGenerateViewsWizard(models.TransientModel):
         self, model_created, model_created_fields, module, dct_value_to_create
     ):
         model_name = model_created.model
+        # Ignore for config.res
+        if model_name in ["res.config.settings"]:
+            return
         model_name_str = model_name.replace(".", "_")
         model_name_display_str = model_name_str.replace("_", " ").capitalize()
 
