@@ -356,7 +356,7 @@ class ExtractorModuleFile:
             if lineno:
                 i_lineno = item.lineno
                 if type(item) is ast.Constant:
-                    if "\n" in item.value:
+                    if type(item.value) is str and "\n" in item.value:
                         # -1 to ignore last \n
                         i_lineno = item.lineno - item.value.count("\n")
                     elif lst_line[i_lineno - 1][-3:] == '"""':
