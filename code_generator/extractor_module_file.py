@@ -390,6 +390,8 @@ class ExtractorModuleFile:
         for attr in lst_attr:
             if not hasattr(item, attr):
                 continue
+            if type(item) == ast.Constant:
+                continue
             lst_attr_item = getattr(item, attr)
             if not lst_attr_item:
                 continue
