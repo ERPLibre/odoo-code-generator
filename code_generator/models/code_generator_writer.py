@@ -3431,9 +3431,10 @@ _logger = logging.getLogger(__name__)"""
             ).split(
                 ";"
             )
+            lst_unique_model = list(set(lst_model))
             last_extractor_view = None
             last_extractor_view_with_cg = None
-            for model in lst_model:
+            for model in lst_unique_model:
                 model = model.strip()
                 if model:
                     last_extractor_view = ExtractorView(module, model)
