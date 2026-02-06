@@ -562,7 +562,7 @@ class CodeGeneratorModule(models.Model):
                         value_field_id = {
                             "name": field_name,
                         }
-                        if enable_tracking:
+                        if enable_tracking or field_info.get("tracking"):
                             value_field_id["tracking"] = True  # or 10
                         for key in field_info.keys():
                             self._update_dict(
