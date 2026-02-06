@@ -434,6 +434,7 @@ class CodeGeneratorModule(models.Model):
         lst_depend_model=None,
         enable_activity=False,
         enable_tracking=False,
+        auto_create_model_when_missing=False,
     ):
         # When this is called, all field is in whitelist
         if dct_field:
@@ -625,6 +626,49 @@ class CodeGeneratorModule(models.Model):
                             )
                         )
 
+            # Create no existing model if missing and force it
+            if auto_create_model_when_missing:
+                lst_model_to_create = [
+                    a[2].get("relation")
+                    for a in value.get("field_id")
+                    if a[2].get("ttype") == "many2one"
+                ]
+
+                model_ids = self.env["ir.model"].search(
+                    [("model", "in", lst_model_to_create)]
+                )
+
+                lst_missing_model = set(lst_model_to_create).difference(
+                    [a.model for a in model_ids]
+                )
+
+                lst_value_missing = []
+                for model_name_missing in lst_missing_model:
+                    lst_field_id_missing = [
+                        (
+                            0,
+                            0,
+                            {
+                                "name": "name",
+                                "ttype": "char",
+                                "is_show_whitelist_model_inherit": True,
+                            },
+                        )
+                    ]
+                    value_missing = {
+                        "name": model_name_missing.replace(".", "_"),
+                        "model": model_name_missing,
+                        "m2o_module": self.id,
+                        "field_id": lst_field_id_missing,
+                        "rec_name": "name",
+                    }
+                    lst_value_missing.append(value_missing)
+
+                model_missing_ids = self.env["ir.model"].create(
+                    lst_value_missing
+                )
+
+            # Create model
             model_id = self.env["ir.model"].create([value])
 
         # Model inherit
