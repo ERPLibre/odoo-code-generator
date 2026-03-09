@@ -3115,7 +3115,7 @@ pass''',
         # Special case, cannot support search view type in action_view
         try:
             lst_second_view_generated.remove("search")
-        except:
+        except ValueError:
             pass
 
         view_mode = ",".join(

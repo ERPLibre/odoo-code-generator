@@ -2,11 +2,14 @@
 # © 2021-2025 TechnoLibre (http://www.technolibre.ca)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import io
+import logging
 import shutil
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from odoo import http
 from odoo.http import content_disposition, request
+
+_logger = logging.getLogger(__name__)
 
 
 def _get_l_map(fn, collection):
@@ -95,6 +98,16 @@ class CodeGeneratorController(http.Controller):
 
         zipy.close()
 
-        shutil.rmtree(rootdir, ignore_errors=True)
+        if rootdir:
+            _logger.info(
+                f"Cleaning up temporary directory '{rootdir}'"
+            )
+            try:
+                shutil.rmtree(rootdir)
+            except OSError as e:
+                _logger.warning(
+                    f"Failed to clean up temporary directory"
+                    f" '{rootdir}': {e}"
+                )
 
         return response

@@ -437,17 +437,22 @@ class CodeGeneratorData:
 
     def sync_code(self, directory, name):
         try:
-            # if not os.path.isdir(path_sync_code):
-            #     osmakedirs(path_sync_code)
             path_sync_code = os.path.join(directory, name)
             if os.path.isdir(path_sync_code):
+                _logger.info(
+                    f"Removing existing directory '{path_sync_code}'"
+                    " before sync"
+                )
                 shutil.rmtree(path_sync_code)
             _logger.info(
-                f"Sync code from '{self._module_path}' to '{path_sync_code}'"
+                f"Sync code from '{self._module_path}' to"
+                f" '{path_sync_code}'"
             )
             shutil.copytree(self._module_path, path_sync_code)
-        except Exception as e:
-            _logger.error(e)
+        except OSError as e:
+            _logger.error(
+                f"Failed to sync code to '{directory}/{name}': {e}"
+            )
 
     async def execute_async_subprocess(self, cmd) -> Tuple[str, int]:
         process = await asyncio.create_subprocess_shell(

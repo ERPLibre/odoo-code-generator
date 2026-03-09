@@ -37,7 +37,7 @@ class PythonControllerWriter:
                 index_pos = lst_header.index("import odoo.http as http")
                 lst_header.pop(index_pos)
                 lst_header.append("from odoo import http")
-            except:
+            except ValueError:
                 pass
 
             set_header = set(lst_header)
