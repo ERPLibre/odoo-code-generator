@@ -58,6 +58,47 @@ class TestCodeGeneratorWriter(TransactionCase):
         self.assertEqual(result, "Res Partner")
 
 
+class TestModelAttributes(TransactionCase):
+    """Tests for new model attributes (_inherits, _parent_store)."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.module = cls.env["code.generator.module"].create([{
+            "name": "test_model_attrs",
+            "shortdesc": "Test Model Attributes",
+        }])
+
+    def test_inherits_field(self):
+        model_id = self.module.add_update_model(
+            "x_test.inherits.model",
+            dct_field={
+                "partner_id": {
+                    "ttype": "many2one",
+                    "relation": "res.partner",
+                    "required": True,
+                },
+            },
+        )
+        model_id.inherits_model = "res.partner:partner_id"
+        self.assertEqual(
+            model_id.inherits_model, "res.partner:partner_id"
+        )
+
+    def test_parent_store_field(self):
+        model_id = self.module.add_update_model(
+            "x_test.parent.store",
+            dct_field={
+                "parent_id": {
+                    "ttype": "many2one",
+                    "relation": "x_test.parent.store",
+                },
+            },
+        )
+        model_id.parent_store = True
+        self.assertTrue(model_id.parent_store)
+
+
 class TestAddControllerWizard(TransactionCase):
     """Tests for the add controller wizard."""
 

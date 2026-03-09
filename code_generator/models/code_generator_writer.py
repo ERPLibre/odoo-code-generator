@@ -707,6 +707,36 @@ class CodeGeneratorWriter(models.Model):
                     lst_data, ("[", "]"), before="'data': ", after=","
                 )
 
+            if module.assets:
+                try:
+                    import json
+
+                    dct_assets = json.loads(module.assets)
+                    if dct_assets:
+                        with cw.block(
+                            before="'assets':",
+                            delim=("{", "}"),
+                            after=",",
+                        ):
+                            for bundle_name, lst_files in (
+                                dct_assets.items()
+                            ):
+                                lst_quoted = [
+                                    f"'{f}'" for f in lst_files
+                                ]
+                                cw.emit_list(
+                                    lst_quoted,
+                                    ("[", "]"),
+                                    before=f"'{bundle_name}': ",
+                                    after=",",
+                                )
+                except (json.JSONDecodeError, TypeError):
+                    _logger.warning(
+                        "Invalid JSON in assets field for"
+                        " module '%s'",
+                        module.name,
+                    )
+
             cw.emit(f"'installable': True,")
 
             self.set_manifest_file_extra(cw, module)
@@ -2414,8 +2444,34 @@ _logger = logging.getLogger(__name__)"""
                 new_order = model.order.replace("'", "\\'")
                 cw.emit(f"_order = '{new_order}'")
 
-            # TODO _order, _local_fields, _period_number, _inherits, _log_access, _auto, _parent_store
-            # TODO _parent_name
+            if model.inherits_model:
+                dct_inherits = {}
+                for entry in model.inherits_model.split(";"):
+                    entry = entry.strip()
+                    if ":" in entry:
+                        parent_model, field_name = entry.split(":", 1)
+                        dct_inherits[parent_model.strip()] = (
+                            field_name.strip()
+                        )
+                if len(dct_inherits) == 1:
+                    k, v = next(iter(dct_inherits.items()))
+                    cw.emit(f"_inherits = {{'{k}': '{v}'}}")
+                elif dct_inherits:
+                    parts = ", ".join(
+                        f"'{k}': '{v}'"
+                        for k, v in dct_inherits.items()
+                    )
+                    cw.emit(f"_inherits = {{{parts}}}")
+
+            if model.parent_store:
+                cw.emit("_parent_store = True")
+
+            if model.parent_name_field:
+                cw.emit(
+                    f"_parent_name = '{model.parent_name_field}'"
+                )
+
+            # TODO _local_fields, _period_number, _log_access, _auto
 
             self._get_model_constrains(cw, model, module)
 
@@ -2801,6 +2857,32 @@ _logger = logging.getLogger(__name__)"""
                 str_selection = f2export.get_selection()
                 if str_selection:
                     dct_field_attribute["selection"] = str_selection
+
+            if f2export.ttype == "properties":
+                if f2export.related:
+                    pass
+                else:
+                    definition_record = extra_info.get(
+                        "definition_record"
+                    ) if extra_info else None
+                    definition_record_field = extra_info.get(
+                        "definition_record_field"
+                    ) if extra_info else None
+                    if definition_record:
+                        dct_field_attribute[
+                            "definition_record"
+                        ] = definition_record
+                    if definition_record_field:
+                        dct_field_attribute[
+                            "definition_record_field"
+                        ] = definition_record_field
+
+            if f2export.ttype == "many2one_reference":
+                model_field = extra_info.get(
+                    "model_field"
+                ) if extra_info else None
+                if model_field:
+                    dct_field_attribute["model_field"] = model_field
 
             if f2export.ttype in ["many2one", "one2many", "many2many"]:
                 if f2export.relation:

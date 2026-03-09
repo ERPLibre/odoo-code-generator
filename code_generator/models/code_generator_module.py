@@ -254,6 +254,14 @@ class CodeGeneratorModule(models.Model):
         ),
     )
 
+    assets = fields.Text(
+        help=(
+            "Asset bundles for __manifest__.py. JSON format, e.g.:"
+            " {\"web.assets_backend\":"
+            " [\"module/static/src/js/*.js\"]}."
+        ),
+    )
+
     url = fields.Char(readonly=False)
 
     website = fields.Char(readonly=False)
@@ -676,6 +684,33 @@ class CodeGeneratorModule(models.Model):
             model_id.add_model_inherit(lst_depend_model)
 
         return model_id
+
+    def add_onchange_method(
+        self, model_id, field_names, method_name=None, code=""
+    ):
+        """Add an @api.onchange method to a model.
+
+        :param model_id: ir.model record
+        :param field_names: str or list of field names
+        :param method_name: optional method name (auto-generated if None)
+        :param code: method body code
+        """
+        if isinstance(field_names, str):
+            field_names = [field_names]
+        if not method_name:
+            method_name = (
+                "_onchange_" + "_".join(field_names)
+            )
+        fields_str = ", ".join(f'"{f}"' for f in field_names)
+        decorator = f"@api.onchange({fields_str})"
+        self.env["code.generator.model.code"].create([{
+            "name": method_name,
+            "code": code or "pass",
+            "decorator": decorator,
+            "param": "self",
+            "m2o_module": self.id,
+            "m2o_model": model_id.id,
+        }])
 
     def add_method_model(self, model_id, compute_company_currency_id=False):
         for rec in self:

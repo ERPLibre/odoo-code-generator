@@ -200,6 +200,30 @@ class IrModel(models.Model):
         ),
     )
 
+    inherits_model = fields.Char(
+        help=(
+            "Delegation inheritance (_inherits). Format:"
+            " model.name:field_name (e.g."
+            " 'res.partner:partner_id'). Use ; for multiple."
+        ),
+    )
+
+    parent_store = fields.Boolean(
+        string="Parent Store",
+        help=(
+            "Enable materialized path (nested set) for hierarchical"
+            " data. Requires a parent_id many2one field."
+        ),
+    )
+
+    parent_name_field = fields.Char(
+        string="Parent Name",
+        help=(
+            "Name of the many2one field used as parent"
+            " (default: 'parent_id')."
+        ),
+    )
+
     rec_name = fields.Char(
         default="name",
         help="Will be the field name to use when show the generic name.",
