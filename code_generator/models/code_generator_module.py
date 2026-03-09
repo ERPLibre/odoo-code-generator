@@ -639,7 +639,8 @@ class CodeGeneratorModule(models.Model):
                 lst_model_to_create = [
                     a[2].get("relation")
                     for a in value.get("field_id")
-                    if a[2].get("ttype") == "many2one"
+                    if a[2].get("ttype")
+                    in ["many2one", "many2many", "one2many"]
                 ]
 
                 model_ids = self.env["ir.model"].search(
