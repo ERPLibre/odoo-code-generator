@@ -17,6 +17,10 @@ The Code Generator replaces manual module scaffolding by capturing module struct
 - Export module data (nomenclator mode) with field whitelist/blacklist filtering
 - Extract structure from existing modules and views
 - Download generated modules as ZIP archives
+- Support delegation inheritance (`_inherits`) and materialized paths (`_parent_store`)
+- Support Odoo 18 field types: Properties, PropertiesDefinition, Many2one_reference
+- Support asset bundles in `__manifest__.py`
+- Helper for `@api.onchange` method generation
 
 ## Architecture
 
@@ -28,6 +32,7 @@ code_generator/
 ├── views/               # 36 XML view definitions
 ├── security/            # Access control (groups + CSV rules)
 ├── static/              # Icons and HTML description
+├── tests/               # Unit tests
 ├── i18n/                # Spanish translations
 ├── hooks.py             # Post-install hook (dev mode setup)
 ├── code_generator_data.py        # File/directory generation utilities
@@ -45,7 +50,7 @@ code_generator/
 
 | Model | Purpose |
 |-------|---------|
-| `code.generator.module` | Root aggregate — defines a module with its name, author, dependencies, and references to all sub-components |
+| `code.generator.module` | Root aggregate — defines a module with its name, author, dependencies, assets, and references to all sub-components |
 | `code.generator.module.dependency` | Module dependency (extends `ir.module.module.dependency`) |
 | `code.generator.module.template.dependency` | Template-specific dependency |
 | `code.generator.module.external.dependency` | External Python/binary dependency (e.g. `lxml`, `wkhtmltopdf`) |
@@ -54,7 +59,7 @@ code_generator/
 
 | Model | Purpose |
 |-------|---------|
-| `ir.model` (extended) | Adds code generation metadata — module link, menu hints, nomenclator flag, diagram config, activity support |
+| `ir.model` (extended) | Adds code generation metadata — module link, menu hints, nomenclator flag, diagram config, activity support, `_inherits`, `_parent_store` |
 | `ir.model.fields` (extended) | Adds per-view-type sequence, whitelist/blacklist flags, force_widget (100+ options), compute code, default_lambda |
 | `code.generator.ir.model.fields` | Extended field metadata — comments, selection options, nomenclature filtering |
 | `code.generator.ir.model.dependency` | Model inheritance tracking |
@@ -64,7 +69,7 @@ code_generator/
 
 | Model | Purpose |
 |-------|---------|
-| `code.generator.model.code` | Python method snippet — name, code, decorator, parameters, return type |
+| `code.generator.model.code` | Python method snippet — name, code, decorator (supports `@api.onchange`, `@api.depends`, `@api.constrains`, etc.), parameters, return type |
 | `code.generator.model.code.import` | Header import statement for generated Python files |
 | `ir.model.constraint` (extended) | SQL constraint with create/drop management |
 | `ir.model.server_constrain` | Server-side validation (constrains decorator + code) |
@@ -98,7 +103,7 @@ code_generator/
 |--------|---------|
 | **Add Model** (`code.generator.add.model.wizard`) | Add existing models to a code generator module with field whitelist/blacklist and inheritance options |
 | **Generate Views** (`code.generator.generate.views.wizard`) | Generate views, menus, access rules, and actions for selected models — supports per-view-type model selection and clear/rebuild |
-| **Add Controller** (`code.generator.add.controller.wizard`) | Add controller to module (stub) |
+| **Add Controller** (`code.generator.add.controller.wizard`) | Link models for controller generation, auto-add module dependencies |
 | **Settings** (`res.config.settings`) | Configure data export mode (nomenclator vs non-nomenclator) |
 
 ## Model relationships
@@ -128,23 +133,56 @@ code.generator.module
 
 ### 1. Define module metadata
 
-Create a `code.generator.module` record with name, author, category, and dependencies.
+Create a `code.generator.module` record with name, author, category, dependencies, and optionally asset bundles.
+
+```python
+module = env["code.generator.module"].create([{
+    "name": "my_module",
+    "shortdesc": "My Module",
+    "author": "My Company",
+    "license": "AGPL-3",
+    "assets": '{"web.assets_backend": ["my_module/static/src/js/*.js"]}',
+}])
+```
 
 ### 2. Add models
 
 Use `add_update_model()` to register models with their fields programmatically, or use the **Add Model** wizard to import from existing `ir.model` records.
 
 ```python
-module.add_update_model(
+model_id = module.add_update_model(
     "my.model",
     dct_field={"name": {"ttype": "char", "required": True}},
     dct_model={"description": "My Model"},
 )
 ```
 
+#### Delegation inheritance and hierarchical models
+
+```python
+# Delegation inheritance (_inherits)
+model_id.inherits_model = "res.partner:partner_id"
+
+# Materialized path for hierarchical data
+model_id.parent_store = True
+model_id.parent_name_field = "parent_id"
+```
+
 ### 3. Inject code
 
 Add Python methods via `code.generator.model.code` records and imports via `code.generator.model.code.import`.
+
+#### Onchange methods
+
+Use the helper to generate `@api.onchange` methods:
+
+```python
+module.add_onchange_method(
+    model_id,
+    field_names=["partner_id"],
+    code="self.name = self.partner_id.name",
+)
+```
 
 ### 4. Generate views
 
@@ -154,12 +192,29 @@ Use the **Generate Views** wizard to create form, list, search, and other views.
 
 Access `/code_generator/<module_ids>` to download a ZIP containing the complete generated module with:
 - `__init__.py` files
-- `__manifest__.py`
+- `__manifest__.py` (with `assets` if configured)
 - `models/*.py` with all fields, methods, decorators
 - `views/*.xml` with all view definitions
 - `security/ir.model.access.csv`
 - `data/*.csv` (nomenclator mode)
 - `controllers/*.py` (if configured)
+
+## Supported field types
+
+The code generator supports all Odoo 18 field types including:
+
+| Type | Generated class | Notes |
+|------|----------------|-------|
+| `char`, `text`, `html` | `fields.Char`, `fields.Text`, `fields.Html` | Standard text types |
+| `integer`, `float`, `monetary` | `fields.Integer`, `fields.Float`, `fields.Monetary` | Numeric types |
+| `boolean` | `fields.Boolean` | |
+| `date`, `datetime` | `fields.Date`, `fields.Datetime` | |
+| `binary` | `fields.Binary` | |
+| `selection`, `reference` | `fields.Selection`, `fields.Reference` | With selection items |
+| `many2one`, `one2many`, `many2many` | `fields.Many2one`, `fields.One2many`, `fields.Many2many` | Relational types |
+| `properties` | `fields.Properties` | Odoo 17+ — dynamic user-defined fields, auto-extracts `definition_record` |
+| `properties_definition` | `fields.PropertiesDefinition` | Odoo 17+ — schema definition for Properties fields |
+| `many2one_reference` | `fields.Many2oneReference` | Odoo 17+ — polymorphic reference, auto-extracts `model_field` |
 
 ## Extractors
 
@@ -170,6 +225,22 @@ The module includes extractors to reverse-engineer existing modules:
 | `ExtractorModule` | Module directory path | Dependencies, external deps, manifest header |
 | `ExtractorView` | XML view files | `code.generator.view` + `code.generator.view.item` records |
 | `ExtractorController` | Controller files | Controller metadata |
+
+## Extensibility
+
+The writer provides hook methods that external modules can override:
+
+| Hook method | Purpose |
+|-------------|---------|
+| `set_manifest_file_extra(cw, module)` | Add custom entries to `__manifest__.py` |
+| `set_xml_data_file(module)` | Generate additional XML data files (e.g. `ir.cron` via `code_generator_cron`) |
+| `set_xml_views_file(module)` | Generate additional view files |
+| `set_module_python_file(module)` | Generate additional Python files |
+| `set_module_css_file(module)` | Generate CSS files |
+| `set_extra_get_lst_file_generate(module)` | Run extra generation logic |
+| `write_extra_pre_init_hook(module, cw)` | Add code to `pre_init_hook` |
+| `write_extra_post_init_hook(module, cw)` | Add code to `post_init_hook` |
+| `write_extra_uninstall_hook(module, cw)` | Add code to `uninstall_hook` |
 
 ## Security
 
