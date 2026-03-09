@@ -26,13 +26,23 @@ The Code Generator replaces manual module scaffolding by capturing module struct
 
 ```
 code_generator/
-├── models/              # 27 model files — core data structures
-├── wizards/             # 4 transient models — UI wizards for generation
+├── models/
+│   ├── code_generator_writer.py           # Core writer — fields, manifest, hooks, orchestration (~990 lines)
+│   ├── code_generator_writer_constants.py # Shared constants (MAGIC_FIELDS, XML_HEAD, etc.)
+│   ├── code_generator_writer_xml.py       # Mixin — XML data file generation (~670 lines)
+│   ├── code_generator_writer_views.py     # Mixin — view/menu/report XML generation (~960 lines)
+│   ├── code_generator_writer_python.py    # Mixin — Python file/security generation (~1220 lines)
+│   └── ...                                # 27 other model files — core data structures
+├── wizards/
+│   ├── code_generator_generate_views_wizard.py  # Core wizard — orchestration (~1200 lines)
+│   ├── code_generator_views_standard.py         # Mixin — 11 view type generators (~1550 lines)
+│   ├── code_generator_views_xml_helpers.py      # Mixin — XML element builders (~730 lines)
+│   └── ...                                      # 3 other wizard files
 ├── controllers/         # HTTP endpoint for ZIP download
 ├── views/               # 36 XML view definitions
 ├── security/            # Access control (groups + CSV rules)
 ├── static/              # Icons and HTML description
-├── tests/               # Unit tests
+├── tests/               # Unit tests (9 test classes, 31 test methods)
 ├── i18n/                # Spanish translations
 ├── hooks.py             # Post-install hook (dev mode setup)
 ├── code_generator_data.py        # File/directory generation utilities
@@ -42,7 +52,7 @@ code_generator/
 └── python_controller_writer.py   # Controller code writer
 ```
 
-**Stats**: ~13,500 lines of Python across 79 source files.
+**Stats**: ~13,500 lines of Python across 86 source files.
 
 ## Core models
 
@@ -247,6 +257,27 @@ The module includes extractors to reverse-engineer existing modules:
 | `ExtractorModule` | Module directory path | Dependencies, external deps, manifest header |
 | `ExtractorView` | XML view files | `code.generator.view` + `code.generator.view.item` records |
 | `ExtractorController` | Controller files | Controller metadata |
+
+## Mixin architecture
+
+The writer and views wizard are split into AbstractModel mixins for maintainability. All methods remain accessible on the original model names — external modules that `_inherit` these classes continue to work unchanged.
+
+### Writer mixins
+
+| Mixin | Model name | Responsibilities |
+|-------|-----------|-----------------|
+| **XML Data** | `code.generator.writer.xml.mixin` | XML data file generation, nomenclator export, binary/image handling |
+| **Views** | `code.generator.writer.views.mixin` | View/menu/report XML generation, ir.model.data resolution |
+| **Python** | `code.generator.writer.python.mixin` | Python model files, security CSV, field generation, code injection |
+| **Core** | `code.generator.writer` | Manifest, static files, hooks, orchestration, utility methods |
+
+### Wizard mixins
+
+| Mixin | Model name | Responsibilities |
+|-------|-----------|-----------------|
+| **Standard Views** | `code.generator.views.standard.mixin` | 11 view type generators (list, form, kanban, search, pivot, calendar, graph, timeline, diagram) |
+| **XML Helpers** | `code.generator.views.xml.helpers.mixin` | XML element builders (buttons, groups, divs, fields, specific form views) |
+| **Core** | `code.generator.generate.views.wizard` | Orchestration, menu generation, access rules, dependencies |
 
 ## Extensibility
 

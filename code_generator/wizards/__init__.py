@@ -3,6 +3,8 @@
 from . import (
     code_generator_add_controller_wizard,
     code_generator_add_model_wizard,
+    code_generator_views_standard,
+    code_generator_views_xml_helpers,
     code_generator_generate_views_wizard,
     res_config_settings,
 )
