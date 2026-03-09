@@ -184,6 +184,28 @@ module.add_onchange_method(
 )
 ```
 
+#### Access rules (ir.rule)
+
+Use the helper to generate security rules for specific groups:
+
+```python
+# Portal users can read their own records
+module.add_access_rule(
+    model_id,
+    "base.group_portal",
+    domain_force="[('create_uid', '=', user.id)]",
+    perm_write=False,
+    perm_create=False,
+    perm_unlink=False,
+)
+
+# Internal users have full access
+module.add_access_rule(
+    model_id,
+    "base.group_user",
+)
+```
+
 ### 4. Generate views
 
 Use the **Generate Views** wizard to create form, list, search, and other views. Field ordering is controlled by `code_generator_*_view_sequence` fields, and visibility by whitelist/blacklist flags.
@@ -236,7 +258,8 @@ The writer provides hook methods that external modules can override:
 | `set_xml_data_file(module)` | Generate additional XML data files (e.g. `ir.cron` via `code_generator_cron`) |
 | `set_xml_views_file(module)` | Generate additional view files |
 | `set_module_python_file(module)` | Generate additional Python files |
-| `set_module_css_file(module)` | Generate CSS files |
+| `set_module_css_file(module)` | Generate CSS/SCSS files |
+| `set_module_js_file(module)` | Generate JavaScript/OWL component files |
 | `set_extra_get_lst_file_generate(module)` | Run extra generation logic |
 | `write_extra_pre_init_hook(module, cw)` | Add code to `pre_init_hook` |
 | `write_extra_post_init_hook(module, cw)` | Add code to `post_init_hook` |

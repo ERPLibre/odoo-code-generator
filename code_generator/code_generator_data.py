@@ -35,6 +35,8 @@ class CodeGeneratorData:
         self._components_path = "components"
         self._models_path = "models"
         self._css_path = os.path.join("static", "src", "scss")
+        self._js_path = os.path.join("static", "src", "js")
+        self._xml_path = os.path.join("static", "src", "xml")
         self._security_path = "security"
         self._views_path = "views"
         self._templates_path = "templates"
@@ -130,7 +132,7 @@ class CodeGeneratorData:
 
     @property
     def readme_path(self):
-        return self._readme_path_path
+        return self._readme_path
 
     @property
     def components_path(self):
@@ -143,6 +145,14 @@ class CodeGeneratorData:
     @property
     def css_path(self):
         return self._css_path
+
+    @property
+    def js_path(self):
+        return self._js_path
+
+    @property
+    def xml_path(self):
+        return self._xml_path
 
     @property
     def security_path(self):

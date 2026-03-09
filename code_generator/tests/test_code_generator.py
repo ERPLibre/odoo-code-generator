@@ -99,6 +99,80 @@ class TestModelAttributes(TransactionCase):
         self.assertTrue(model_id.parent_store)
 
 
+class TestAccessRuleHelper(TransactionCase):
+    """Tests for the add_access_rule helper."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.module = cls.env["code.generator.module"].create([{
+            "name": "test_access_rules",
+            "shortdesc": "Test Access Rules",
+        }])
+        cls.model_id = cls.env["ir.model"].search(
+            [("model", "=", "res.partner")], limit=1
+        )
+
+    def test_add_access_rule_user(self):
+        rule = self.module.add_access_rule(
+            self.model_id,
+            "base.group_user",
+            domain_force="[(1, '=', 1)]",
+        )
+        self.assertTrue(rule.id)
+        self.assertEqual(rule.domain_force, "[(1, '=', 1)]")
+        self.assertTrue(rule.perm_read)
+
+    def test_add_access_rule_auto_name(self):
+        rule = self.module.add_access_rule(
+            self.model_id,
+            "base.group_user",
+        )
+        self.assertIn("res_partner", rule.name)
+        self.assertIn("group_user", rule.name)
+
+
+class TestOnchangeHelper(TransactionCase):
+    """Tests for the add_onchange_method helper."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.module = cls.env["code.generator.module"].create([{
+            "name": "test_onchange",
+            "shortdesc": "Test Onchange",
+        }])
+        cls.model_id = cls.env["ir.model"].search(
+            [("model", "=", "res.partner")], limit=1
+        )
+
+    def test_add_onchange_method(self):
+        self.module.add_onchange_method(
+            self.model_id,
+            field_names="name",
+            code="self.display_name = self.name",
+        )
+        code_rec = self.env["code.generator.model.code"].search([
+            ("m2o_module", "=", self.module.id),
+            ("name", "=", "_onchange_name"),
+        ])
+        self.assertTrue(code_rec)
+        self.assertIn("@api.onchange", code_rec.decorator)
+
+    def test_add_onchange_multiple_fields(self):
+        self.module.add_onchange_method(
+            self.model_id,
+            field_names=["name", "email"],
+        )
+        code_rec = self.env["code.generator.model.code"].search([
+            ("m2o_module", "=", self.module.id),
+            ("name", "=", "_onchange_name_email"),
+        ])
+        self.assertTrue(code_rec)
+        self.assertIn('"name"', code_rec.decorator)
+        self.assertIn('"email"', code_rec.decorator)
+
+
 class TestAddControllerWizard(TransactionCase):
     """Tests for the add controller wizard."""
 

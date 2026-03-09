@@ -712,6 +712,43 @@ class CodeGeneratorModule(models.Model):
             "m2o_model": model_id.id,
         }])
 
+    def add_access_rule(
+        self,
+        model_id,
+        group_xml_id,
+        domain_force="[(1, '=', 1)]",
+        rule_name=None,
+        perm_read=True,
+        perm_write=True,
+        perm_create=True,
+        perm_unlink=True,
+    ):
+        """Add an ir.rule to a model for a specific group.
+
+        :param model_id: ir.model record
+        :param group_xml_id: str XML ID of the group
+            (e.g. 'base.group_portal', 'base.group_user')
+        :param domain_force: domain string for the rule
+        :param rule_name: optional rule name
+        :param perm_read/write/create/unlink: permission flags
+        """
+        if not rule_name:
+            group_short = group_xml_id.split(".")[-1]
+            model_under = model_id.model.replace(".", "_")
+            rule_name = f"{model_under}_{group_short}_rule"
+
+        group = self.env.ref(group_xml_id)
+        return self.env["ir.rule"].create([{
+            "name": rule_name,
+            "model_id": model_id.id,
+            "domain_force": domain_force,
+            "groups": [(4, group.id)],
+            "perm_read": perm_read,
+            "perm_write": perm_write,
+            "perm_create": perm_create,
+            "perm_unlink": perm_unlink,
+        }])
+
     def add_method_model(self, model_id, compute_company_currency_id=False):
         for rec in self:
             if compute_company_currency_id:

@@ -2214,22 +2214,32 @@ _logger = logging.getLogger(__name__)"""
 
         for report in model.o2m_reports.with_context(lang=None):
 
-            l_model_report_file.append(
-                '<template id="%s">' % report.report_name
-            )
-
-            str_arch_base = (
-                report.m2o_template.arch_base
-                if not report.m2o_template.arch_base.startswith(
-                    XML_VERSION_STR
+            if report.m2o_template and report.m2o_template.arch_base:
+                l_model_report_file.append(
+                    '<template id="%s">' % report.report_name
                 )
-                else report.m2o_template.arch_base[len(XML_VERSION_STR) :]
-            )
-            l_model_report_file.append(
-                f'<field name="arch" type="xml">{str_arch_base}</field>'
-            )
 
-            l_model_report_file.append("</template>\n")
+                str_arch_base = (
+                    report.m2o_template.arch_base
+                    if not report.m2o_template.arch_base.startswith(
+                        XML_VERSION_STR
+                    )
+                    else report.m2o_template.arch_base[
+                        len(XML_VERSION_STR) :
+                    ]
+                )
+                l_model_report_file.append(
+                    '<field name="arch" type="xml">'
+                    f"{str_arch_base}</field>"
+                )
+
+                l_model_report_file.append("</template>\n")
+            else:
+                _logger.warning(
+                    "Report '%s' has no QWeb template linked,"
+                    " generating report action only.",
+                    report.report_name,
+                )
 
             l_model_report_file.append(
                 '<record model="ir.actions.report" id="%s_actionreport">'
@@ -2289,6 +2299,15 @@ _logger = logging.getLogger(__name__)"""
             if report.groups_id:
                 l_model_report_file.append(
                     self._get_m2m_groups(report.groups_id)
+                )
+
+            if report.paperformat_id:
+                l_model_report_file.append(
+                    '<field name="paperformat_id"'
+                    ' ref="%s" />'
+                    % self._get_id_view_model_data(
+                        report.paperformat_id
+                    )
                 )
 
             l_model_report_file.append("</record>")
@@ -3582,6 +3601,8 @@ _logger = logging.getLogger(__name__)"""
 
             self.set_module_css_file(module)
 
+            self.set_module_js_file(module)
+
             self._set_module_security(
                 module, l_model_rules, l_model_csv_access
             )
@@ -3615,6 +3636,9 @@ _logger = logging.getLogger(__name__)"""
         pass
 
     def set_module_css_file(self, module):
+        pass
+
+    def set_module_js_file(self, module):
         pass
 
     def set_module_python_file(self, module):
