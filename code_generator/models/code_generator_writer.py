@@ -16,7 +16,7 @@ from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models
-from odoo.models import MAGIC_COLUMNS
+from odoo.models import MAGIC_COLUMNS, is_definition_class
 from odoo.tools.misc import mute_logger
 from PIL import Image
 
@@ -52,6 +52,42 @@ FROM_ODOO_IMPORTS_SUPERUSER = [
     "from odoo import _, api, models, fields, SUPERUSER_ID"
 ]
 MODEL_SUPERUSER_HEAD = FROM_ODOO_IMPORTS_SUPERUSER + BREAK_LINE
+
+
+def py_str(value):
+    """Python literal of the string ``value``, on one line.
+
+    ``repr`` escapes the quotes, the backslashes and the control
+    characters, so ``ast.literal_eval(py_str(value)) == value`` holds for
+    any string.
+    """
+    return repr(str(value))
+
+
+def py_str_multiline(value):
+    """Python literal of the string ``value`` that keeps its line breaks.
+
+    A string with a line break and only printable characters (plus tab)
+    becomes a triple-quoted literal whose lines are the lines of
+    ``value``, with every backslash doubled; the delimiter is the triple
+    quote that neither appears in the content nor glues to its last
+    character. Any other string falls back to ``py_str``. In both cases
+    ``ast.literal_eval(py_str_multiline(value)) == value``.
+
+    Characters other than ``\\n`` that ``str.splitlines`` treats as line
+    breaks are not printable, so ``CodeWriter.emit_raw``, which splits on
+    them, never alters a triple-quoted literal produced here.
+    """
+    value = str(value)
+    if "\n" not in value or not all(
+        char in "\n\t" or char.isprintable() for char in value
+    ):
+        return py_str(value)
+    escaped = value.replace("\\", "\\\\")
+    for quote in ('"""', "'''"):
+        if quote not in escaped and not escaped.endswith(quote[0]):
+            return f"{quote}{escaped}{quote}"
+    return py_str(value)
 
 
 class CodeGeneratorWriter(models.Model):
@@ -226,6 +262,94 @@ class CodeGeneratorWriter(models.Model):
 
         return prepared
 
+    @staticmethod
+    def _is_extension_of_existing_model(model):
+        """True when the class written for ``model`` extends it: its
+        inherit list names the model itself, so the class has
+        ``_inherit = model`` and no ``_name``."""
+        return model.model in model.inherit_model_ids.mapped("depend_id.model")
+
+    def _get_definition_classes_outside_module(self, model_name, module_name):
+        """The Python classes that define ``model_name`` in the registry,
+        in attribute lookup order, without those of ``module_name`` nor
+        the class Odoo builds for a manual model from its ``ir.model``
+        row. Empty when the registry does not know the model."""
+        if model_name not in self.env.registry:
+            return []
+        return [
+            cls
+            for cls in type(self.env[model_name]).__mro__
+            if is_definition_class(cls)
+            and not cls._custom
+            and cls._module != module_name
+        ]
+
+    def _get_attr_outside_module(self, model_name, attr, module_name):
+        """Value of the class attribute ``attr`` of ``model_name`` once the
+        classes of ``module_name`` are left out: what the model would have
+        without the generated module. None when no class sets it."""
+        for cls in self._get_definition_classes_outside_module(
+            model_name, module_name
+        ):
+            if attr in vars(cls):
+                return vars(cls)[attr]
+        return None
+
+    def _get_sql_constraint_keys_outside_module(self, model_name, module_name):
+        """Keys of the ``_sql_constraints`` that the classes of other modules
+        than ``module_name`` declare on ``model_name``, mixins included."""
+        return {
+            constraint[0]
+            for cls in self._get_definition_classes_outside_module(
+                model_name, module_name
+            )
+            for constraint in vars(cls).get("_sql_constraints", [])
+        }
+
+    @staticmethod
+    def _get_constraint_rank(constraint, module):
+        """How much ``constraint`` belongs to the generated ``module``: 2
+        for a row the generator created for it, 1 for a row Odoo reflected
+        for a module of the same name (an installed version, or the
+        template module a template generator reads), 0 otherwise. The
+        ``module`` of a row the generator creates defaults to base, so
+        it says nothing on its own."""
+        if constraint.code_generator_id == module:
+            return 2
+        if constraint.module.name == module.name:
+            return 1
+        return 0
+
+    def _get_own_constraints(
+        self, constraints_id, model, module, model_prefix
+    ):
+        """The rows of ``constraints_id`` that ``module`` declares on
+        ``model``, one per key, in the order of their first appearance.
+
+        ``ir.model.constraint`` keeps one row per (name, module): a key
+        that another module also declares has one row per module. For an
+        extension class, a key that the classes of other modules declare
+        is kept only through a row of ``module`` (rank above 0), so a core
+        constraint is not copied while an override of it survives the
+        regeneration. Among the rows of one key, the highest rank wins.
+        """
+        foreign_keys = set()
+        if self._is_extension_of_existing_model(model):
+            foreign_keys = self._get_sql_constraint_keys_outside_module(
+                model.model, module.name
+            )
+        dct_kept = {}
+        for constraint in constraints_id:
+            key = constraint.name.replace(model_prefix, "")
+            rank = self._get_constraint_rank(constraint, module)
+            if key in foreign_keys and not rank:
+                continue
+            if key not in dct_kept or rank > dct_kept[key][0]:
+                dct_kept[key] = (rank, constraint)
+        return self.env["ir.model.constraint"].concat(
+            *(constraint for _rank, constraint in dct_kept.values())
+        )
+
     def _get_model_constrains(self, cw, model, module):
         """
         Function to obtain the model constrains
@@ -267,14 +391,22 @@ class CodeGeneratorWriter(models.Model):
             # TODO how to use this way? binding model not working
             constraints_id = model.o2m_constraints
         elif module.o2m_model_constraints:
-            constraints_id = module.o2m_model_constraints
+            # The constraints of the module span all its models: keep the
+            # unique constraints of this one.
+            constraints_id = module.o2m_model_constraints.filtered(
+                lambda c: c.model == model and c.type == "u" and c.definition
+            )
+
+        model_prefix = "%s_" % self._get_model_model(model.model)
+        if constraints_id:
+            constraints_id = self._get_own_constraints(
+                constraints_id, model, module, model_prefix
+            )
 
         if constraints_id:
             lst_constraint = []
             for constraint in constraints_id:
-                constraint_name = constraint.name.replace(
-                    "%s_" % self._get_model_model(model.model), ""
-                )
+                constraint_name = constraint.name.replace(model_prefix, "")
                 constraint_definition = constraint.definition
                 constraint_message = (
                     constraint.message
@@ -283,8 +415,9 @@ class CodeGeneratorWriter(models.Model):
                 )
 
                 lst_constraint.append(
-                    f"('{constraint_name}', '{constraint_definition}',"
-                    f" '{constraint_message}')"
+                    f"({py_str(constraint_name)},"
+                    f" {py_str(constraint_definition)},"
+                    f" {py_str(constraint_message)})"
                 )
 
             cw.emit()
@@ -595,58 +728,51 @@ class CodeGeneratorWriter(models.Model):
             cw.emit()
 
         with cw.block(delim=("{", "}")):
-            cw.emit(f"'name': '{module.shortdesc}',")
+            cw.emit(f"'name': {py_str(module.shortdesc)},")
 
             if module.category_id:
-                cw.emit(
-                    "'category':"
-                    f" '{module.category_id.with_context(lang=lang).name}',"
-                )
+                category = module.category_id.with_context(lang=lang).name
+                cw.emit(f"'category': {py_str(category)},")
 
             if module.summary and module.summary != "false":
-                cw.emit(f"'summary': '{module.summary}',")
+                cw.emit(f"'summary': {py_str(module.summary)},")
 
             if module.description:
-                description = module.description.strip()
-                lst_description = description.split("\n")
-                if len(lst_description) == 1:
-                    cw.emit(f"'description': '{description}',")
-                else:
-                    cw.emit("'description': '''")
-                    for desc in lst_description:
-                        cw.emit_raw(desc)
-                    cw.emit("''',")
+                # A multi-line literal goes through emit_raw: its next
+                # lines belong to the string and take no indentation.
+                description = py_str_multiline(module.description.strip())
+                cw.emit_raw(f"{cw.mk_indent()}'description': {description},\n")
 
             if module.installed_version:
-                cw.emit(f"'version': '{module.installed_version}',")
+                cw.emit(f"'version': {py_str(module.installed_version)},")
 
             if module.author:
                 author = module.author.strip()
                 lst_author = author.split(",")
                 if len(lst_author) == 1:
-                    cw.emit(f"'author': '{author}',")
+                    cw.emit(f"'author': {py_str(author)},")
                 else:
                     cw.emit(f"'author': (")
                     with cw.indent():
                         for auth in lst_author[:-1]:
                             s_auth = auth.strip()
-                            cw.emit(f"'{s_auth}, '")
-                    cw.emit(f"'{lst_author[-1].strip()}'),")
+                            cw.emit(py_str(f"{s_auth}, "))
+                    cw.emit(f"{py_str(lst_author[-1].strip())}),")
 
             if module.contributors:
-                cw.emit(f"'contributors': '{module.contributors}',")
+                cw.emit(f"'contributors': {py_str(module.contributors)},")
 
             # if module.maintener:
             #     cw.emit(f"'maintainers': '{module.maintener}',")
 
             if module.license != "LGPL-3":
-                cw.emit(f"'license': '{module.license}',")
+                cw.emit(f"'license': {py_str(module.license)},")
 
             if module.sequence != 100:
                 cw.emit(f"'sequence': {module.sequence},")
 
             if module.website:
-                cw.emit(f"'website': '{module.website}',")
+                cw.emit(f"'website': {py_str(module.website)},")
 
             if module.auto_install:
                 cw.emit(f"'auto_install': True,")
@@ -659,13 +785,13 @@ class CodeGeneratorWriter(models.Model):
 
             if module.dependencies_id:
                 lst_depend = module.dependencies_id.mapped(
-                    lambda did: f"'{did.depend_id.name}'"
+                    lambda did: py_str(did.depend_id.name)
                 )
                 lst_depend = sorted(lst_depend)
                 # Remove exclude_dependencies_str
                 if module.exclude_dependencies_str:
                     lst_exclude_depend = [
-                        f"'{a}'"
+                        py_str(a)
                         for a in module.exclude_dependencies_str.split(";")
                     ]
                     lst_depend = list(
@@ -688,18 +814,18 @@ class CodeGeneratorWriter(models.Model):
                         if depend.is_template:
                             continue
                         dct_depend[depend.application_type].append(
-                            f"'{depend.depend}'"
+                            py_str(depend.depend)
                         )
                     for application_type, lst_value in dct_depend.items():
                         cw.emit_list(
                             lst_value,
                             ("[", "]"),
-                            before=f"'{application_type}': ",
+                            before=f"{py_str(application_type)}: ",
                             after=",",
                         )
 
             lst_data = self._get_l_map(
-                lambda dfile: f"'{dfile}'",
+                py_str,
                 cg_data.lst_manifest_data_files,
             )
             if lst_data:
@@ -2402,17 +2528,28 @@ _logger = logging.getLogger(__name__)"""
                     str_inherit = f'["{str_inherit_internal}"]'
                 cw.emit(f"_inherit = {str_inherit}")
 
-            if model.description:
-                new_description = model.description.replace("'", "\\'")
-                cw.emit(f"_description = '{new_description}'")
+            # An extension class repeats an attribute only when it differs
+            # from what the other modules give the model: copying the
+            # reflected value would pin it in the generated module.
+            dct_attr_outside = {}
+            if not add_name:
+                for attr in ("_description", "_order", "_rec_name"):
+                    dct_attr_outside[attr] = self._get_attr_outside_module(
+                        model.model, attr, module.name
+                    )
+
+            if (
+                model.description
+                and model.description != dct_attr_outside.get("_description")
+            ):
+                cw.emit(f"_description = {py_str(model.description)}")
             elif not lst_inherit or add_name:
-                cw.emit(f"_description = '{model.name}'")
+                cw.emit(f"_description = {py_str(model.name)}")
             rec_name = self._get_rec_name_inherit_model(model)
-            if rec_name:
-                cw.emit(f"_rec_name = '{rec_name}'")
-            if model.order:
-                new_order = model.order.replace("'", "\\'")
-                cw.emit(f"_order = '{new_order}'")
+            if rec_name and rec_name != dct_attr_outside.get("_rec_name"):
+                cw.emit(f"_rec_name = {py_str(rec_name)}")
+            if model.order and model.order != dct_attr_outside.get("_order"):
+                cw.emit(f"_order = {py_str(model.order)}")
 
             # TODO _order, _local_fields, _period_number, _inherits, _log_access, _auto, _parent_store
             # TODO _parent_name
@@ -3042,7 +3179,7 @@ _logger = logging.getLogger(__name__)"""
             # TODO support digits, check dp.get_precision('Account')
 
             if f2export.help:
-                dct_field_attribute["help"] = f2export.help.replace("\\'", '"')
+                dct_field_attribute["help"] = f2export.help
 
             # Ignore it, by default it's copy=False
             # elif f2export.ttype != 'one2many' and not f2export.related and not compute and not f2export.copied:
@@ -3066,31 +3203,15 @@ _logger = logging.getLogger(__name__)"""
             if type(value) is str:
                 if key == "domain_raw":
                     lst_last_field_attribute.append(f"domain={value}")
+                elif key == "comodel_name":
+                    lst_first_field_attribute.append(f"{key}={py_str(value)}")
+                elif key == "ondelete":
+                    lst_last_field_attribute.append(f"{key}={py_str(value)}")
                 else:
-                    # TODO find another solution than removing \n, this cause error with cw.CodeWriter
-                    copy_value = value.replace("'", "\\'")
-                    value = value.replace("\n", " ").replace("'", "\\'")
-                    if key == "comodel_name":
-                        lst_first_field_attribute.append(f"{key}='{value}'")
-                    elif key == "ondelete":
-                        lst_last_field_attribute.append(f"{key}='{value}'")
-                    else:
-                        if "\n" in copy_value:
-                            has_endline = True
-                            if '"""' in copy_value:
-                                lst_field_attribute.append(
-                                    f"{key}='''{copy_value}'''"
-                                )
-                            elif "'''" in copy_value:
-                                lst_field_attribute.append(
-                                    f'{key}="""{copy_value}"""'
-                                )
-                            else:
-                                lst_field_attribute.append(
-                                    f'{key}="""{copy_value}"""'
-                                )
-                        else:
-                            lst_field_attribute.append(f"{key}='{copy_value}'")
+                    literal = py_str_multiline(value)
+                    if "\n" in literal:
+                        has_endline = True
+                    lst_field_attribute.append(f"{key}={literal}")
             elif type(value) is list or type(value) is tuple:
                 # TODO find another solution than removing \n, this cause error with cw.CodeWriter
                 if key == "default" and value[0] == "noquote":
@@ -3625,17 +3746,22 @@ _logger = logging.getLogger(__name__)"""
         vals["rootdir"] = rootdir
 
         lst_path_file = []
-        # TODO this will crash if generate multiple modules
-        for module in modules:
-            cg_data = code_generator_data.get_code_generator_data(
-                self.env, module, path
-            )
-            python_controller_writer = PythonControllerWriter(module, cg_data)
-            self.get_lst_file_generate(module, python_controller_writer)
+        try:
+            for module in modules:
+                # Each module starts from an empty state on the cursor.
+                cg_data = code_generator_data.start_code_generator_data(
+                    self.env, module, path
+                )
+                python_controller_writer = PythonControllerWriter(
+                    module, cg_data
+                )
+                self.get_lst_file_generate(module, python_controller_writer)
 
-            if module.enable_sync_code:
-                cg_data.sync_code(module.path_sync_code, module.name)
-            lst_path_file.extend(cg_data.lst_path_file)
+                if module.enable_sync_code:
+                    cg_data.sync_code(module.path_sync_code, module.name)
+                lst_path_file.extend(cg_data.lst_path_file)
+        finally:
+            code_generator_data.end_code_generator_data(self.env)
 
         vals["list_path_file"] = ";".join(list(set(lst_path_file)))
 

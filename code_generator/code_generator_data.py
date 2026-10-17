@@ -732,7 +732,33 @@ class CodeGeneratorData:
         _logger.info("End of auto_format")
 
 
+def start_code_generator_data(env, module, path) -> CodeGeneratorData:
+    """Open the generation of ``module`` under ``path``: a new state
+    replaces the one the cursor may hold, so a generation never writes
+    into the paths of an earlier one."""
+    env.cr._code_generator_data = CodeGeneratorData(module, path)
+    return env.cr._code_generator_data
+
+
+def end_code_generator_data(env):
+    """Close the generation in progress on the cursor of ``env``, if any."""
+    if hasattr(env.cr, "_code_generator_data"):
+        del env.cr._code_generator_data
+
+
 def get_code_generator_data(env, module=None, path=None) -> CodeGeneratorData:
+    """State of the generation in progress on the cursor of ``env``.
+
+    With ``module``, opens a new generation (see
+    ``start_code_generator_data``). Without, returns the open one; it
+    lives from the start of a module in ``generate_writer`` to the end of
+    that writer run.
+    """
+    if module is not None:
+        return start_code_generator_data(env, module, path)
     if not hasattr(env.cr, "_code_generator_data"):
-        env.cr._code_generator_data = CodeGeneratorData(module, path)
+        raise RuntimeError(
+            "No code generation in progress on this cursor: create a"
+            " code.generator.writer to generate a module."
+        )
     return env.cr._code_generator_data
