@@ -106,11 +106,14 @@ class IrModel(models.Model):
         ondelete="cascade",
     )
 
+    # "set null": a generator also links models that other modules
+    # define, and deleting it must leave their ir.model row in place.
+    # CodeGeneratorModule.unlink deletes the manual models it links.
     m2o_module = fields.Many2one(
         comodel_name="code.generator.module",
         string="Module",
         help="Module",
-        ondelete="cascade",
+        ondelete="set null",
     )
 
     menu_group = fields.Char(
