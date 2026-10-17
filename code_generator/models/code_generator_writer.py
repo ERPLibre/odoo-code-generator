@@ -1,5 +1,6 @@
 import ast
 import base64
+import csv
 import glob
 import hashlib
 import io
@@ -10,6 +11,7 @@ import tempfile
 import types
 import uuid
 from collections import defaultdict
+from xml.sax.saxutils import escape as xml_escape
 
 import unidecode
 from code_writer import CodeWriter
@@ -2671,9 +2673,31 @@ _logger = logging.getLogger(__name__)"""
                 insert_first=True,
             )
 
+    def _get_model_xmlid_ref(self, model, module):
+        """
+        Reference to the ir.model of ``model`` from a data file of
+        ``module``: the local ``model_<model>`` when the module defines or
+        extends the model in Python (Odoo then gives the module this
+        external id), else the first external id of the ir.model, the one
+        of the module that defines it.
+        :param model: ir.model
+        :param module: code.generator.module
+        :return: str
+        """
+        local = "model_%s" % self._get_model_model(model.model)
+        if model in module.o2m_models:
+            return local
+        data = self.env["ir.model.data"].search(
+            [("model", "=", "ir.model"), ("res_id", "=", model.id)],
+            order="id",
+            limit=1,
+        )
+        return f"{data.module}.{data.name}" if data else local
+
     def _get_model_access(self, module, model):
         """
-        Function to obtain the model access
+        Function to obtain the model access: one CSV line per access right,
+        its values in the order of the header of ``_set_module_security``
         :param model:
         :return:
         """
@@ -2697,40 +2721,34 @@ _logger = logging.getLogger(__name__)"""
                 else self._lower_replace(access_name)
             )
 
-            access_model = self._get_model_model(access.model_id.model)
-
             access_group = (
                 self._get_group_data_name(access.group_id)
                 if access.group_id
                 else ""
             )
 
-            access_read, access_create, access_write, access_unlink = (
-                1 if access.perm_read else 0,
-                1 if access.perm_create else 0,
-                1 if access.perm_write else 0,
-                1 if access.perm_unlink else 0,
-            )
-
-            l_model_csv_access.append(
-                "%s,%s,model_%s,%s,%s,%s,%s,%s"
-                % (
+            line = io.StringIO()
+            csv.writer(line, lineterminator="").writerow(
+                [
                     access_id,
                     access_name,
-                    access_model,
+                    self._get_model_xmlid_ref(access.model_id, module),
                     access_group,
-                    access_read,
-                    access_create,
-                    access_write,
-                    access_unlink,
-                )
+                    1 if access.perm_read else 0,
+                    1 if access.perm_write else 0,
+                    1 if access.perm_create else 0,
+                    1 if access.perm_unlink else 0,
+                ]
             )
+            l_model_csv_access.append(line.getvalue())
 
         return l_model_csv_access
 
     def _get_model_rules(self, module, model):
         """
-        Function to obtain the model rules
+        Function to obtain the model rules: the record id is the external
+        id of the rule under the module when it has one; the id, the name
+        and the domain are escaped for XML, the id with its quotes
         :param model:
         :return:
         """
@@ -2738,44 +2756,53 @@ _logger = logging.getLogger(__name__)"""
         l_model_rules = []
 
         for rule in model.rule_ids:
+            rule_model_data = self.env["ir.model.data"].search(
+                [
+                    ("module", "=", module.name),
+                    ("model", "=", "ir.rule"),
+                    ("res_id", "=", rule.id),
+                ],
+                limit=1,
+            )
 
+            if rule_model_data:
+                rule_id = rule_model_data.name
+            elif rule.name:
+                rule_id = self._lower_replace(rule.name)
+            else:
+                rule_id = "%s_rrule_%s" % (
+                    self._get_model_data_name(
+                        rule.model_id, module_name=module.name
+                    ),
+                    rule.id,
+                )
+            l_model_rules.append(
+                '<record model="ir.rule" id="%s">'
+                % xml_escape(rule_id, {'"': "&quot;"})
+            )
             if rule.name:
                 l_model_rules.append(
-                    '<record model="ir.rule" id="%s">'
-                    % self._lower_replace(rule.name)
-                )
-                l_model_rules.append(
-                    '<field name="name">%s</field>' % rule.name
-                )
-
-            else:
-                l_model_rules.append(
-                    '<record model="ir.rule" id="%s_rrule_%s">'
-                    % (
-                        self._get_model_data_name(
-                            rule.model_id, module_name=module.name
-                        ),
-                        rule.id,
-                    )
+                    '<field name="name">%s</field>' % xml_escape(rule.name)
                 )
 
             l_model_rules.append(
                 '<field name="model_id" ref="%s"/>'
-                % self._get_model_data_name(
-                    rule.model_id, module_name=module.name
-                )
+                % self._get_model_xmlid_ref(rule.model_id, module)
             )
 
             if rule.domain_force:
                 l_model_rules.append(
-                    '<field name="domain_force">%s</field>' % rule.domain_force
+                    '<field name="domain_force">%s</field>'
+                    % xml_escape(rule.domain_force)
                 )
 
             if not rule.active:
                 l_model_rules.append('<field name="active" eval="False" />')
 
             if rule.groups:
-                l_model_rules.append(self._get_m2m_groups(rule.groups))
+                l_model_rules.append(
+                    self._get_m2m_groups(rule.groups, field_name="groups")
+                )
 
             if not rule.perm_read:
                 l_model_rules.append('<field name="perm_read" eval="False" />')
@@ -2799,17 +2826,30 @@ _logger = logging.getLogger(__name__)"""
 
         return l_model_rules
 
-    def _get_m2m_groups(self, m2m_groups):
+    def _get_m2m_groups_eval(self, m2m_groups):
         """
-
+        The eval of a many2many to ``m2m_groups``: ``ref()`` of each group,
+        its external id quoted
         :param m2m_groups:
+        :return: str
+        """
+        var = ", ".join(
+            m2m_groups.mapped(
+                lambda g: "ref(%s)" % py_str(self._get_group_data_name(g))
+            )
+        )
+        return f"[(6, 0, [{var}])]"
+
+    def _get_m2m_groups(self, m2m_groups, field_name="groups_id"):
+        """
+        :param m2m_groups:
+        :param field_name: the many2many field of the record
         :return:
         """
 
-        return '<field name="groups_id" eval="[(6,0, [%s])]" />' % ", ".join(
-            m2m_groups.mapped(
-                lambda g: "ref(%s)" % self._get_group_data_name(g)
-            )
+        return '<field name="%s" eval="%s" />' % (
+            field_name,
+            xml_escape(self._get_m2m_groups_eval(m2m_groups), {'"': "&quot;"}),
         )
 
     def _get_m2m_groups_etree(self, m2m_groups):
@@ -2819,12 +2859,12 @@ _logger = logging.getLogger(__name__)"""
         :return:
         """
 
-        var = ", ".join(
-            m2m_groups.mapped(
-                lambda g: "ref(%s)" % self._get_group_data_name(g)
-            )
+        return E.field(
+            {
+                "name": "groups_id",
+                "eval": self._get_m2m_groups_eval(m2m_groups),
+            }
         )
-        return E.field({"name": "groups_id", "eval": f"[(6,0, [{var}])]"})
 
     def _generate_field_from_model(
         self, f2export, model_name, lst_field_inherit, dct_field_attr_diff

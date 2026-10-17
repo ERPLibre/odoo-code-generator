@@ -11,6 +11,7 @@ from collections import defaultdict
 from typing import Tuple
 
 from code_writer import CodeWriter
+from lxml import etree
 
 _logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ class CodeGeneratorData:
         self._lst_wizards_init_imports = []
         self._lst_controllers_init_imports = []
         self._lst_path_file = set()
+        # XML files whose texts the formatting keeps (see keep_xml_text).
+        self._set_path_file_unwrapped = set()
         self._dct_data_depend = defaultdict(list)
         self._dct_data_metadata_file = defaultdict(list)
         self._path = path
@@ -195,6 +198,18 @@ class CodeGeneratorData:
 
     def add_module_init_path(self, component, import_line):
         self._dct_extra_module_init_path[component].append(import_line)
+
+    def keep_xml_text(self, file_path):
+        """
+        Keep the texts of the XML file ``file_path`` (relative to the
+        module) through the formatting, as for the security files: see
+        ``_kept_xml_files``
+        :param file_path:
+        :return:
+        """
+        self._set_path_file_unwrapped.add(
+            os.path.join(self._path, self._module_name, file_path)
+        )
 
     def _get_lst_files_data_depends(self, lst_meta):
         set_files = set()
@@ -550,7 +565,54 @@ class CodeGeneratorData:
         if result:
             _logger.warning(result)
 
+    def _kept_xml_files(self):
+        """
+        The XML files whose texts are values the formatting must keep: the
+        security files (names and domains of the record rules) and those of
+        ``keep_xml_text``. Prettier, whitespace « ignore », moves a text
+        longer than a line onto lines of its own and collapses its inner
+        spaces: both end up in the value of the field
+        :return: {absolute path: content}
+        """
+        kept = {}
+        for path_file in self.lst_path_file:
+            if not path_file.endswith(".xml"):
+                continue
+            relative_path = path_file[len(self.module_path) + 1 :]
+            if (
+                relative_path.startswith(f"{self._security_path}/")
+                or path_file in self._set_path_file_unwrapped
+            ) and os.path.isfile(path_file):
+                with open(path_file, "rb") as file:
+                    kept[path_file] = file.read()
+        return kept
+
+    @staticmethod
+    def _write_kept_xml_files(kept):
+        """
+        Write back the files of ``_kept_xml_files``, indented by lxml,
+        which leaves every text as it is
+        :param kept: {absolute path: content}
+        :return:
+        """
+        parser = etree.XMLParser(remove_blank_text=True)
+        for path_file, content in kept.items():
+            root = etree.fromstring(content, parser)
+            etree.indent(root, space="    ")
+            body = etree.tostring(root, encoding="unicode")
+            with open(path_file, "w", encoding="utf-8") as file:
+                file.write(
+                    f'<?xml version="1.0" encoding="utf-8" ?>\n{body}\n'
+                )
+
     def auto_format(self):
+        kept = self._kept_xml_files()
+        try:
+            self._auto_format()
+        finally:
+            self._write_kept_xml_files(kept)
+
+    def _auto_format(self):
         workspace_path = os.path.normpath(
             os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
         )
