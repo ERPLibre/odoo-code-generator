@@ -2,7 +2,7 @@
     "name": "Code Generator",
     "category": "Extra Tools",
     "summary": "Code Generator Module",
-    "version": "18.0.1.1.0",
+    "version": "18.0.1.2.0",
     "author": "Mathben (mathben@technolibre.ca)",
     "description": "An application to generate ERPLibre module.",
     "license": "AGPL-3",
