@@ -762,11 +762,14 @@ class CodeGeneratorModule(models.Model):
         return super(models.Model, self).create(vals)
 
     def unlink(self):
+        # The manual models of the generator go with it, tables included.
+        # The models defined by Python code stay: ir.model.m2o_module is
+        # "set null", so they only lose their link.
         o2m_models = self.mapped("o2m_models").filtered(
             lambda m: m.state == "manual"
         )
         if o2m_models:
             o2m_models.mapped("view_ids").unlink()
             # TODO need to support logic unlink depend from interdependency
-            o2m_models.unlink()  # I need to delete the created tables
+            o2m_models.unlink()
         return super(CodeGeneratorModule, self).unlink()
