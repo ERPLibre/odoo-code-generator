@@ -367,7 +367,11 @@ class IrModel(models.Model):
         custommodelclass = super(IrModel, self)._instanciate(model_data)
 
         try:
-            if "rec_name" in model_data and model_data["rec_name"]:
+            # « name », the default of the column, is what Odoo picks by
+            # itself when the model has such a field; forcing it on a model
+            # without one (a custom model with x_name only) fails the
+            # setup of the registry.
+            if model_data.get("rec_name") and model_data["rec_name"] != "name":
                 # TODO this was commented because it caused stack overflow when running with pydev
                 # model_fields = self.field_id.search([('model_id', '=', model_data['id'])]). \
                 #     filtered(lambda f: f.name not in MAGIC_FIELDS)
