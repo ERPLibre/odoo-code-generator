@@ -16,7 +16,7 @@ from code_writer import CodeWriter
 from lxml import etree as ET
 from lxml.builder import E
 from odoo import api, fields, models
-from odoo.models import MAGIC_COLUMNS
+from odoo.models import MAGIC_COLUMNS, is_definition_class
 from odoo.tools.misc import mute_logger
 from PIL import Image
 
@@ -262,6 +262,94 @@ class CodeGeneratorWriter(models.Model):
 
         return prepared
 
+    @staticmethod
+    def _is_extension_of_existing_model(model):
+        """True when the class written for ``model`` extends it: its
+        inherit list names the model itself, so the class has
+        ``_inherit = model`` and no ``_name``."""
+        return model.model in model.inherit_model_ids.mapped("depend_id.model")
+
+    def _get_definition_classes_outside_module(self, model_name, module_name):
+        """The Python classes that define ``model_name`` in the registry,
+        in attribute lookup order, without those of ``module_name`` nor
+        the class Odoo builds for a manual model from its ``ir.model``
+        row. Empty when the registry does not know the model."""
+        if model_name not in self.env.registry:
+            return []
+        return [
+            cls
+            for cls in type(self.env[model_name]).__mro__
+            if is_definition_class(cls)
+            and not cls._custom
+            and cls._module != module_name
+        ]
+
+    def _get_attr_outside_module(self, model_name, attr, module_name):
+        """Value of the class attribute ``attr`` of ``model_name`` once the
+        classes of ``module_name`` are left out: what the model would have
+        without the generated module. None when no class sets it."""
+        for cls in self._get_definition_classes_outside_module(
+            model_name, module_name
+        ):
+            if attr in vars(cls):
+                return vars(cls)[attr]
+        return None
+
+    def _get_sql_constraint_keys_outside_module(self, model_name, module_name):
+        """Keys of the ``_sql_constraints`` that the classes of other modules
+        than ``module_name`` declare on ``model_name``, mixins included."""
+        return {
+            constraint[0]
+            for cls in self._get_definition_classes_outside_module(
+                model_name, module_name
+            )
+            for constraint in vars(cls).get("_sql_constraints", [])
+        }
+
+    @staticmethod
+    def _get_constraint_rank(constraint, module):
+        """How much ``constraint`` belongs to the generated ``module``: 2
+        for a row the generator created for it, 1 for a row Odoo reflected
+        for a module of the same name (an installed version, or the
+        template module a template generator reads), 0 otherwise. The
+        ``module`` of a row the generator creates defaults to base, so
+        it says nothing on its own."""
+        if constraint.code_generator_id == module:
+            return 2
+        if constraint.module.name == module.name:
+            return 1
+        return 0
+
+    def _get_own_constraints(
+        self, constraints_id, model, module, model_prefix
+    ):
+        """The rows of ``constraints_id`` that ``module`` declares on
+        ``model``, one per key, in the order of their first appearance.
+
+        ``ir.model.constraint`` keeps one row per (name, module): a key
+        that another module also declares has one row per module. For an
+        extension class, a key that the classes of other modules declare
+        is kept only through a row of ``module`` (rank above 0), so a core
+        constraint is not copied while an override of it survives the
+        regeneration. Among the rows of one key, the highest rank wins.
+        """
+        foreign_keys = set()
+        if self._is_extension_of_existing_model(model):
+            foreign_keys = self._get_sql_constraint_keys_outside_module(
+                model.model, module.name
+            )
+        dct_kept = {}
+        for constraint in constraints_id:
+            key = constraint.name.replace(model_prefix, "")
+            rank = self._get_constraint_rank(constraint, module)
+            if key in foreign_keys and not rank:
+                continue
+            if key not in dct_kept or rank > dct_kept[key][0]:
+                dct_kept[key] = (rank, constraint)
+        return self.env["ir.model.constraint"].concat(
+            *(constraint for _rank, constraint in dct_kept.values())
+        )
+
     def _get_model_constrains(self, cw, model, module):
         """
         Function to obtain the model constrains
@@ -303,14 +391,22 @@ class CodeGeneratorWriter(models.Model):
             # TODO how to use this way? binding model not working
             constraints_id = model.o2m_constraints
         elif module.o2m_model_constraints:
-            constraints_id = module.o2m_model_constraints
+            # The constraints of the module span all its models: keep the
+            # unique constraints of this one.
+            constraints_id = module.o2m_model_constraints.filtered(
+                lambda c: c.model == model and c.type == "u" and c.definition
+            )
+
+        model_prefix = "%s_" % self._get_model_model(model.model)
+        if constraints_id:
+            constraints_id = self._get_own_constraints(
+                constraints_id, model, module, model_prefix
+            )
 
         if constraints_id:
             lst_constraint = []
             for constraint in constraints_id:
-                constraint_name = constraint.name.replace(
-                    "%s_" % self._get_model_model(model.model), ""
-                )
+                constraint_name = constraint.name.replace(model_prefix, "")
                 constraint_definition = constraint.definition
                 constraint_message = (
                     constraint.message
@@ -2432,14 +2528,27 @@ _logger = logging.getLogger(__name__)"""
                     str_inherit = f'["{str_inherit_internal}"]'
                 cw.emit(f"_inherit = {str_inherit}")
 
-            if model.description:
+            # An extension class repeats an attribute only when it differs
+            # from what the other modules give the model: copying the
+            # reflected value would pin it in the generated module.
+            dct_attr_outside = {}
+            if not add_name:
+                for attr in ("_description", "_order", "_rec_name"):
+                    dct_attr_outside[attr] = self._get_attr_outside_module(
+                        model.model, attr, module.name
+                    )
+
+            if (
+                model.description
+                and model.description != dct_attr_outside.get("_description")
+            ):
                 cw.emit(f"_description = {py_str(model.description)}")
             elif not lst_inherit or add_name:
                 cw.emit(f"_description = {py_str(model.name)}")
             rec_name = self._get_rec_name_inherit_model(model)
-            if rec_name:
+            if rec_name and rec_name != dct_attr_outside.get("_rec_name"):
                 cw.emit(f"_rec_name = {py_str(rec_name)}")
-            if model.order:
+            if model.order and model.order != dct_attr_outside.get("_order"):
                 cw.emit(f"_order = {py_str(model.order)}")
 
             # TODO _order, _local_fields, _period_number, _inherits, _log_access, _auto, _parent_store
