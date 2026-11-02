@@ -3625,17 +3625,22 @@ _logger = logging.getLogger(__name__)"""
         vals["rootdir"] = rootdir
 
         lst_path_file = []
-        # TODO this will crash if generate multiple modules
-        for module in modules:
-            cg_data = code_generator_data.get_code_generator_data(
-                self.env, module, path
-            )
-            python_controller_writer = PythonControllerWriter(module, cg_data)
-            self.get_lst_file_generate(module, python_controller_writer)
+        try:
+            for module in modules:
+                # Each module starts from an empty state on the cursor.
+                cg_data = code_generator_data.start_code_generator_data(
+                    self.env, module, path
+                )
+                python_controller_writer = PythonControllerWriter(
+                    module, cg_data
+                )
+                self.get_lst_file_generate(module, python_controller_writer)
 
-            if module.enable_sync_code:
-                cg_data.sync_code(module.path_sync_code, module.name)
-            lst_path_file.extend(cg_data.lst_path_file)
+                if module.enable_sync_code:
+                    cg_data.sync_code(module.path_sync_code, module.name)
+                lst_path_file.extend(cg_data.lst_path_file)
+        finally:
+            code_generator_data.end_code_generator_data(self.env)
 
         vals["list_path_file"] = ";".join(list(set(lst_path_file)))
 
