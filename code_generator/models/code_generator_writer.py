@@ -2993,14 +2993,13 @@ _logger = logging.getLogger(__name__)"""
                     #     # TODO why ignore relation when start name with x_? Is it about x_name?
                     #     # A relation who begin with x_ is an automated relation, ignore it
                     #     ignored_relation = True
-                    if (
-                        f2export.relation_table
-                        and f"{f2export.model.replace('.', '_')}_id"
-                        != f2export.column1
-                        and f"{f2export.relation.replace('.', '_')}_id"
-                        != f2export.column2
-                        and f"{f2export.model.replace('.', '_')}_{f2export.relation.replace('.', '_')}"
-                        != f2export.relation_table
+                    if f2export.relation_table and (
+                        (
+                            f2export.relation_table,
+                            f2export.column1,
+                            f2export.column2,
+                        )
+                        != self._get_many2many_default_names(f2export)
                     ):
                         dct_field_attribute["relation"] = (
                             f2export.relation_table
@@ -3270,6 +3269,28 @@ _logger = logging.getLogger(__name__)"""
         )
 
         return lst_field_attribute, has_endline, compute, True
+
+    @staticmethod
+    def _get_many2many_default_names(f2export):
+        """
+        (relation, column1, column2) the ORM gives a Python many2many of
+        ``f2export`` that names none of them: the sorted tables of the
+        model and the comodel, then « <table>_id » of each. A relation of a
+        model to itself has no default: (None, None, None), so that its
+        names are always written
+        :param f2export: ir.model.fields of type many2many
+        :return: tuple
+        """
+        table = f2export.model.replace(".", "_")
+        comodel_table = f2export.relation.replace(".", "_")
+        if table == comodel_table:
+            return None, None, None
+        tables = sorted([table, comodel_table])
+        return (
+            "%s_%s_rel" % tuple(tables),
+            f"{table}_id",
+            f"{comodel_table}_id",
+        )
 
     def _get_model_fields_f2export(self, model, module):
         """
