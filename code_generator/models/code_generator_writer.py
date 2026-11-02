@@ -54,6 +54,42 @@ FROM_ODOO_IMPORTS_SUPERUSER = [
 MODEL_SUPERUSER_HEAD = FROM_ODOO_IMPORTS_SUPERUSER + BREAK_LINE
 
 
+def py_str(value):
+    """Python literal of the string ``value``, on one line.
+
+    ``repr`` escapes the quotes, the backslashes and the control
+    characters, so ``ast.literal_eval(py_str(value)) == value`` holds for
+    any string.
+    """
+    return repr(str(value))
+
+
+def py_str_multiline(value):
+    """Python literal of the string ``value`` that keeps its line breaks.
+
+    A string with a line break and only printable characters (plus tab)
+    becomes a triple-quoted literal whose lines are the lines of
+    ``value``, with every backslash doubled; the delimiter is the triple
+    quote that neither appears in the content nor glues to its last
+    character. Any other string falls back to ``py_str``. In both cases
+    ``ast.literal_eval(py_str_multiline(value)) == value``.
+
+    Characters other than ``\\n`` that ``str.splitlines`` treats as line
+    breaks are not printable, so ``CodeWriter.emit_raw``, which splits on
+    them, never alters a triple-quoted literal produced here.
+    """
+    value = str(value)
+    if "\n" not in value or not all(
+        char in "\n\t" or char.isprintable() for char in value
+    ):
+        return py_str(value)
+    escaped = value.replace("\\", "\\\\")
+    for quote in ('"""', "'''"):
+        if quote not in escaped and not escaped.endswith(quote[0]):
+            return f"{quote}{escaped}{quote}"
+    return py_str(value)
+
+
 class CodeGeneratorWriter(models.Model):
     _name = "code.generator.writer"
     _description = "Code Generator Writer"
@@ -283,8 +319,9 @@ class CodeGeneratorWriter(models.Model):
                 )
 
                 lst_constraint.append(
-                    f"('{constraint_name}', '{constraint_definition}',"
-                    f" '{constraint_message}')"
+                    f"({py_str(constraint_name)},"
+                    f" {py_str(constraint_definition)},"
+                    f" {py_str(constraint_message)})"
                 )
 
             cw.emit()
@@ -595,58 +632,51 @@ class CodeGeneratorWriter(models.Model):
             cw.emit()
 
         with cw.block(delim=("{", "}")):
-            cw.emit(f"'name': '{module.shortdesc}',")
+            cw.emit(f"'name': {py_str(module.shortdesc)},")
 
             if module.category_id:
-                cw.emit(
-                    "'category':"
-                    f" '{module.category_id.with_context(lang=lang).name}',"
-                )
+                category = module.category_id.with_context(lang=lang).name
+                cw.emit(f"'category': {py_str(category)},")
 
             if module.summary and module.summary != "false":
-                cw.emit(f"'summary': '{module.summary}',")
+                cw.emit(f"'summary': {py_str(module.summary)},")
 
             if module.description:
-                description = module.description.strip()
-                lst_description = description.split("\n")
-                if len(lst_description) == 1:
-                    cw.emit(f"'description': '{description}',")
-                else:
-                    cw.emit("'description': '''")
-                    for desc in lst_description:
-                        cw.emit_raw(desc)
-                    cw.emit("''',")
+                # A multi-line literal goes through emit_raw: its next
+                # lines belong to the string and take no indentation.
+                description = py_str_multiline(module.description.strip())
+                cw.emit_raw(f"{cw.mk_indent()}'description': {description},\n")
 
             if module.installed_version:
-                cw.emit(f"'version': '{module.installed_version}',")
+                cw.emit(f"'version': {py_str(module.installed_version)},")
 
             if module.author:
                 author = module.author.strip()
                 lst_author = author.split(",")
                 if len(lst_author) == 1:
-                    cw.emit(f"'author': '{author}',")
+                    cw.emit(f"'author': {py_str(author)},")
                 else:
                     cw.emit(f"'author': (")
                     with cw.indent():
                         for auth in lst_author[:-1]:
                             s_auth = auth.strip()
-                            cw.emit(f"'{s_auth}, '")
-                    cw.emit(f"'{lst_author[-1].strip()}'),")
+                            cw.emit(py_str(f"{s_auth}, "))
+                    cw.emit(f"{py_str(lst_author[-1].strip())}),")
 
             if module.contributors:
-                cw.emit(f"'contributors': '{module.contributors}',")
+                cw.emit(f"'contributors': {py_str(module.contributors)},")
 
             # if module.maintener:
             #     cw.emit(f"'maintainers': '{module.maintener}',")
 
             if module.license != "LGPL-3":
-                cw.emit(f"'license': '{module.license}',")
+                cw.emit(f"'license': {py_str(module.license)},")
 
             if module.sequence != 100:
                 cw.emit(f"'sequence': {module.sequence},")
 
             if module.website:
-                cw.emit(f"'website': '{module.website}',")
+                cw.emit(f"'website': {py_str(module.website)},")
 
             if module.auto_install:
                 cw.emit(f"'auto_install': True,")
@@ -659,13 +689,13 @@ class CodeGeneratorWriter(models.Model):
 
             if module.dependencies_id:
                 lst_depend = module.dependencies_id.mapped(
-                    lambda did: f"'{did.depend_id.name}'"
+                    lambda did: py_str(did.depend_id.name)
                 )
                 lst_depend = sorted(lst_depend)
                 # Remove exclude_dependencies_str
                 if module.exclude_dependencies_str:
                     lst_exclude_depend = [
-                        f"'{a}'"
+                        py_str(a)
                         for a in module.exclude_dependencies_str.split(";")
                     ]
                     lst_depend = list(
@@ -688,18 +718,18 @@ class CodeGeneratorWriter(models.Model):
                         if depend.is_template:
                             continue
                         dct_depend[depend.application_type].append(
-                            f"'{depend.depend}'"
+                            py_str(depend.depend)
                         )
                     for application_type, lst_value in dct_depend.items():
                         cw.emit_list(
                             lst_value,
                             ("[", "]"),
-                            before=f"'{application_type}': ",
+                            before=f"{py_str(application_type)}: ",
                             after=",",
                         )
 
             lst_data = self._get_l_map(
-                lambda dfile: f"'{dfile}'",
+                py_str,
                 cg_data.lst_manifest_data_files,
             )
             if lst_data:
@@ -2403,16 +2433,14 @@ _logger = logging.getLogger(__name__)"""
                 cw.emit(f"_inherit = {str_inherit}")
 
             if model.description:
-                new_description = model.description.replace("'", "\\'")
-                cw.emit(f"_description = '{new_description}'")
+                cw.emit(f"_description = {py_str(model.description)}")
             elif not lst_inherit or add_name:
-                cw.emit(f"_description = '{model.name}'")
+                cw.emit(f"_description = {py_str(model.name)}")
             rec_name = self._get_rec_name_inherit_model(model)
             if rec_name:
-                cw.emit(f"_rec_name = '{rec_name}'")
+                cw.emit(f"_rec_name = {py_str(rec_name)}")
             if model.order:
-                new_order = model.order.replace("'", "\\'")
-                cw.emit(f"_order = '{new_order}'")
+                cw.emit(f"_order = {py_str(model.order)}")
 
             # TODO _order, _local_fields, _period_number, _inherits, _log_access, _auto, _parent_store
             # TODO _parent_name
@@ -3042,7 +3070,7 @@ _logger = logging.getLogger(__name__)"""
             # TODO support digits, check dp.get_precision('Account')
 
             if f2export.help:
-                dct_field_attribute["help"] = f2export.help.replace("\\'", '"')
+                dct_field_attribute["help"] = f2export.help
 
             # Ignore it, by default it's copy=False
             # elif f2export.ttype != 'one2many' and not f2export.related and not compute and not f2export.copied:
@@ -3066,31 +3094,15 @@ _logger = logging.getLogger(__name__)"""
             if type(value) is str:
                 if key == "domain_raw":
                     lst_last_field_attribute.append(f"domain={value}")
+                elif key == "comodel_name":
+                    lst_first_field_attribute.append(f"{key}={py_str(value)}")
+                elif key == "ondelete":
+                    lst_last_field_attribute.append(f"{key}={py_str(value)}")
                 else:
-                    # TODO find another solution than removing \n, this cause error with cw.CodeWriter
-                    copy_value = value.replace("'", "\\'")
-                    value = value.replace("\n", " ").replace("'", "\\'")
-                    if key == "comodel_name":
-                        lst_first_field_attribute.append(f"{key}='{value}'")
-                    elif key == "ondelete":
-                        lst_last_field_attribute.append(f"{key}='{value}'")
-                    else:
-                        if "\n" in copy_value:
-                            has_endline = True
-                            if '"""' in copy_value:
-                                lst_field_attribute.append(
-                                    f"{key}='''{copy_value}'''"
-                                )
-                            elif "'''" in copy_value:
-                                lst_field_attribute.append(
-                                    f'{key}="""{copy_value}"""'
-                                )
-                            else:
-                                lst_field_attribute.append(
-                                    f'{key}="""{copy_value}"""'
-                                )
-                        else:
-                            lst_field_attribute.append(f"{key}='{copy_value}'")
+                    literal = py_str_multiline(value)
+                    if "\n" in literal:
+                        has_endline = True
+                    lst_field_attribute.append(f"{key}={literal}")
             elif type(value) is list or type(value) is tuple:
                 # TODO find another solution than removing \n, this cause error with cw.CodeWriter
                 if key == "default" and value[0] == "noquote":
