@@ -40,7 +40,7 @@ class CodeGeneratorWriter(models.Model):
                         "m2o_model": model.id,
                     }
                     self.env["code.generator.model.code"].create([value])
-        super(CodeGeneratorWriter, self)._set_model_py_file(
+        return super(CodeGeneratorWriter, self)._set_model_py_file(
             module, model, model_model
         )
 
