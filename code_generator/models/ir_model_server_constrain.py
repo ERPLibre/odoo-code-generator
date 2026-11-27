@@ -3,10 +3,10 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl)
 import re
 
-from odoo import _, api, fields, models, modules, tools
+from odoo import _, api, fields, models
 from odoo.addons.base.models.ir_model import SAFE_EVAL_BASE
 from odoo.exceptions import ValidationError
-from odoo.tools.safe_eval import safe_eval
+from odoo.tools.safe_eval import safe_eval, wrap_module
 
 CONSTRAINEDLS = (
     "The field Constrained lists the fields that the server constrain will"
@@ -15,16 +15,44 @@ CONSTRAINEDLS = (
 SERVERCONSTRAIN = "%s Server constrain "
 SYNTAXERRORMSG = "There is a syntax error in your %scode definition."
 
-SAFE_EVAL_4FUNCTION = SAFE_EVAL_BASE
-SAFE_EVAL_4FUNCTION.update(
-    {
-        "re": re,
-        "ValidationError": ValidationError,
-        "api": api,
-        "models": models,
-        "fields": fields,
-        "_": _,
-    }
+# The evaluation context of the code of a server constrain: a copy of the
+# one of Odoo, which every manual computed field of the server evaluates
+# its code with, so that nothing added here reaches it. safe_eval refuses
+# a raw module in its context: each module is a wrap_module that exposes
+# the names a constrain uses.
+SAFE_EVAL_4FUNCTION = dict(
+    SAFE_EVAL_BASE,
+    re=wrap_module(
+        re,
+        [
+            "compile",
+            "escape",
+            "findall",
+            "finditer",
+            "fullmatch",
+            "match",
+            "search",
+            "split",
+            "sub",
+            "subn",
+            "error",
+            "A",
+            "ASCII",
+            "I",
+            "IGNORECASE",
+            "M",
+            "MULTILINE",
+            "S",
+            "DOTALL",
+            "X",
+            "VERBOSE",
+        ],
+    ),
+    ValidationError=ValidationError,
+    api=wrap_module(api, ["constrains", "depends", "model", "onchange"]),
+    models=wrap_module(models, ["AbstractModel", "Model", "TransientModel"]),
+    fields=wrap_module(fields, ["Date", "Datetime"]),
+    _=_,
 )
 PREDEFINEDVARS = (
     "You specified a non predefined variable. The predefined variables are"
